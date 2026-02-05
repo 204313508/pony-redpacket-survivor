@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小马红包大作战</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        
+        <!-- HUD -->
+        <div id="hud" class="hud">
+            <div class="hud-section">
+                <div class="health-bar-container">
+                    <span class="bar-label">HP</span>
+                    <div class="health-bar">
+                        <div id="healthBar" class="health-fill"></div>
+                    </div>
+                    <span id="healthText" class="bar-text">100/100</span>
+                </div>
+                <div class="exp-bar-container">
+                    <span class="bar-label">EXP</span>
+                    <div class="exp-bar">
+                        <div id="expBar" class="exp-fill"></div>
+                    </div>
+                    <span id="expText" class="bar-text">0/100</span>
+                </div>
+            </div>
+            <div class="hud-section stats">
+                <div class="stat-item">
+                    <span class="stat-icon">🏆</span>
+                    <span id="scoreDisplay" class="stat-value">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-icon">💀</span>
+                    <span id="killCount" class="stat-value">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-icon">🧧</span>
+                    <span id="redpacketCount" class="stat-value">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 开始界面 -->
+        <div id="startScreen" class="screen start-screen">
+            <div class="screen-content">
+                <h1 class="game-title">🐴 小马红包大作战 🧧</h1>
+                <p class="game-subtitle">收集红包，击败怪物，成为红包之王！</p>
+                <div class="controls-info">
+                    <h3>游戏说明</h3>
+                    <p>⌨️ <strong>WASD / 方向键</strong> - 移动小马</p>
+                    <p>🖱️ <strong>鼠标左键 / 空格键</strong> - 攻击</p>
+                    <p>🧧 <strong>红包</strong> - 收集升级</p>
+                </div>
+                <button id="startButton" class="game-button">开始游戏</button>
+            </div>
+        </div>
+
+        <!-- 升级界面 -->
+        <div id="upgradeScreen" class="screen upgrade-screen">
+            <div class="screen-content">
+                <h2 class="screen-title">⬆️ 升级啦！</h2>
+                <p class="level-info">当前等级: <span id="currentLevel">1</span></p>
+                <div class="upgrade-options">
+                    <button class="upgrade-option" data-upgrade="health">
+                        <span class="upgrade-icon">❤️</span>
+                        <span class="upgrade-name">生命上限</span>
+                        <span class="upgrade-bonus">+20 HP</span>
+                    </button>
+                    <button class="upgrade-option" data-upgrade="attack">
+                        <span class="upgrade-icon">⚔️</span>
+                        <span class="upgrade-name">攻击力</span>
+                        <span class="upgrade-bonus">+5 攻击</span>
+                    </button>
+                    <button class="upgrade-option" data-upgrade="defense">
+                        <span class="upgrade-icon">🛡️</span>
+                        <span class="upgrade-name">防御力</span>
+                        <span class="upgrade-bonus">+3 防御</span>
+                    </button>
+                    <button class="upgrade-option" data-upgrade="speed">
+                        <span class="upgrade-icon">⚡</span>
+                        <span class="upgrade-name">移速</span>
+                        <span class="upgrade-bonus">+0.5 速度</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 结算界面 -->
+        <div id="gameOverScreen" class="screen game-over-screen">
+            <div class="screen-content">
+                <h2 class="screen-title">💀 游戏结束 💀</h2>
+                <div class="stats-summary">
+                    <div class="stat-summary-item">
+                        <span class="stat-summary-icon">🧧</span>
+                        <span class="stat-summary-label">收集红包</span>
+                        <span id="finalRedpackets" class="stat-summary-value">0</span>
+                    </div>
+                    <div class="stat-summary-item">
+                        <span class="stat-summary-icon">💀</span>
+                        <span class="stat-summary-label">击败怪物</span>
+                        <span id="finalKills" class="stat-summary-value">0</span>
+                    </div>
+                    <div class="stat-summary-item">
+                        <span class="stat-summary-icon">🏆</span>
+                        <span class="stat-summary-label">最终得分</span>
+                        <span id="finalScore" class="stat-summary-value">0</span>
+                    </div>
+                </div>
+                <button id="restartButton" class="game-button">再来一局</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
