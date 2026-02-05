@@ -24,7 +24,7 @@
 
 ### ✨ 游戏特色
 
-- 🎯 **简单易上手** - WASD/方向键移动，空格/鼠标左键攻击
+- 🎯 **简单易上手** - WASD/方向键移动，鼠标左键攻击
 - 🔥 **爽快的战斗体验** - 范围攻击，一次击中多个怪物
 - 📈 **RPG成长系统** - 收集红包升级，提升四大属性
 - 🎨 **精美的视觉效果** - 使用Emoji角色，炫酷的攻击特效
@@ -59,7 +59,7 @@
 #### 本地运行
 ```bash
 # 克隆仓库
-git clone https://github.com/yourusername/pony-redpacket-survivor.git
+git clone https://github.com/204313508/pony-redpacket-survivor.git
 
 # 进入目录
 cd pony-redpacket-survivor
@@ -293,8 +293,6 @@ pony-redpacket-survivor/
 - Some older browsers may not support Canvas API
 
 ### 🔄 Future Plans
-
-- [ ] Add sound effects
 - [ ] Add more attack skills
 - [ ] Add boss monsters
 - [ ] Add achievement system
