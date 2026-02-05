@@ -79,6 +79,71 @@ const Utils = {
     }
 };
 
+// ==================== 音效系统 ====================
+class SoundEffect {
+    constructor() {
+        this.sounds = {};
+        this.loaded = false;
+        this.volume = 0.5;
+    }
+
+    init() {
+        if (this.loaded) return;
+
+        // 加载音效文件
+        this.sounds = {
+            attack: new Audio('sounds/attack.mp3'),
+            monsterDeath: new Audio('sounds/monster_death.mp3'),
+            collect: new Audio('sounds/collect.mp3'),
+            upgrade: new Audio('sounds/upgrade.mp3')
+        };
+
+        // 设置音量
+        Object.values(this.sounds).forEach(sound => {
+            sound.volume = this.volume;
+            sound.load();
+        });
+
+        this.loaded = true;
+    }
+
+    playAttack() {
+        if (!this.loaded) this.init();
+        if (this.sounds.attack) {
+            const sound = this.sounds.attack.cloneNode();
+            sound.volume = this.volume;
+            sound.play().catch(e => console.log('音效播放失败:', e));
+        }
+    }
+
+    playMonsterDeath() {
+        if (!this.loaded) this.init();
+        if (this.sounds.monsterDeath) {
+            const sound = this.sounds.monsterDeath.cloneNode();
+            sound.volume = this.volume;
+            sound.play().catch(e => console.log('音效播放失败:', e));
+        }
+    }
+
+    playCollect() {
+        if (!this.loaded) this.init();
+        if (this.sounds.collect) {
+            const sound = this.sounds.collect.cloneNode();
+            sound.volume = this.volume;
+            sound.play().catch(e => console.log('音效播放失败:', e));
+        }
+    }
+
+    playUpgrade() {
+        if (!this.loaded) this.init();
+        if (this.sounds.upgrade) {
+            const sound = this.sounds.upgrade.cloneNode();
+            sound.volume = this.volume;
+            sound.play().catch(e => console.log('音效播放失败:', e));
+        }
+    }
+}
+
 // ==================== 玩家类 ====================
 class Player {
     constructor(x, y) {
@@ -149,14 +214,6 @@ class Player {
                 this.isAttacking = false;
             }
         }
-
-        // 空格键攻击（辅助攻击方式）
-        if (keys['Space'] && this.canAttack()) {
-            this.attack(); // 调用attack方法，触发冷却和动画
-            return true; // 返回true表示执行了攻击
-        }
-
-        return false;
     }
     
     canAttack() {
@@ -588,26 +645,29 @@ class Game {
     constructor() {
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
-        
+
         this.resizeCanvas();
         window.addEventListener('resize', () => this.resizeCanvas());
-        
+
         this.state = GameState.MENU;
         this.keys = {};
         this.mouse = { x: 0, y: 0 };
-        
+
         this.player = null;
         this.monsters = [];
         this.redPackets = [];
         this.attackEffects = [];
-        
+
         this.score = 0;
         this.totalRedPackets = 0;
         this.totalKills = 0;
         this.gameTime = 0;
         this.lastSpawnTime = 0;
         this.difficultyMultiplier = 1;
-        
+
+        // 音效系统
+        this.soundEffect = new SoundEffect();
+
         this.setupEventListeners();
         this.updateUI();
     }
@@ -683,13 +743,16 @@ class Game {
     
     executeAttack() {
         if (!this.player || !this.player.attack()) return;
-        
+
+        // 播放攻击音效
+        this.soundEffect.playAttack();
+
         // 创建攻击效果
         this.attackEffects.push(new AttackEffect(this.player.x, this.player.y, this.player.direction));
-        
+
         // 检测攻击范围内的怪物
         const attackRadius = this.player.attackRange;
-        
+
         for (let i = this.monsters.length - 1; i >= 0; i--) {
             const monster = this.monsters[i];
             const distance = Utils.distance(this.player.x, this.player.y, monster.x, monster.y);
@@ -698,6 +761,9 @@ class Game {
                 const killed = monster.takeDamage(this.player.attackPower);
 
                 if (killed) {
+                    // 播放怪物死亡音效
+                    this.soundEffect.playMonsterDeath();
+
                     // 怪物死亡，掉落红包
                     this.monsters.splice(i, 1);
                     this.redPackets.push(new RedPacket(monster.x, monster.y));
@@ -706,7 +772,7 @@ class Game {
                 }
             }
         }
-        
+
         this.updateUI();
     }
     
@@ -765,15 +831,10 @@ class Game {
         
         // 生成怪物
         this.spawnMonster(currentTime);
-        
+
         // 更新玩家
-        const didAttackFromKeyboard = this.player.update(deltaTime, this.keys);
-        
-        // 如果按了空格键攻击，执行攻击逻辑
-        if (didAttackFromKeyboard) {
-            this.executeAttack();
-        }
-        
+        this.player.update(deltaTime, this.keys);
+
         // 更新怪物
         this.monsters.forEach(monster => monster.update(this.player));
         
@@ -797,15 +858,20 @@ class Game {
         for (let i = this.redPackets.length - 1; i >= 0; i--) {
             const redPacket = this.redPackets[i];
             const collected = redPacket.update(deltaTime, this.player);
-            
+
             if (collected) {
                 this.redPackets.splice(i, 1);
                 this.totalRedPackets++;
                 this.score += 50;
-                
+
+                // 播放收集音效
+                this.soundEffect.playCollect();
+
                 const canLevelUp = this.player.gainExp(redPacket.expValue);
-                
+
                 if (canLevelUp) {
+                    // 播放升级音效
+                    this.soundEffect.playUpgrade();
                     this.showUpgradeScreen();
                     return;
                 }

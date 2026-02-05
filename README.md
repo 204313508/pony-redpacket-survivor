@@ -35,7 +35,7 @@
 
 #### 控制方式
 - **WASD / 方向键** - 移动小马
-- **鼠标左键 / 空格键** - 范围攻击
+- **鼠标左键** - 范围攻击
 - **收集红包** - 靠近红包自动收集
 
 #### 升级系统
@@ -103,13 +103,12 @@ pony-redpacket-survivor/
 ### 🎮 游戏截图
 
 <div align="center">
-  <img src="https://via.placeholder.com/400x300/1a1a2e/FFD700?text=开始界面" alt="开始界面" width="45%">
-  <img src="https://via.placeholder.com/400x300/0a0a0a/FF4444?text=游戏进行中" alt="游戏进行中" width="45%">
+  <img src="1.png" alt="游戏截图1" width="45%">
+  <img src="2.png" alt="游戏截图2" width="45%">
 </div>
 
 <div align="center">
-  <img src="https://via.placeholder.com/400x300/16213e/44FF44?text=升级界面" alt="升级界面" width="45%">
-  <img src="https://via.placeholder.com/400x300/1a1a2e/FF0000?text=游戏结束" alt="游戏结束" width="45%">
+  <img src="3.png" alt="游戏截图3" width="45%">
 </div>
 
 ### 📊 游戏参数
@@ -151,7 +150,6 @@ pony-redpacket-survivor/
 
 ### 🔄 未来计划
 
-- [ ] 添加音效系统
 - [ ] 添加更多攻击技能
 - [ ] 添加Boss怪物
 - [ ] 添加成就系统
@@ -159,47 +157,6 @@ pony-redpacket-survivor/
 - [ ] 支持触摸屏操作
 - [ ] 添加更多角色选择
 - [ ] 优化性能
-
-### 🤝 贡献
-
-欢迎提交 Issue 和 Pull Request！
-
-1. Fork 本仓库
-2. 创建你的特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交你的修改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 开启一个 Pull Request
-
-### 📄 许可证
-
-本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件
-
-### 👨‍💻 作者
-
-**iFlow CLI**
-
-- GitHub: [@yourusername](https://github.com/yourusername)
-
-### 🙏 致谢
-
-- 灵感来源于《吸血鬼幸存者》和《土豆兄弟》
-- 感谢所有开源项目的贡献者
-
-### 📮 联系方式
-
-如果你有任何问题或建议，欢迎：
-- 提交 [Issue](https://github.com/yourusername/pony-redpacket-survivor/issues)
-- 发送邮件至：your.email@example.com
-
----
-
-<div align="center">
-
-**⭐ 如果这个项目对你有帮助，请给它一个星星！⭐**
-
-Made with ❤️ by iFlow CLI
-
-</div>
 
 ---
 
@@ -211,7 +168,7 @@ Made with ❤️ by iFlow CLI
 
 ### ✨ Game Features
 
-- 🎯 **Easy to Play** - WASD/Arrow keys to move, Space/Mouse to attack
+- 🎯 **Easy to Play** - WASD/Arrow keys to move, Mouse to attack
 - 🔥 **Exciting Combat** - Area-of-effect attacks, hit multiple enemies at once
 - 📈 **RPG Progression** - Collect red packets to level up and upgrade stats
 - 🎨 **Beautiful Visuals** - Emoji-based characters, cool attack effects
@@ -222,7 +179,7 @@ Made with ❤️ by iFlow CLI
 
 #### Controls
 - **WASD / Arrow Keys** - Move pony
-- **Mouse Left Click / Space** - Area attack
+- **Mouse Left Click** - Area attack
 - **Collect Red Packets** - Get close to collect automatically
 
 #### Upgrade System
@@ -290,13 +247,12 @@ pony-redpacket-survivor/
 ### 🎮 Game Screenshots
 
 <div align="center">
-  <img src="https://via.placeholder.com/400x300/1a1a2e/FFD700?text=Start+Screen" alt="Start Screen" width="45%">
-  <img src="https://via.placeholder.com/400x300/0a0a0a/FF4444?text=Gameplay" alt="Gameplay" width="45%">
+  <img src="1.png" alt="Game Screenshot 1" width="45%">
+  <img src="2.png" alt="Game Screenshot 2" width="45%">
 </div>
 
 <div align="center">
-  <img src="https://via.placeholder.com/400x300/16213e/44FF44?text=Upgrade+Screen" alt="Upgrade Screen" width="45%">
-  <img src="https://via.placeholder.com/400x300/1a1a2e/FF0000?text=Game+Over" alt="Game Over" width="45%">
+  <img src="3.png" alt="Game Screenshot 3" width="45%">
 </div>
 
 ### 📊 Game Parameters
@@ -346,44 +302,3 @@ pony-redpacket-survivor/
 - [ ] Support touch controls
 - [ ] Add more character options
 - [ ] Performance optimization
-
-### 🤝 Contributing
-
-Contributions are welcome! Feel free to submit Issues and Pull Requests.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-### 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
-
-### 👨‍💻 Author
-
-**iFlow CLI**
-
-- GitHub: [@yourusername](https://github.com/yourusername)
-
-### 🙏 Acknowledgments
-
-- Inspired by *Vampire Survivors* and *Potato Bros*
-- Thanks to all open source contributors
-
-### 📮 Contact
-
-If you have any questions or suggestions, feel free to:
-- Open an [Issue](https://github.com/yourusername/pony-redpacket-survivor/issues)
-- Send email to: your.email@example.com
-
----
-
-<div align="center">
-
-**⭐ If this project helps you, please give it a star! ⭐**
-
-Made with ❤️ by iFlow CLI
-
-</div>
