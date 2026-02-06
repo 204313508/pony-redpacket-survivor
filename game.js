@@ -68,20 +68,23 @@ const CONFIG = {
 
     // 天气系统配置
     WEATHER: {
-        CHANGE_INTERVAL: 30000, // 天气切换间隔（30秒）
+        CHANGE_INTERVAL: 10000, // 天气切换间隔（10秒）
         SUNNY_ATTACK_BONUS: 5, // 晴天攻击加成（点数）
         SUNNY_ATTACK_BONUS_PERCENT: 0.05, // 晴天攻击加成（百分比）
         WINDY_SPEED_BONUS: 0.5, // 风天速度加成（点数）
         WINDY_SPEED_BONUS_PERCENT: 0.02, // 风天速度加成（百分比）
-        RAINY_HEALTHPOTION_INTERVAL: 5000, // 雨天生成回复包间隔（5秒）
+        RAINY_HEALTHPOTION_INTERVAL: 2000, // 雨天生成回复包间隔（2秒）
         RAINY_HEALTHPOTION_DURATION: 10000, // 回复包存在时间（10秒）
         RAINY_HEALTHPOTION_AMOUNT: 10, // 回复包回复血量（点数）
         RAINY_HEALTHPOTION_PERCENT: 0.1, // 回复包回复血量（百分比）
-        STORMY_LIGHTNING_INTERVAL: 3000, // 雷天雷击间隔（3秒）
+        STORMY_LIGHTNING_INTERVAL: 1250, // 雷天雷击间隔（1.25秒）
         STORMY_LIGHTNING_DAMAGE: 30, // 雷击伤害（点数）
         STORMY_LIGHTNING_DAMAGE_PERCENT: 0.1, // 雷击伤害（百分比）
         STORMY_LIGHTNING_WARNING_DURATION: 1000, // 雷击预警时间（1秒）
-        STORMY_LIGHTNING_RADIUS: 100 // 雷击半径
+        STORMY_LIGHTNING_RADIUS: 100, // 雷击半径
+        FOGGY_VIEW_DISTANCE: 400, // 雾天可见距离
+        FOGGY_ALPHA: 0.85, // 雾天遮罩透明度
+        SNOWY_SPEED_PENALTY: 0.02 // 雪天移速降低（2%）
     }
 };
 
@@ -97,8 +100,10 @@ const GameState = {
 const WeatherType = {
     SUNNY: 'sunny', // 晴天：攻击+5
     WINDY: 'windy', // 风天：移动速度+0.5
-    RAINY: 'rainy', // 雨天：每隔5秒生成回复包
-    STORMY: 'stormy' // 雷天：每隔3秒出现雷击
+    RAINY: 'rainy', // 雨天：每隔2秒生成回复包
+    STORMY: 'stormy', // 雷天：每隔1.25秒出现雷击
+    FOGGY: 'foggy', // 雾天：只渲染用户附近的红包，其他地方用特效遮盖
+    SNOWY: 'snowy' // 雪天：降低移速2%
 };
 
 // ==================== 工具函数 ====================
@@ -245,8 +250,12 @@ class VirtualJoystick {
 class SoundEffect {
     constructor() {
         this.sounds = {};
+        this.weatherSounds = {};
         this.loaded = false;
+        this.weatherLoaded = false;
         this.volume = 0.5;
+        this.weatherVolume = 0.3; // 天气音效音量较低
+        this.currentWeatherSound = null; // 当前正在播放的天气音效
     }
 
     init() {
@@ -267,6 +276,29 @@ class SoundEffect {
         });
 
         this.loaded = true;
+    }
+
+    initWeatherSounds() {
+        if (this.weatherLoaded) return;
+
+        // 加载天气音效文件
+        this.weatherSounds = {
+            sunny: new Audio('sounds/weather-sunny.mp3'),
+            windy: new Audio('sounds/weather-wind.mp3'),
+            rainy: new Audio('sounds/weather-rain.mp3'),
+            stormy: new Audio('sounds/weather-storm.mp3'),
+            foggy: new Audio('sounds/weather-fog.mp3'),
+            snowy: new Audio('sounds/weather-snow.mp3')
+        };
+
+        // 设置天气音效属性（循环播放、音量）
+        Object.values(this.weatherSounds).forEach(sound => {
+            sound.volume = this.weatherVolume;
+            sound.loop = true; // 循环播放
+            sound.load();
+        });
+
+        this.weatherLoaded = true;
     }
 
     playAttack() {
@@ -303,6 +335,45 @@ class SoundEffect {
             sound.volume = this.volume;
             sound.play().catch(e => console.log('音效播放失败:', e));
         }
+    }
+
+    // 播放天气音效
+    playWeatherSound(weatherType) {
+        if (!this.weatherLoaded) this.initWeatherSounds();
+
+        const soundKey = weatherType.toLowerCase();
+        const sound = this.weatherSounds[soundKey];
+
+        if (!sound) return;
+
+        // 如果当前已经有天气音效在播放，先停止
+        if (this.currentWeatherSound && this.currentWeatherSound !== sound) {
+            this.stopWeatherSound();
+        }
+
+        // 如果音效未播放，则开始播放
+        if (this.currentWeatherSound !== sound) {
+            this.currentWeatherSound = sound;
+            sound.currentTime = 0;
+            sound.play().catch(e => console.log('天气音效播放失败:', e));
+        }
+    }
+
+    // 停止天气音效
+    stopWeatherSound() {
+        if (this.currentWeatherSound) {
+            this.currentWeatherSound.pause();
+            this.currentWeatherSound.currentTime = 0;
+            this.currentWeatherSound = null;
+        }
+    }
+
+    // 设置天气音效音量
+    setWeatherVolume(volume) {
+        this.weatherVolume = Math.max(0, Math.min(1, volume));
+        Object.values(this.weatherSounds).forEach(sound => {
+            sound.volume = this.weatherVolume;
+        });
     }
 }
 
@@ -759,29 +830,33 @@ class Monster {
     draw(ctx, cameraX, cameraY) {
         const screenX = this.x - cameraX;
         const screenY = this.y - cameraY;
-        
+
         // 受伤动画效果
         let scale = 1;
         let shakeX = 0;
         let shakeY = 0;
-        
+
         if (this.isHurt) {
             const progress = this.hurtAnimationTime / this.hurtAnimationDuration;
-            
+
             // 受伤时晃动
             shakeX = Math.sin(progress * Math.PI * 12) * this.size * 0.2;
             shakeY = Math.cos(progress * Math.PI * 12) * this.size * 0.2;
-            
+
             // 更新动画时间
             this.hurtAnimationTime += 16;
             if (this.hurtAnimationTime >= this.hurtAnimationDuration) {
                 this.isHurt = false;
             }
         }
-        
+
+        // 计算移动端元素缩放
+        const elementScale = this.isMobile ? CONFIG.MOBILE.ELEMENT_SCALE_MULTIPLIER : 1;
+
         // 绘制怪物的光环（始终存在）
         ctx.save();
         ctx.translate(screenX + shakeX, screenY + shakeY);
+        ctx.scale(elementScale, elementScale);
 
         // 怪物周围的光环（使用stroke而不是fill，避免遮挡emoji）
         const auraAlpha = 0.3 + Math.sin(Date.now() * 0.003) * 0.1;
@@ -825,16 +900,16 @@ class Monster {
         ctx.fillText('🧧', 0, 0);
 
         ctx.restore();
-        
+
         // 绘制血条（在restore之后，确保血条不受translate影响）
         ctx.save();
         ctx.translate(screenX + shakeX, screenY + shakeY);
-        
+
         const healthPercent = this.hp / this.maxHp;
         const barWidth = this.size * 1.4;
         const barHeight = 8;
         const barY = -this.size * 1.0;
-        
+
         // 血条背景
         const barBgGradient = ctx.createLinearGradient(-barWidth / 2, 0, barWidth / 2, 0);
         barBgGradient.addColorStop(0, 'rgba(0, 0, 0, 0.8)');
@@ -844,61 +919,24 @@ class Monster {
         ctx.beginPath();
         ctx.roundRect(-barWidth / 2, barY, barWidth, barHeight, 4);
         ctx.fill();
-        
+
         // 血条边框
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
         ctx.lineWidth = 2;
         ctx.stroke();
-        
+
         // 血条填充（渐变色）
         const barColor = healthPercent > 0.5 ? '#2ed573' : healthPercent > 0.25 ? '#ffa502' : '#ff4757';
         const fillGradient = ctx.createLinearGradient(-barWidth / 2, 0, barWidth / 2, 0);
         fillGradient.addColorStop(0, barColor);
         fillGradient.addColorStop(1, healthPercent > 0.5 ? '#7bed9f' : healthPercent > 0.25 ? '#ffbe76' : '#ff6b81');
-        
+
         ctx.fillStyle = fillGradient;
         ctx.shadowBlur = 8;
         ctx.shadowColor = barColor;
         ctx.beginPath();
         ctx.roundRect(-barWidth / 2 + 2, barY + 2, (barWidth - 4) * healthPercent, barHeight - 4, 2);
         ctx.fill();
-
-        ctx.restore();
-    }
-
-    // 只绘制emoji，确保在所有特效层之上显示
-    drawEmojiOnly(ctx, cameraX, cameraY) {
-        const screenX = this.x - cameraX;
-        const screenY = this.y - cameraY;
-
-        // 受伤动画效果
-        let shakeX = 0;
-        let shakeY = 0;
-
-        if (this.isHurt) {
-            const progress = this.hurtAnimationTime / this.hurtAnimationDuration;
-            shakeX = Math.sin(progress * Math.PI * 12) * this.size * 0.2;
-            shakeY = Math.cos(progress * Math.PI * 12) * this.size * 0.2;
-        }
-
-        // 计算移动端元素缩放
-        const elementScale = this.isMobile ? CONFIG.MOBILE.ELEMENT_SCALE_MULTIPLIER : 1;
-
-        ctx.save();
-        ctx.translate(screenX + shakeX, screenY + shakeY);
-        ctx.scale(elementScale, elementScale);
-
-        // 重置所有效果，确保emoji完全清晰
-        ctx.shadowBlur = 0;
-        ctx.shadowColor = 'transparent';
-        ctx.globalAlpha = 1;
-        ctx.globalCompositeOperation = 'source-over';
-
-        // 绘制红包emoji
-        ctx.font = `${this.size * 1.8}px Arial`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('🧧', 0, 0);
 
         ctx.restore();
     }
@@ -1024,9 +1062,13 @@ class Boss {
         // Boss呼吸动画
         const breatheScale = 1 + Math.sin(Date.now() / 400) * 0.08;
 
+        // 计算移动端元素缩放
+        const elementScale = this.isMobile ? CONFIG.MOBILE.ELEMENT_SCALE_MULTIPLIER : 1;
+        const combinedScale = scale * breatheScale * elementScale;
+
         ctx.save();
         ctx.translate(screenX + shakeX, screenY + shakeY);
-        ctx.scale(scale * breatheScale, scale * breatheScale);
+        ctx.scale(combinedScale, combinedScale);
 
         // 绘制Boss光环（多层）
         const time = Date.now();
@@ -1099,7 +1141,7 @@ class Boss {
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
         ctx.fillText('BOSS', 0, -this.size * 0.7);
-        
+
         // 添加警告标志
         ctx.font = '12px Arial';
         ctx.fillStyle = '#ff4757';
@@ -1143,11 +1185,11 @@ class Boss {
             barColor = '#ffa502';
             barColorEnd = '#ffbe76';
         }
-        
+
         const fillGradient = ctx.createLinearGradient(-barWidth / 2, 0, barWidth / 2, 0);
         fillGradient.addColorStop(0, barColor);
         fillGradient.addColorStop(1, barColorEnd);
-        
+
         ctx.fillStyle = fillGradient;
         ctx.shadowBlur = 15;
         ctx.shadowColor = barColor;
@@ -1162,60 +1204,6 @@ class Boss {
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
         ctx.fillText(`${Math.ceil(this.hp)}/${this.maxHp}`, 0, barY - 8);
-
-        ctx.restore();
-    }
-
-    // 只绘制emoji，确保在所有特效层之上显示
-    drawEmojiOnly(ctx, cameraX, cameraY) {
-        const screenX = this.x - cameraX;
-        const screenY = this.y - cameraY;
-
-        // 受伤动画效果
-        let shakeX = 0;
-        let shakeY = 0;
-
-        if (this.isHurt) {
-            const progress = this.hurtAnimationTime / this.hurtAnimationDuration;
-            shakeX = Math.sin(progress * Math.PI * 15) * this.size * 0.15;
-            shakeY = Math.cos(progress * Math.PI * 15) * this.size * 0.15;
-        }
-
-        // Boss呼吸动画
-        const breatheScale = 1 + Math.sin(Date.now() / 400) * 0.08;
-        
-        // 计算移动端元素缩放
-        const elementScale = this.isMobile ? CONFIG.MOBILE.ELEMENT_SCALE_MULTIPLIER : 1;
-        const combinedScale = breatheScale * elementScale;
-
-        ctx.save();
-        ctx.translate(screenX + shakeX, screenY + shakeY);
-        ctx.scale(combinedScale, combinedScale);
-
-        // 重置所有效果，确保emoji完全清晰
-        ctx.shadowBlur = 0;
-        ctx.shadowColor = 'transparent';
-        ctx.globalAlpha = 1;
-        ctx.globalCompositeOperation = 'source-over';
-
-        // 绘制Boss（大红包）
-        ctx.font = `${this.size * 1.5}px Arial`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('🧧', 0, 0);
-
-        // 绘制Boss名称标签
-        ctx.shadowBlur = 8;
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-        ctx.font = 'bold 18px Arial';
-        ctx.fillStyle = '#ffffff';
-        ctx.textAlign = 'center';
-        ctx.fillText('BOSS', 0, -this.size * 0.7);
-
-        // 添加警告标志
-        ctx.font = '12px Arial';
-        ctx.fillStyle = '#ff4757';
-        ctx.fillText('⚠', 0, -this.size * 0.9);
 
         ctx.restore();
     }
@@ -1274,9 +1262,13 @@ class RedPacket {
     draw(ctx, cameraX, cameraY) {
         const screenX = this.x - cameraX;
         const screenY = this.y - cameraY + Math.sin(this.bobAngle) * 5;
-        
+
+        // 计算移动端元素缩放
+        const elementScale = this.isMobile ? CONFIG.MOBILE.ELEMENT_SCALE_MULTIPLIER : 1;
+
         ctx.save();
         ctx.translate(screenX, screenY);
+        ctx.scale(elementScale, elementScale);
 
         // 外围光环（在emoji后面）
         ctx.strokeStyle = `rgba(255, 215, 0, 0.5)`;
@@ -1294,33 +1286,6 @@ class RedPacket {
         ctx.globalCompositeOperation = 'source-over';
 
         // 绘制红包emoji（使用💰）
-        ctx.font = `${this.size * 2}px Arial`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('💰', 0, 0);
-
-        ctx.restore();
-    }
-
-    // 只绘制emoji，确保在所有特效层之上显示
-    drawEmojiOnly(ctx, cameraX, cameraY) {
-        const screenX = this.x - cameraX;
-        const screenY = this.y - cameraY + Math.sin(this.bobAngle) * 5;
-
-        // 计算移动端元素缩放
-        const elementScale = this.isMobile ? CONFIG.MOBILE.ELEMENT_SCALE_MULTIPLIER : 1;
-
-        ctx.save();
-        ctx.translate(screenX, screenY);
-        ctx.scale(elementScale, elementScale);
-
-        // 重置所有效果，确保emoji完全清晰
-        ctx.shadowBlur = 0;
-        ctx.shadowColor = 'transparent';
-        ctx.globalAlpha = 1;
-        ctx.globalCompositeOperation = 'source-over';
-
-        // 绘制红包emoji
         ctx.font = `${this.size * 2}px Arial`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -1373,8 +1338,12 @@ class HealthPotion {
         const elapsed = Date.now() - this.createTime;
         const progress = elapsed / this.lifetime;
 
+        // 计算移动端元素缩放
+        const elementScale = this.isMobile ? CONFIG.MOBILE.ELEMENT_SCALE_MULTIPLIER : 1;
+
         ctx.save();
         ctx.translate(screenX, screenY);
+        ctx.scale(elementScale, elementScale);
 
         // 剩余时间淡出效果
         const alpha = progress > 0.7 ? 1 - (progress - 0.7) / 0.3 : 1;
@@ -1402,40 +1371,6 @@ class HealthPotion {
         ctx.globalCompositeOperation = 'source-over';
 
         // 绘制回复包emoji（使用💚）
-        ctx.font = `${this.size * 2.2}px Arial`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('💚', 0, 0);
-
-        ctx.restore();
-    }
-
-    // 只绘制emoji，确保在所有特效层之上显示
-    drawEmojiOnly(ctx, cameraX, cameraY) {
-        const screenX = this.x - cameraX;
-        const screenY = this.y - cameraY + Math.sin(this.bobAngle) * 4;
-
-        // 计算生命周期进度
-        const elapsed = Date.now() - this.createTime;
-        const progress = elapsed / this.lifetime;
-
-        // 计算移动端元素缩放
-        const elementScale = this.isMobile ? CONFIG.MOBILE.ELEMENT_SCALE_MULTIPLIER : 1;
-
-        ctx.save();
-        ctx.translate(screenX, screenY);
-        ctx.scale(elementScale, elementScale);
-
-        // 剩余时间淡出效果
-        const alpha = progress > 0.7 ? 1 - (progress - 0.7) / 0.3 : 1;
-
-        // 重置所有效果，确保emoji完全清晰
-        ctx.shadowBlur = 0;
-        ctx.shadowColor = 'transparent';
-        ctx.globalAlpha = alpha;
-        ctx.globalCompositeOperation = 'source-over';
-
-        // 绘制回复包emoji
         ctx.font = `${this.size * 2.2}px Arial`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -1829,11 +1764,16 @@ class LightningEffect {
 
 // ==================== 天气系统类 ====================
 class WeatherSystem {
-    constructor() {
+    constructor(soundEffect = null) {
         this.currentWeather = WeatherType.SUNNY;
         this.lastWeatherChangeTime = 0;
         this.lastRainyPotionTime = 0;
         this.lastStormyLightningTime = 0;
+        this.soundEffect = soundEffect;
+    }
+
+    setSoundEffect(soundEffect) {
+        this.soundEffect = soundEffect;
     }
 
     update(currentTime, player, mapWidth, mapHeight) {
@@ -1874,6 +1814,11 @@ class WeatherSystem {
 
         this.currentWeather = newWeather;
         console.log('天气切换为:', this.currentWeather);
+
+        // 播放对应的天气音效
+        if (this.soundEffect) {
+            this.soundEffect.playWeatherSound(this.currentWeather);
+        }
     }
 
     getSpeedBonus() {
@@ -1922,6 +1867,28 @@ class WeatherSystem {
         return 0;
     }
 
+    getSpeedPenalty() {
+        if (this.currentWeather === WeatherType.SNOWY) {
+            return CONFIG.WEATHER.SNOWY_SPEED_PENALTY;
+        }
+        return 0;
+    }
+
+    getSpeedPenaltyPercent() {
+        if (this.currentWeather === WeatherType.SNOWY) {
+            return CONFIG.WEATHER.SNOWY_SPEED_PENALTY;
+        }
+        return 0;
+    }
+
+    isInFoggyWeather() {
+        return this.currentWeather === WeatherType.FOGGY;
+    }
+
+    getFoggyViewDistance() {
+        return CONFIG.WEATHER.FOGGY_VIEW_DISTANCE;
+    }
+
     spawnHealthPotion(mapWidth, mapHeight, playerMaxHp, isMobile) {
         // 在地图内随机位置生成回复包
         const x = Utils.randomRange(50, mapWidth - 50);
@@ -1936,7 +1903,7 @@ class WeatherSystem {
         return new LightningEffect(x, y, playerMaxHp);
     }
 
-    drawBackgroundEffect(ctx, canvasWidth, canvasHeight) {
+    drawBackgroundEffect(ctx, canvasWidth, canvasHeight, cameraX, cameraY, player) {
         ctx.save();
 
         switch (this.currentWeather) {
@@ -1951,6 +1918,12 @@ class WeatherSystem {
                 break;
             case WeatherType.STORMY:
                 this.drawStormyEffect(ctx, canvasWidth, canvasHeight);
+                break;
+            case WeatherType.FOGGY:
+                this.drawFoggyEffect(ctx, canvasWidth, canvasHeight, cameraX, cameraY, player);
+                break;
+            case WeatherType.SNOWY:
+                this.drawSnowyEffect(ctx, canvasWidth, canvasHeight);
                 break;
         }
 
@@ -2080,6 +2053,84 @@ class WeatherSystem {
         ctx.fillRect(0, 0, width, height);
     }
 
+    drawFoggyEffect(ctx, width, height, cameraX, cameraY, player) {
+        // 雾天：只渲染用户附近的区域，其他地方用特效遮盖
+        const time = Date.now();
+        const viewDistance = CONFIG.WEATHER.FOGGY_VIEW_DISTANCE;
+
+        // 创建径向渐变，中心透明，边缘雾色
+        // 计算玩家在屏幕上的位置
+        const playerScreenX = player.x - cameraX;
+        const playerScreenY = player.y - cameraY;
+
+        // 创建雾效果渐变
+        const gradient = ctx.createRadialGradient(
+            playerScreenX, playerScreenY, 0,
+            playerScreenX, playerScreenY, viewDistance
+        );
+
+        // 中心透明（玩家附近），边缘雾色
+        gradient.addColorStop(0, 'rgba(200, 200, 210, 0)');
+        gradient.addColorStop(0.6, 'rgba(200, 200, 210, 0.2)');
+        gradient.addColorStop(0.85, 'rgba(180, 180, 190, 0.6)');
+        gradient.addColorStop(1, `rgba(160, 160, 170, ${CONFIG.WEATHER.FOGGY_ALPHA})`);
+
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+
+        // 添加雾的粒子效果（在雾区域中）
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        const fogParticleCount = 30;
+        for (let i = 0; i < fogParticleCount; i++) {
+            const x = ((i * 47 + time * 0.05) % width);
+            const y = ((i * 61 + time * 0.03) % height);
+            const size = 2 + Math.sin(time * 0.001 + i) * 1;
+
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // 雾天整体色调
+        ctx.fillStyle = 'rgba(180, 180, 190, 0.08)';
+        ctx.fillRect(0, 0, width, height);
+    }
+
+    drawSnowyEffect(ctx, width, height) {
+        // 雪天：雪花飘落效果
+        const time = Date.now();
+
+        // 雪花
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        const snowCount = 80;
+        for (let i = 0; i < snowCount; i++) {
+            const x = ((i * 53 + time * 0.15) % (width + 100)) - 50;
+            const y = ((i * 67 + time * 0.1) % (height + 100)) - 50;
+            const size = 2 + Math.sin(i) * 1;
+
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // 较大的雪花
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+        const largeSnowCount = 15;
+        for (let i = 0; i < largeSnowCount; i++) {
+            const x = ((i * 89 + time * 0.08) % (width + 100)) - 50;
+            const y = ((i * 101 + time * 0.05) % (height + 100)) - 50;
+            const size = 3 + Math.sin(time * 0.002 + i) * 2;
+
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // 雪天整体色调
+        ctx.fillStyle = 'rgba(220, 230, 240, 0.05)';
+        ctx.fillRect(0, 0, width, height);
+    }
+
     getWeatherIcon() {
         switch (this.currentWeather) {
             case WeatherType.SUNNY:
@@ -2090,6 +2141,10 @@ class WeatherSystem {
                 return '🌧️';
             case WeatherType.STORMY:
                 return '⛈️';
+            case WeatherType.FOGGY:
+                return '🌫️';
+            case WeatherType.SNOWY:
+                return '❄️';
             default:
                 return '☀️';
         }
@@ -2105,6 +2160,10 @@ class WeatherSystem {
                 return '雨天';
             case WeatherType.STORMY:
                 return '雷天';
+            case WeatherType.FOGGY:
+                return '雾天';
+            case WeatherType.SNOWY:
+                return '雪天';
             default:
                 return '晴天';
         }
@@ -2120,6 +2179,10 @@ class WeatherSystem {
                 return '生成回复包';
             case WeatherType.STORMY:
                 return '随机落雷';
+            case WeatherType.FOGGY:
+                return '视野受限';
+            case WeatherType.SNOWY:
+                return '移速降低';
             default:
                 return '';
         }
@@ -2132,9 +2195,13 @@ class WeatherSystem {
             case WeatherType.WINDY:
                 return '移动速度 +0.5';
             case WeatherType.RAINY:
-                return '每隔5秒生成回复包';
+                return '每隔2秒生成回复包';
             case WeatherType.STORMY:
-                return '每隔3秒出现雷击';
+                return '每隔1.25秒出现雷击';
+            case WeatherType.FOGGY:
+                return '只渲染用户附近的红包';
+            case WeatherType.SNOWY:
+                return '移速降低2%';
             default:
                 return '';
         }
@@ -2167,6 +2234,16 @@ class Game {
         // 天气系统
         this.weatherSystem = new WeatherSystem();
 
+        // 性能监控系统
+        this.performanceMonitor = {
+            fps: 60,
+            frameTime: 0,
+            lowFpsCount: 0,
+            highFpsCount: 0,
+            lastCheckTime: 0,
+            renderQuality: 3 // 渲染质量等级：3=高，2=中，1=低
+        };
+
         this.score = 0;
         this.totalRedPackets = 0;
         this.totalKills = 0;
@@ -2177,6 +2254,9 @@ class Game {
 
         // 音效系统
         this.soundEffect = new SoundEffect();
+
+        // 设置天气系统的音效
+        this.weatherSystem.setSoundEffect(this.soundEffect);
 
         // 移动端虚拟摇杆
         this.joystick = null;
@@ -2189,6 +2269,9 @@ class Game {
             showAttackRange: true,
             showCollectRange: false,
             autoAttack: true, // 自动攻击
+            renderQuality: 'auto', // 渲染质量：'auto', 'high', 'medium', 'low'
+            // 红包设置
+            redpacketExpValue: 10, // 红包掉落经验
             // 怪物基础数值
             monsterInitialHP: 30,
             monsterInitialAttack: 10,
@@ -2215,9 +2298,7 @@ class Game {
             // Boss自爆伤害
             bossExplosionDamage: 30,
             // Boss掉落红包数量
-            bossRedpacketDropCount: 15,
-            // 红包掉落经验
-            redpacketExpValue: 10
+            bossRedpacketDropCount: 15
         };
 
         // 从localStorage加载设置，如果没有则使用默认设置
@@ -2321,6 +2402,7 @@ class Game {
 
         // 重置天气系统
         this.weatherSystem = new WeatherSystem();
+        this.weatherSystem.setSoundEffect(this.soundEffect);
 
         this.score = 0;
         this.totalRedPackets = 0;
@@ -2475,14 +2557,72 @@ class Game {
         }
     }
 
+    updatePerformanceMonitor(currentTime) {
+        // 只在自动模式下才进行性能监控
+        if (this.settings.renderQuality !== 'auto') return;
+
+        const pm = this.performanceMonitor;
+
+        // 计算当前FPS
+        const currentFps = 1000 / (currentTime - pm.lastCheckTime);
+        pm.lastCheckTime = currentTime;
+
+        // 平滑FPS值
+        pm.fps = pm.fps * 0.9 + currentFps * 0.1;
+
+        // 每30帧检查一次性能
+        pm.frameTime += 1;
+        if (pm.frameTime < 30) return;
+        pm.frameTime = 0;
+
+        // 根据FPS调整渲染质量
+        if (pm.fps < 30) {
+            pm.lowFpsCount++;
+            pm.highFpsCount = 0;
+
+            // 持续低FPS，降低渲染质量
+            if (pm.lowFpsCount > 3 && pm.renderQuality > 1) {
+                pm.renderQuality--;
+                pm.lowFpsCount = 0;
+                console.log(`性能下降，降低渲染质量至等级 ${pm.renderQuality}`);
+            }
+        } else if (pm.fps > 50) {
+            pm.highFpsCount++;
+            pm.lowFpsCount = 0;
+
+            // 持续高FPS，提升渲染质量
+            if (pm.highFpsCount > 10 && pm.renderQuality < 3) {
+                pm.renderQuality++;
+                pm.highFpsCount = 0;
+                console.log(`性能良好，提升渲染质量至等级 ${pm.renderQuality}`);
+            }
+        }
+    }
+
+    // 获取当前渲染质量等级
+    getCurrentRenderQuality() {
+        const quality = this.settings.renderQuality;
+        if (quality === 'auto') {
+            return this.performanceMonitor.renderQuality;
+        }
+        // 将字符串转换为数字
+        const qualityMap = { 'high': 3, 'medium': 2, 'low': 1 };
+        return qualityMap[quality] || 3;
+    }
+
     gameLoop() {
         if (this.state !== GameState.PLAYING) return;
-        
+
         const currentTime = performance.now();
         const deltaTime = currentTime - this.lastTime;
         this.lastTime = currentTime;
-        
+
         this.gameTime += deltaTime;
+
+        // 性能监控（仅在自动模式下）
+        if (this.settings.renderQuality === 'auto') {
+            this.updatePerformanceMonitor(currentTime);
+        }
         
         // 更新难度
         this.updateDifficulty();
@@ -2496,13 +2636,27 @@ class Game {
             this.lightningEffects.push(...weatherResult.lightningEffects);
         }
 
-        // 应用风天速度加成
+        // 应用风天速度加成和雪天速度惩罚
         const speedBonus = this.weatherSystem.getSpeedBonus();
         const speedBonusPercent = this.weatherSystem.getSpeedBonusPercent();
-        if (speedBonus > 0) {
+        const speedPenalty = this.weatherSystem.getSpeedPenalty();
+        const speedPenaltyPercent = this.weatherSystem.getSpeedPenaltyPercent();
+
+        if (speedBonus > 0 && speedPenalty === 0) {
+            // 只有风天加成
             const percentSpeed = this.player.baseSpeed * speedBonusPercent;
             this.player.speed = this.player.baseSpeed + Math.max(speedBonus, percentSpeed);
+        } else if (speedPenalty > 0 && speedBonus === 0) {
+            // 只有雪天惩罚
+            const percentPenalty = this.player.baseSpeed * speedPenaltyPercent;
+            this.player.speed = this.player.baseSpeed - Math.max(speedPenalty, percentPenalty);
+        } else if (speedBonus > 0 && speedPenalty > 0) {
+            // 同时有加成和惩罚（虽然实际上不会同时发生）
+            const percentSpeed = this.player.baseSpeed * speedBonusPercent;
+            const percentPenalty = this.player.baseSpeed * speedPenaltyPercent;
+            this.player.speed = this.player.baseSpeed + Math.max(speedBonus, percentSpeed) - Math.max(speedPenalty, percentPenalty);
         } else {
+            // 无加成也无惩罚
             this.player.speed = this.player.baseSpeed;
         }
 
@@ -2836,7 +2990,11 @@ class Game {
         document.getElementById('showAttackRange').checked = this.settings.showAttackRange;
         document.getElementById('showCollectRange').checked = this.settings.showCollectRange;
         document.getElementById('autoAttack').checked = this.settings.autoAttack;
-        
+        document.getElementById('renderQuality').value = this.settings.renderQuality;
+
+        // 同步红包设置
+        document.getElementById('redpacketExpValue').value = this.settings.redpacketExpValue;
+
         // 同步怪物基础数值
         document.getElementById('monsterInitialHP').value = this.settings.monsterInitialHP;
         document.getElementById('monsterInitialAttack').value = this.settings.monsterInitialAttack;
@@ -2844,35 +3002,32 @@ class Game {
         document.getElementById('monsterInitialSize').value = this.settings.monsterInitialSize;
         document.getElementById('monsterMaxMonsters').value = this.settings.monsterMaxMonsters;
         document.getElementById('monsterSpawnInterval').value = this.settings.monsterSpawnInterval;
-        
+
         // 同步怪物成长曲线
         document.getElementById('monsterHPGrowth').value = this.settings.monsterHPGrowth;
         document.getElementById('monsterAttackGrowth').value = this.settings.monsterAttackGrowth;
         document.getElementById('monsterSpeedGrowth').value = this.settings.monsterSpeedGrowth;
-        
+
         // 同步怪物掉落经验
         document.getElementById('monsterExpValue').value = this.settings.monsterExpValue;
-        
+
         // 同步Boss基础数值
         document.getElementById('bossInitialHP').value = this.settings.bossInitialHP;
         document.getElementById('bossAttack').value = this.settings.bossAttack;
         document.getElementById('bossSpeed').value = this.settings.bossSpeed;
         document.getElementById('bossSize').value = this.settings.bossSize;
         document.getElementById('bossSpawnInterval').value = this.settings.bossSpawnInterval;
-        
+
         // 同步Boss成长曲线
         document.getElementById('bossHPGrowth').value = this.settings.bossHPGrowth;
         document.getElementById('bossAttackGrowth').value = this.settings.bossAttackGrowth;
         document.getElementById('bossSpeedGrowth').value = this.settings.bossSpeedGrowth;
-        
+
         // 同步Boss自爆伤害
         document.getElementById('bossExplosionDamage').value = this.settings.bossExplosionDamage;
-        
+
         // 同步Boss掉落红包数量
         document.getElementById('bossRedpacketDropCount').value = this.settings.bossRedpacketDropCount;
-        
-        // 同步红包掉落经验
-        document.getElementById('redpacketExpValue').value = this.settings.redpacketExpValue;
     }
 
     openSettings() {
@@ -2910,7 +3065,11 @@ class Game {
         this.settings.showAttackRange = document.getElementById('showAttackRange').checked;
         this.settings.showCollectRange = document.getElementById('showCollectRange').checked;
         this.settings.autoAttack = document.getElementById('autoAttack').checked;
-        
+        this.settings.renderQuality = document.getElementById('renderQuality').value || 'auto';
+
+        // 读取红包设置
+        this.settings.redpacketExpValue = parseInt(document.getElementById('redpacketExpValue').value) || 10;
+
         // 读取怪物基础数值
         this.settings.monsterInitialHP = parseInt(document.getElementById('monsterInitialHP').value) || 30;
         this.settings.monsterInitialAttack = parseInt(document.getElementById('monsterInitialAttack').value) || 10;
@@ -2918,35 +3077,32 @@ class Game {
         this.settings.monsterInitialSize = parseInt(document.getElementById('monsterInitialSize').value) || 25;
         this.settings.monsterMaxMonsters = parseInt(document.getElementById('monsterMaxMonsters').value) || 30;
         this.settings.monsterSpawnInterval = parseInt(document.getElementById('monsterSpawnInterval').value) || 1500;
-        
+
         // 读取怪物成长曲线
         this.settings.monsterHPGrowth = parseFloat(document.getElementById('monsterHPGrowth').value) || 0.1;
         this.settings.monsterAttackGrowth = parseFloat(document.getElementById('monsterAttackGrowth').value) || 0.05;
         this.settings.monsterSpeedGrowth = parseFloat(document.getElementById('monsterSpeedGrowth').value) || 0.01;
-        
+
         // 读取怪物掉落经验
         this.settings.monsterExpValue = parseInt(document.getElementById('monsterExpValue').value) || 10;
-        
+
         // 读取Boss基础数值
         this.settings.bossInitialHP = parseInt(document.getElementById('bossInitialHP').value) || 200;
         this.settings.bossAttack = parseInt(document.getElementById('bossAttack').value) || 20;
         this.settings.bossSpeed = parseFloat(document.getElementById('bossSpeed').value) || 2.2;
         this.settings.bossSize = parseInt(document.getElementById('bossSize').value) || 60;
         this.settings.bossSpawnInterval = parseInt(document.getElementById('bossSpawnInterval').value) || 30000;
-        
+
         // 读取Boss成长曲线
         this.settings.bossHPGrowth = parseFloat(document.getElementById('bossHPGrowth').value) || 0.15;
         this.settings.bossAttackGrowth = parseFloat(document.getElementById('bossAttackGrowth').value) || 0.08;
         this.settings.bossSpeedGrowth = parseFloat(document.getElementById('bossSpeedGrowth').value) || 0.03;
-        
+
         // 读取Boss自爆伤害
         this.settings.bossExplosionDamage = parseInt(document.getElementById('bossExplosionDamage').value) || 30;
-        
+
         // 读取Boss掉落红包数量
         this.settings.bossRedpacketDropCount = parseInt(document.getElementById('bossRedpacketDropCount').value) || 15;
-        
-        // 读取红包掉落经验
-        this.settings.redpacketExpValue = parseInt(document.getElementById('redpacketExpValue').value) || 10;
     }
     
     gameOver() {
@@ -2961,42 +3117,63 @@ class Game {
     
     render() {
         const ctx = this.ctx;
-        
+
         // 清空画布
         ctx.fillStyle = '#0a0a0a';
         ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        
+
         // 计算缩放因子（移动端缩小视野）
         const zoom = this.isTouchDevice ? CONFIG.MOBILE.CAMERA_ZOOM : 1;
-        
+
         // 保存上下文状态
         ctx.save();
-        
+
         // 应用缩放（以画布中心为基准）
         if (zoom !== 1) {
             ctx.translate(this.canvas.width / 2, this.canvas.height / 2);
             ctx.scale(zoom, zoom);
             ctx.translate(-this.canvas.width / 2, -this.canvas.height / 2);
         }
-        
+
         // 计算摄像机位置（跟随玩家）
         // 移动端让玩家稍微偏上，可以看到更多下方区域
         let playerOffsetY = 0;
         if (this.isTouchDevice) {
             playerOffsetY = this.canvas.height * 0.15; // 移动端玩家偏上15%
         }
-        
+
         const cameraX = this.player.x - this.canvas.width / 2;
         const cameraY = this.player.y - this.canvas.height / 2 + playerOffsetY;
-        
+
+        // 获取当前渲染质量等级
+        const quality = this.getCurrentRenderQuality();
+
+        // 根据质量设置阴影
+        if (quality === 1) {
+            ctx.shadowBlur = 0;
+            ctx.shadowColor = 'transparent';
+        }
+
         // 绘制地图背景
         this.drawMap(ctx, cameraX, cameraY);
 
-        // 绘制天气背景效果
-        this.weatherSystem.drawBackgroundEffect(ctx, this.canvas.width, this.canvas.height);
+        // 绘制天气背景效果（低质量时简化）
+        if (quality >= 2) {
+            this.weatherSystem.drawBackgroundEffect(ctx, this.canvas.width, this.canvas.height, cameraX, cameraY, this.player);
+        }
 
-        // 绘制红包
-        this.redPackets.forEach(redPacket => redPacket.draw(ctx, cameraX, cameraY));
+        // 绘制红包（雾天天气下只渲染玩家附近的红包）
+        if (this.weatherSystem.isInFoggyWeather()) {
+            const foggyViewDistance = this.weatherSystem.getFoggyViewDistance();
+            this.redPackets.forEach(redPacket => {
+                const distance = Utils.distance(this.player.x, this.player.y, redPacket.x, redPacket.y);
+                if (distance <= foggyViewDistance) {
+                    redPacket.draw(ctx, cameraX, cameraY);
+                }
+            });
+        } else {
+            this.redPackets.forEach(redPacket => redPacket.draw(ctx, cameraX, cameraY));
+        }
 
         // 绘制回复包
         this.healthPotions.forEach(potion => potion.draw(ctx, cameraX, cameraY));
@@ -3013,29 +3190,20 @@ class Game {
         // 绘制玩家
         this.player.draw(ctx, cameraX, cameraY);
 
-        // 绘制攻击效果（半透明特效层）
-        this.attackEffects.forEach(effect => effect.draw(ctx, cameraX, cameraY));
+        // 绘制攻击效果（半透明特效层）- 低质量时跳过
+        if (quality >= 2) {
+            this.attackEffects.forEach(effect => effect.draw(ctx, cameraX, cameraY));
+        }
 
-        // 绘制怪物自爆特效
-        this.monsterExplosionEffects.forEach(effect => effect.draw(ctx, cameraX, cameraY));
+        // 绘制怪物自爆特效 - 低质量时简化
+        if (quality >= 2) {
+            this.monsterExplosionEffects.forEach(effect => effect.draw(ctx, cameraX, cameraY));
+        }
 
-        // 绘制小马受伤特效
-        this.playerHurtEffects.forEach(effect => effect.draw(ctx, cameraX, cameraY));
-
-        // 重新绘制玩家的emoji（确保在特效层之上）
-        this.player.drawEmojiOnly(ctx, cameraX, cameraY);
-
-        // 重新绘制所有怪物的emoji（确保在特效层之上）
-        this.monsters.forEach(monster => monster.drawEmojiOnly(ctx, cameraX, cameraY));
-
-        // 重新绘制所有Boss的emoji（确保在特效层之上）
-        this.bosses.forEach(boss => boss.drawEmojiOnly(ctx, cameraX, cameraY));
-
-        // 重新绘制所有红包的emoji（确保在特效层之上）
-        this.redPackets.forEach(redPacket => redPacket.drawEmojiOnly(ctx, cameraX, cameraY));
-
-        // 重新绘制所有回复包的emoji（确保在特效层之上）
-        this.healthPotions.forEach(potion => potion.drawEmojiOnly(ctx, cameraX, cameraY));
+        // 绘制小马受伤特效 - 低质量时简化
+        if (quality >= 2) {
+            this.playerHurtEffects.forEach(effect => effect.draw(ctx, cameraX, cameraY));
+        }
 
         // 恢复上下文状态
         ctx.restore();
