@@ -29,6 +29,7 @@
 - 🌦️ **动态天气系统** - 每30秒切换天气，影响游戏策略
 - ⚔️ **自动攻击系统** - 智能自动攻击范围内敌人，解放双手
 - 📈 **RPG成长系统** - 收集红包升级，提升四大属性
+- ⚡ **技能系统** - 升级时可选择学习8种强力技能，最多同时使用3个
 - 🎨 **精美的视觉效果** - 使用Emoji角色，炫酷的攻击特效
 - 🚀 **流畅的游戏体验** - 纯HTML/CSS/JS实现，无需安装
 - 💪 **挑战性** - 怪物随时间增强，越玩越刺激
@@ -59,6 +60,21 @@
 - ⚔️ **攻击力** - +5 攻击
 - 🛡️ **防御力** - +3 防御
 - ⚡ **移速** - +0.5 速度
+
+#### 技能系统
+升级时有概率出现技能选项，玩家可以学习强力技能来增强战斗能力：
+- 💨 **飞毛腿** - 短暂提升移动速度（基础50%，持续2秒，冷却15秒）
+- 🔥 **狂热** - 短暂降低攻击间隔，提升攻速（基础50%，持续3秒，冷却30秒）
+- 🛡️ **石化皮肤** - 短暂提升防御力（基础40%，持续2秒，冷却30秒）
+- 💚 **回春术** - 立即回复生命值（基础30%最大生命，冷却30秒）
+- ⚡ **天罚** - 对全屏敌人造成伤害（基础50%最大生命值，冷却60秒）
+- 🌟 **回血阵** - 创建持续回血的区域（每秒回复5%生命，持续10秒，冷却45秒）
+- 🩸 **嗜血术** - 短暂提升吸血能力（基础10%吸血，持续3秒，冷却20秒）
+- ✨ **闪现术** - 向当前朝向闪现，期间无敌（距离200px，冷却10秒）
+
+- 技能可以升级，每次升级会增强技能效果
+- 每个玩家最多同时装备3个技能
+- 技能释放有冷却时间，合理使用技能组合是关键
 
 #### Boss系统
 - **Boss生成**：每30秒生成一个强大的Boss
@@ -161,12 +177,12 @@ pony-redpacket-survivor/
 
 #### Boss战斗
 <div align="center">
-  <img src="boss.png" alt="Boss战斗" width="400">
+  <img src="gamethunder.png" alt="Boss战斗" width="400">
 </div>
 
 #### 升级界面
 <div align="center">
-  <img src="upgrade.png" alt="升级界面" width="400">
+  <img src="levelup.png" alt="升级界面" width="400">
 </div>
 
 #### 设置界面
@@ -181,10 +197,7 @@ pony-redpacket-survivor/
 
 #### 移动端界面
 <div align="center">
-  <img src="mobile-start-screen.jpg" alt="移动端开始界面" width="200">
-  <img src="mobile-gameplay.jpg" alt="移动端游戏进行中" width="200">
-  <img src="mobile-upgrade-screen.jpg" alt="移动端升级界面" width="200">
-  <img src="mobile-gameover-screen.jpg" alt="移动端游戏结束界面" width="200">
+  <img src="mobile-gameplay.jpg" alt="移动端游戏进行中" width="400">
 </div>
 
 ### 📊 游戏参数
@@ -269,6 +282,7 @@ pony-redpacket-survivor/
 - 🌦️ **Dynamic Weather System** - Weather changes every 30 seconds, affecting gameplay strategy
 - ⚔️ **Auto-Attack System** - Smartly attacks enemies in range, hands-free gameplay
 - 📈 **RPG Progression** - Collect red packets to level up and upgrade stats
+- ⚡ **Skill System** - Choose from 8 powerful skills when leveling up, equip up to 3 skills
 - 🎨 **Beautiful Visuals** - Emoji-based characters, cool attack effects
 - 🚀 **Smooth Experience** - Pure HTML/CSS/JS, no installation needed
 - 💪 **Challenging** - Monsters get stronger over time
@@ -299,6 +313,21 @@ Collect enough red packets (EXP) to level up, choose from four stats:
 - ⚔️ **Attack Power** - +5 Attack
 - 🛡️ **Defense** - +3 Defense
 - ⚡ **Movement Speed** - +0.5 Speed
+
+#### Skill System
+When leveling up, skill options may appear. Players can learn powerful skills to enhance combat abilities:
+- 💨 **Fleet Foot** - Temporarily boost movement speed (base 50%, 2s duration, 15s cooldown)
+- 🔥 **Frenzy** - Temporarily reduce attack cooldown, boost attack speed (base 50%, 3s duration, 30s cooldown)
+- 🛡️ **Stone Skin** - Temporarily boost defense (base 40%, 2s duration, 30s cooldown)
+- 💚 **Heal** - Instantly restore health (base 30% max HP, 30s cooldown)
+- ⚡ **Sky Punishment** - Deal damage to all enemies on screen (base 50% max HP damage, 60s cooldown)
+- 🌟 **Heal Field** - Create a healing area (heals 5% HP per second, 10s duration, 45s cooldown)
+- 🩸 **Bloodthirst** - Temporarily boost lifesteal ability (base 10% lifesteal, 3s duration, 20s cooldown)
+- ✨ **Blink** - Teleport in current direction, invincible during teleport (200px distance, 10s cooldown)
+
+- Skills can be upgraded, each level enhances the skill effect
+- Each player can equip up to 3 skills simultaneously
+- Skills have cooldown times, using skill combinations wisely is key
 
 #### Boss System
 - **Boss Spawn**: A powerful Boss appears every 30 seconds
@@ -401,12 +430,12 @@ pony-redpacket-survivor/
 
 #### Boss Combat
 <div align="center">
-  <img src="boss.png" alt="Boss Combat" width="400">
+  <img src="gamethunder.png" alt="Boss Combat" width="400">
 </div>
 
 #### Upgrade Screen
 <div align="center">
-  <img src="upgrade.png" alt="Upgrade Screen" width="400">
+  <img src="levelup.png" alt="Upgrade Screen" width="400">
 </div>
 
 #### Settings Screen
@@ -421,10 +450,7 @@ pony-redpacket-survivor/
 
 #### Mobile Screens
 <div align="center">
-  <img src="mobile-start-screen.jpg" alt="Mobile Start Screen" width="200">
-  <img src="mobile-gameplay.jpg" alt="Mobile Gameplay" width="200">
-  <img src="mobile-upgrade-screen.jpg" alt="Mobile Upgrade Screen" width="200">
-  <img src="mobile-gameover-screen.jpg" alt="Mobile Game Over Screen" width="200">
+  <img src="mobile-gameplay.jpg" alt="Mobile Gameplay" width="400">
 </div>
 
 ### 📊 Game Parameters
