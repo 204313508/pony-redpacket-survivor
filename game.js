@@ -6,9 +6,10 @@ const CONFIG = {
     
     // 移动端适配配置
     MOBILE: {
-        SPEED_MULTIPLIER: 0.65, // 移动端速度系数
+        SPEED_MULTIPLIER: 0.45, // 移动端速度系数（降低以便更精确控制）
         ATTACK_RANGE_MULTIPLIER: 1.1, // 移动端攻击范围系数
-        CAMERA_ZOOM: 0.7 // 移动端摄像机缩放（小于1表示缩小视野，让玩家看到更大区域）
+        CAMERA_ZOOM: 0.7, // 移动端摄像机缩放（小于1表示缩小视野，让玩家看到更大区域）
+        REDPACKET_COLLECT_SPEED_MULTIPLIER: 0.6 // 移动端红包收集速度系数
     },
     
     // 玩家初始属性
@@ -889,7 +890,7 @@ class Boss {
 
 // ==================== 红包掉落类 ====================
 class RedPacket {
-    constructor(x, y) {
+    constructor(x, y, isMobile = false) {
         this.x = x;
         this.y = y;
         this.size = CONFIG.REDPACKET.SIZE;
@@ -898,6 +899,7 @@ class RedPacket {
         this.isBeingCollected = false;
         this.collectedByPlayer = false;
         this.bobAngle = Math.random() * Math.PI * 2;
+        this.isMobile = isMobile;
     }
     
     update(deltaTime, player) {
@@ -916,8 +918,13 @@ class RedPacket {
             const dy = player.y - this.y;
             const normalized = Utils.normalize(dx, dy);
             
-            this.x += normalized.x * CONFIG.REDPACKET.COLLECT_SPEED;
-            this.y += normalized.y * CONFIG.REDPACKET.COLLECT_SPEED;
+            // 移动端使用较慢的收集速度
+            const collectSpeed = this.isMobile 
+                ? CONFIG.REDPACKET.COLLECT_SPEED * CONFIG.MOBILE.REDPACKET_COLLECT_SPEED_MULTIPLIER
+                : CONFIG.REDPACKET.COLLECT_SPEED;
+            
+            this.x += normalized.x * collectSpeed;
+            this.y += normalized.y * collectSpeed;
         }
         
         return distance < player.size + this.size;
@@ -1356,7 +1363,7 @@ class Game {
 
                     // 怪物死亡，掉落红包
                     this.monsters.splice(i, 1);
-                    this.redPackets.push(new RedPacket(monster.x, monster.y));
+                    this.redPackets.push(new RedPacket(monster.x, monster.y, this.isTouchDevice));
                     this.totalKills++;
                     this.score += 100;
                 }
@@ -1381,7 +1388,7 @@ class Game {
                         const dropDistance = Utils.randomRange(30, 80);
                         const dropX = boss.x + Math.cos(angle) * dropDistance;
                         const dropY = boss.y + Math.sin(angle) * dropDistance;
-                        this.redPackets.push(new RedPacket(dropX, dropY));
+                        this.redPackets.push(new RedPacket(dropX, dropY, this.isTouchDevice));
                     }
                     this.bosses.splice(i, 1);
                     this.totalKills++;
@@ -1512,7 +1519,7 @@ class Game {
                             const dropDistance = Utils.randomRange(30, 80);
                             const dropX = boss.x + Math.cos(angle) * dropDistance;
                             const dropY = boss.y + Math.sin(angle) * dropDistance;
-                            this.redPackets.push(new RedPacket(dropX, dropY));
+                            this.redPackets.push(new RedPacket(dropX, dropY, this.isTouchDevice));
                         }
                         this.score += 500;
                         this.totalKills++;
