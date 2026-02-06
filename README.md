@@ -26,7 +26,7 @@
 - 🔥 **爽快的战斗体验** - 范围攻击，一次击中多个怪物
 - 👹 **Boss挑战** - 每30秒出现强大的Boss，需要多次击败
 - 💥 **自爆系统** - 怪物和Boss自爆造成伤害，考验走位
-- 🌦️ **动态天气系统** - 每30秒切换天气，影响游戏策略
+- 🌦️ **动态天气系统** - 每10秒切换天气，影响游戏策略
 - ⚔️ **自动攻击系统** - 智能自动攻击范围内敌人，解放双手
 - 📈 **RPG成长系统** - 收集红包升级，提升四大属性
 - ⚡ **技能系统** - 升级时可选择学习8种强力技能，最多同时使用3个
@@ -91,7 +91,7 @@
 - 利用走位躲避自爆伤害
 
 #### 天气系统
-游戏每30秒随机切换一种天气，每种天气都有独特的效果：
+游戏每10秒随机切换一种天气，每种天气都有独特的效果：
 
 **☀️ 晴天**
 - 攻击力提升（+5 或 +5%，取高值）
@@ -104,15 +104,25 @@
 - 适合快速移动和躲避
 
 **🌧️ 雨天**
-- 每隔5秒在地图随机位置生成一个回复包（💚）
+- 每隔2秒在地图随机位置生成一个回复包（💚）
 - 回复包存在10秒，小马踩到后回复生命值（10点或10%最大生命，取高值）
 - 暴雨效果，需要注意收集回复包
 
 **⛈️ 雷天**
-- 每隔3秒在地图随机100范围内出现雷击
+- 每隔1.25秒在地图随机100范围内出现雷击
 - 雷击有预警圈（范围圈+逐渐变大的实心内圈，预警持续1秒）
 - 被雷击击中的单位（玩家、怪物、Boss）受到伤害（30点或10%最大生命，取高值）
 - 闪电效果震撼，需要快速躲避
+
+**🌫️ 雾天**
+- 只渲染玩家附近的红包（400px范围内）
+- 其他地方用雾气特效遮盖
+- 降低视野范围，考验记忆和探索
+
+**❄️ 雪天**
+- 移动速度降低2%
+- 飘雪效果增加氛围
+- 需要更谨慎地规划移动路线
 
 #### 游戏目标
 - 尽可能长时间生存
@@ -165,7 +175,14 @@ pony-redpacket-survivor/
 ├── index.html          # 游戏主页面
 ├── style.css           # 样式文件
 ├── game.js             # 游戏逻辑
-└── README.md           # 项目说明
+├── README.md           # 项目说明
+├── gamestart.png       # 游戏开始界面截图
+├── gamethunder.png     # Boss战斗截图
+├── levelup.png         # 升级界面截图
+├── gameover.png        # 游戏结束界面截图
+├── settings.png        # 设置界面截图
+├── mobile-gameplay.jpg # 移动端游戏截图
+└── sounds/             # 音频文件夹
 ```
 
 ### 🎮 游戏截图
@@ -209,7 +226,7 @@ pony-redpacket-survivor/
 | 攻击力 | 15 |
 | 防御力 | 5 |
 | 移速 | 4 |
-| 攻击范围 | 150px |
+| 攻击范围 | 160px |
 | 攻击冷却 | 400ms |
 
 #### 怪物属性
@@ -239,19 +256,15 @@ pony-redpacket-survivor/
 - 生成数量随难度增加
 - Boss属性也随难度增强
 
-#### 天气系统参数
-| 参数 | 数值 |
-|------|------|
-| 天气切换间隔 | 30秒 |
-| 晴天攻击加成 | +5 或 +5%（取高值） |
-| 风天速度加成 | +0.5 或 +2%（取高值） |
-| 雨天回复包生成间隔 | 5秒 |
-| 雨天回复包存在时间 | 10秒 |
-| 雨天回复包回复血量 | 10点 或 10%最大生命（取高值） |
-| 雷天雷击间隔 | 3秒 |
-| 雷天雷击伤害 | 30点 或 10%最大生命（取高值） |
-| 雷天雷击预警时间 | 1秒 |
-| 雷天雷击半径 | 100px |
+#### 移动端补偿参数
+| 参数 | 数值 | 说明 |
+|------|------|------|
+| 速度系数 | 0.45 | 移动端速度降低，以便更精确控制 |
+| 攻击范围系数 | 1.1 | 移动端攻击范围增大 |
+| 收集范围系数 | 1.3 | 移动端收集范围增大（确保收集范围比攻击范围大） |
+| 摄像机缩放 | 0.85 | 移动端摄像机缩小视野，让玩家看到更大区域 |
+| 元素显示大小倍数 | 1.15 | 移动端元素显示增大，让元素更容易看清 |
+| 红包收集速度系数 | 0.6 | 移动端红包收集速度降低 |
 
 ### 🎯 得分规则
 
@@ -279,7 +292,7 @@ pony-redpacket-survivor/
 - 🔥 **Exciting Combat** - Area-of-effect attacks, hit multiple enemies at once
 - 👹 **Boss Challenges** - Powerful Bosses appear every 30 seconds, requiring multiple defeats
 - 💥 **Explosion System** - Monsters and Bosses explode on impact, dealing damage
-- 🌦️ **Dynamic Weather System** - Weather changes every 30 seconds, affecting gameplay strategy
+- 🌦️ **Dynamic Weather System** - Weather changes every 10 seconds, affecting gameplay strategy
 - ⚔️ **Auto-Attack System** - Smartly attacks enemies in range, hands-free gameplay
 - 📈 **RPG Progression** - Collect red packets to level up and upgrade stats
 - ⚡ **Skill System** - Choose from 8 powerful skills when leveling up, equip up to 3 skills
@@ -344,7 +357,7 @@ When leveling up, skill options may appear. Players can learn powerful skills to
 - Dodge explosion damage with good positioning
 
 #### Weather System
-The game randomly switches between weather types every 30 seconds, each with unique effects:
+The game randomly switches between weather types every 10 seconds, each with unique effects:
 
 **☀️ Sunny**
 - Attack Power boosted (+5 or +5%, whichever is higher)
@@ -357,15 +370,25 @@ The game randomly switches between weather types every 30 seconds, each with uni
 - Perfect for fast movement and dodging
 
 **🌧️ Rainy**
-- Health potions (💚) spawn at random locations every 5 seconds
+- Health potions (💚) spawn at random locations every 2 seconds
 - Potions last for 10 seconds, heal HP (10 or 10% max HP, whichever is higher) when collected
 - Rainstorm effects, keep an eye out for health potions
 
 **⛈️ Stormy**
-- Lightning strikes random 100-radius areas every 3 seconds
+- Lightning strikes random 100-radius areas every 1.25 seconds
 - Lightning has warning circles (outer range + expanding inner circle, 1 second warning)
 - Units hit by lightning (player, monsters, Bosses) take damage (30 or 10% max HP, whichever is higher)
 - Impressive lightning effects, requires quick dodging
+
+**🌫️ Foggy**
+- Only renders red packets near the player (within 400px range)
+- Other areas are covered with fog effects
+- Reduces visibility,考验 memory and exploration
+
+**❄️ Snowy**
+- Movement Speed reduced by 2%
+- Snow falling effects add atmosphere
+- Requires more careful movement planning
 
 #### Goal
 - Survive as long as possible
@@ -381,7 +404,7 @@ Just open `index.html` in your browser and start playing!
 #### Local Setup
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/pony-redpacket-survivor.git
+git clone https://github.com/204313508/pony-redpacket-survivor.git
 
 # Navigate to directory
 cd pony-redpacket-survivor
@@ -418,7 +441,14 @@ pony-redpacket-survivor/
 ├── index.html          # Main page
 ├── style.css           # Styles
 ├── game.js             # Game logic
-└── README.md           # Project documentation
+├── README.md           # Project documentation
+├── gamestart.png       # Game start screen
+├── gamethunder.png     # Boss combat screenshot
+├── levelup.png         # Upgrade screen
+├── gameover.png        # Game over screen
+├── settings.png        # Settings screen
+├── mobile-gameplay.jpg # Mobile gameplay screenshot
+└── sounds/             # Sound effects folder
 ```
 
 ### 🎮 Game Screenshots
@@ -462,7 +492,7 @@ pony-redpacket-survivor/
 | Attack Power | 15 |
 | Defense | 5 |
 | Movement Speed | 4 |
-| Attack Range | 150px |
+| Attack Range | 160px |
 | Attack Cooldown | 400ms |
 
 #### Monster Stats
@@ -492,19 +522,15 @@ pony-redpacket-survivor/
 - Spawn count increases with difficulty
 - Boss stats also scale with difficulty
 
-#### Weather System Parameters
-| Parameter | Value |
-|-----------|-------|
-| Weather Change Interval | 30s |
-| Sunny Attack Bonus | +5 or +5% (whichever is higher) |
-| Windy Speed Bonus | +0.5 or +2% (whichever is higher) |
-| Rainy Potion Spawn Interval | 5s |
-| Rainy Potion Duration | 10s |
-| Rainy Potion Heal Amount | 10 or 10% max HP (whichever is higher) |
-| Stormy Lightning Interval | 3s |
-| Stormy Lightning Damage | 30 or 10% max HP (whichever is higher) |
-| Stormy Lightning Warning Duration | 1s |
-| Stormy Lightning Radius | 100px |
+#### Mobile Compensation Parameters
+| Parameter | Value | Description |
+|-----------|-------|-------------|
+| Speed Multiplier | 0.45 | Reduced speed for mobile for more precise control |
+| Attack Range Multiplier | 1.1 | Increased attack range on mobile |
+| Collect Range Multiplier | 1.3 | Increased collect range on mobile (ensures collect range is larger than attack range) |
+| Camera Zoom | 0.85 | Smaller camera view on mobile for larger visible area |
+| Element Scale Multiplier | 1.15 | Larger element display on mobile for better visibility |
+| Red Packet Collect Speed Multiplier | 0.6 | Reduced red packet collect speed on mobile |
 
 ### 🎯 Scoring Rules
 
