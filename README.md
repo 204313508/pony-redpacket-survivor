@@ -8,8 +8,6 @@
 [![Language](https://img.shields.io/badge/Language-JavaScript-F7DF1E)](https://github.com/204313508/pony-redpacket-survivor)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
-![Game Start](game-start.jpg)
-
 [English](#english) | [中文](#中文)
 
 </div>
@@ -151,48 +149,42 @@ pony-redpacket-survivor/
 ├── index.html          # 游戏主页面
 ├── style.css           # 样式文件
 ├── game.js             # 游戏逻辑
-├── README.md           # 项目说明
-└── review.md           # 代码审查报告
+└── README.md           # 项目说明
 ```
 
 ### 🎮 游戏截图
 
 #### 游戏开始界面
 <div align="center">
-  <img src="gamestart.png" alt="游戏开始界面" width="80%">
+  <img src="gamestart.png" alt="游戏开始界面" width="400">
 </div>
 
-#### 游戏战斗画面
+#### Boss战斗
 <div align="center">
-  <img src="1.png" alt="游戏战斗1" width="45%">
-  <img src="3.png" alt="游戏战斗2" width="45%">
-</div>
-
-<div align="center">
-  <img src="boss.png" alt="Boss战斗" width="45%">
+  <img src="boss.png" alt="Boss战斗" width="400">
 </div>
 
 #### 升级界面
 <div align="center">
-  <img src="upgrade.png" alt="升级界面" width="45%">
+  <img src="upgrade.png" alt="升级界面" width="400">
 </div>
 
 #### 设置界面
 <div align="center">
-  <img src="settings.png" alt="设置界面" width="45%">
+  <img src="settings.png" alt="设置界面" width="400">
 </div>
 
 #### 游戏结束界面
 <div align="center">
-  <img src="gameover.png" alt="游戏结束界面" width="45%">
+  <img src="gameover.png" alt="游戏结束界面" width="400">
 </div>
 
 #### 移动端界面
 <div align="center">
-  <img src="mobile-start-screen.jpg" alt="移动端开始界面" width="30%">
-  <img src="mobile-gameplay.jpg" alt="移动端游戏进行中" width="30%">
-  <img src="mobile-upgrade-screen.jpg" alt="移动端升级界面" width="30%">
-  <img src="mobile-gameover-screen.jpg" alt="移动端游戏结束界面" width="30%">
+  <img src="mobile-start-screen.jpg" alt="移动端开始界面" width="200">
+  <img src="mobile-gameplay.jpg" alt="移动端游戏进行中" width="200">
+  <img src="mobile-upgrade-screen.jpg" alt="移动端升级界面" width="200">
+  <img src="mobile-gameover-screen.jpg" alt="移动端游戏结束界面" width="200">
 </div>
 
 ### 📊 游戏参数
@@ -259,16 +251,6 @@ pony-redpacket-survivor/
 
 - 游戏在低性能设备上可能会有卡顿
 - 部分旧版浏览器可能不支持Canvas API
-
-### 🔄 未来计划
-
-- [ ] 添加更多攻击技能
-- [ ] 添加成就系统
-- [ ] 添加排行榜
-- [ ] 支持触摸屏操作
-- [ ] 添加更多角色选择
-- [ ] 添加更多Boss类型
-- [ ] 优化性能
 
 ---
 
@@ -407,48 +389,42 @@ pony-redpacket-survivor/
 ├── index.html          # Main page
 ├── style.css           # Styles
 ├── game.js             # Game logic
-├── README.md           # Project documentation
-└── review.md           # Code review report
+└── README.md           # Project documentation
 ```
 
 ### 🎮 Game Screenshots
 
 #### Game Start Screen
 <div align="center">
-  <img src="gamestart.png" alt="Game Start Screen" width="80%">
+  <img src="gamestart.png" alt="Game Start Screen" width="400">
 </div>
 
-#### Gameplay
+#### Boss Combat
 <div align="center">
-  <img src="1.png" alt="Game Combat 1" width="45%">
-  <img src="3.png" alt="Game Combat 2" width="45%">
-</div>
-
-<div align="center">
-  <img src="boss.png" alt="Boss Combat" width="45%">
+  <img src="boss.png" alt="Boss Combat" width="400">
 </div>
 
 #### Upgrade Screen
 <div align="center">
-  <img src="upgrade.png" alt="Upgrade Screen" width="45%">
+  <img src="upgrade.png" alt="Upgrade Screen" width="400">
 </div>
 
 #### Settings Screen
 <div align="center">
-  <img src="settings.png" alt="Settings Screen" width="45%">
+  <img src="settings.png" alt="Settings Screen" width="400">
 </div>
 
 #### Game Over Screen
 <div align="center">
-  <img src="gameover.png" alt="Game Over Screen" width="45%">
+  <img src="gameover.png" alt="Game Over Screen" width="400">
 </div>
 
 #### Mobile Screens
 <div align="center">
-  <img src="mobile-start-screen.jpg" alt="Mobile Start Screen" width="30%">
-  <img src="mobile-gameplay.jpg" alt="Mobile Gameplay" width="30%">
-  <img src="mobile-upgrade-screen.jpg" alt="Mobile Upgrade Screen" width="30%">
-  <img src="mobile-gameover-screen.jpg" alt="Mobile Game Over Screen" width="30%">
+  <img src="mobile-start-screen.jpg" alt="Mobile Start Screen" width="200">
+  <img src="mobile-gameplay.jpg" alt="Mobile Gameplay" width="200">
+  <img src="mobile-upgrade-screen.jpg" alt="Mobile Upgrade Screen" width="200">
+  <img src="mobile-gameover-screen.jpg" alt="Mobile Game Over Screen" width="200">
 </div>
 
 ### 📊 Game Parameters
@@ -515,12 +491,3 @@ pony-redpacket-survivor/
 
 - Game may lag on low-performance devices
 - Some older browsers may not support Canvas API
-
-### 🔄 Future Plans
-- [ ] Add more attack skills
-- [ ] Add achievement system
-- [ ] Add leaderboard
-- [ ] Support touch controls
-- [ ] Add more character options
-- [ ] Add more Boss types
-- [ ] Performance optimization
