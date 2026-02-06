@@ -90,6 +90,105 @@ const Utils = {
     }
 };
 
+// ==================== 虚拟摇杆类 ====================
+class VirtualJoystick {
+    constructor(container) {
+        this.container = container;
+        this.base = container.querySelector('.joystick-base');
+        this.stick = container.querySelector('.joystick-stick');
+        
+        this.active = false;
+        this.touchId = null;
+        this.baseCenter = { x: 0, y: 0 };
+        this.stickPosition = { x: 0, y: 0 };
+        this.input = { x: 0, y: 0 };
+        
+        this.maxDistance = 35; // 摇杆最大移动距离
+        
+        this.setupEventListeners();
+    }
+    
+    setupEventListeners() {
+        this.container.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: false });
+        this.container.addEventListener('touchmove', (e) => this.handleTouchMove(e), { passive: false });
+        this.container.addEventListener('touchend', (e) => this.handleTouchEnd(e), { passive: false });
+        this.container.addEventListener('touchcancel', (e) => this.handleTouchEnd(e), { passive: false });
+    }
+    
+    handleTouchStart(e) {
+        e.preventDefault();
+        const touch = e.changedTouches[0];
+        this.touchId = touch.identifier;
+        this.active = true;
+        
+        const rect = this.base.getBoundingClientRect();
+        this.baseCenter = {
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2
+        };
+        
+        this.updateStickPosition(touch.clientX, touch.clientY);
+    }
+    
+    handleTouchMove(e) {
+        e.preventDefault();
+        if (!this.active) return;
+        
+        for (let i = 0; i < e.changedTouches.length; i++) {
+            if (e.changedTouches[i].identifier === this.touchId) {
+                this.updateStickPosition(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
+                break;
+            }
+        }
+    }
+    
+    handleTouchEnd(e) {
+        e.preventDefault();
+        for (let i = 0; i < e.changedTouches.length; i++) {
+            if (e.changedTouches[i].identifier === this.touchId) {
+                this.reset();
+                break;
+            }
+        }
+    }
+    
+    updateStickPosition(touchX, touchY) {
+        const dx = touchX - this.baseCenter.x;
+        const dy = touchY - this.baseCenter.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        // 限制摇杆移动范围
+        const clampedDistance = Math.min(distance, this.maxDistance);
+        const normalized = Utils.normalize(dx, dy);
+        
+        this.stickPosition = {
+            x: normalized.x * clampedDistance,
+            y: normalized.y * clampedDistance
+        };
+        
+        // 更新输入值（归一化到 -1 到 1 之间）
+        this.input = {
+            x: normalized.x * (clampedDistance / this.maxDistance),
+            y: normalized.y * (clampedDistance / this.maxDistance)
+        };
+        
+        // 更新摇杆视觉位置
+        this.stick.style.transform = `translate(calc(-50% + ${this.stickPosition.x}px), calc(-50% + ${this.stickPosition.y}px))`;
+    }
+    
+    reset() {
+        this.active = false;
+        this.touchId = null;
+        this.stickPosition = { x: 0, y: 0 };
+        this.input = { x: 0, y: 0 };
+        this.stick.style.transform = 'translate(-50%, -50%)';
+    }
+    
+    getInput() {
+        return this.input;
+    }
+}
+
 // ==================== 音效系统 ====================
 class SoundEffect {
     constructor() {
@@ -186,11 +285,12 @@ class Player {
         this.hurtAnimationDuration = 400;
     }
     
-    update(deltaTime, keys) {
+    update(deltaTime, keys, joystickInput = { x: 0, y: 0 }) {
         // 移动处理
         let dx = 0;
         let dy = 0;
         
+        // 键盘输入
         if (keys['ArrowUp'] || keys['KeyW']) dy -= 1;
         if (keys['ArrowDown'] || keys['KeyS']) dy += 1;
         if (keys['ArrowLeft'] || keys['KeyA']) {
@@ -200,6 +300,16 @@ class Player {
         if (keys['ArrowRight'] || keys['KeyD']) {
             dx += 1;
             this.direction = 1;
+        }
+        
+        // 虚拟摇杆输入（如果没有键盘输入，则使用摇杆输入）
+        if (dx === 0 && dy === 0 && (joystickInput.x !== 0 || joystickInput.y !== 0)) {
+            dx = joystickInput.x;
+            dy = joystickInput.y;
+            
+            // 根据摇杆方向设置朝向
+            if (dx > 0) this.direction = 1;
+            else if (dx < 0) this.direction = -1;
         }
         
         // 归一化对角线移动
@@ -1071,6 +1181,11 @@ class Game {
         // 音效系统
         this.soundEffect = new SoundEffect();
 
+        // 移动端虚拟摇杆
+        this.joystick = null;
+        this.joystickInput = { x: 0, y: 0 };
+        this.isTouchDevice = 'ontouchstart' in window;
+
         // 初始状态下隐藏 HUD，显示开始界面
         document.getElementById('hud').classList.add('hidden');
         document.getElementById('startScreen').classList.remove('hidden');
@@ -1120,6 +1235,15 @@ class Game {
                 this.handleUpgrade(upgradeType);
             });
         });
+
+        // 移动端攻击按钮事件
+        const attackButton = document.getElementById('attackButton');
+        attackButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (this.state === GameState.PLAYING) {
+                this.executeAttack();
+            }
+        });
     }
     
     startGame() {
@@ -1145,6 +1269,18 @@ class Game {
         document.getElementById('gameOverScreen').classList.add('hidden');
         document.getElementById('upgradeScreen').classList.add('hidden');
         document.getElementById('hud').classList.remove('hidden');
+
+        // 初始化虚拟摇杆（如果是触摸设备）
+        if (this.isTouchDevice) {
+            const joystickElement = document.getElementById('joystick');
+            joystickElement.classList.remove('hidden');
+            if (!this.joystick) {
+                this.joystick = new VirtualJoystick(joystickElement);
+            }
+            
+            // 显示攻击按钮
+            document.getElementById('attackButton').classList.remove('hidden');
+        }
         
         this.lastTime = performance.now();
         this.gameLoop();
@@ -1287,8 +1423,14 @@ class Game {
         // 生成怪物
         this.spawnMonster(currentTime);
 
+        // 获取虚拟摇杆输入
+        let joystickInput = { x: 0, y: 0 };
+        if (this.joystick && this.joystick.active) {
+            joystickInput = this.joystick.getInput();
+        }
+
         // 更新玩家
-        this.player.update(deltaTime, this.keys);
+        this.player.update(deltaTime, this.keys, joystickInput);
 
         // 更新怪物
         this.monsters.forEach(monster => monster.update(this.player));

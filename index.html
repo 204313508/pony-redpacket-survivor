@@ -51,9 +51,13 @@
                 <p class="game-subtitle">收集红包，击败怪物，成为红包之王！</p>
                 <div class="controls-info">
                     <h3>游戏说明</h3>
-                    <p>⌨️ <strong>WASD / 方向键</strong> - 移动小马</p>
-                    <p>🖱️ <strong>鼠标左键</strong> - 攻击</p>
-                    <p>🧧 <strong>红包</strong> - 收集升级</p>
+                    <p>⌨️ <strong>电脑端操作</strong></p>
+                    <p>WASD / 方向键 - 移动小马</p>
+                    <p>鼠标左键 - 攻击</p>
+                    <p>📱 <strong>移动端操作</strong></p>
+                    <p>左侧虚拟摇杆 - 移动小马</p>
+                    <p>右侧攻击按钮 - 攻击</p>
+                    <p>🧧 <strong>红包</strong> - 靠近自动收集升级</p>
                 </div>
                 <button id="startButton" class="game-button">开始游戏</button>
             </div>
@@ -112,6 +116,18 @@
                 </div>
                 <button id="restartButton" class="game-button">再来一局</button>
             </div>
+        </div>
+
+        <!-- 移动端虚拟摇杆 -->
+        <div id="joystick" class="joystick hidden">
+            <div class="joystick-base">
+                <div class="joystick-stick"></div>
+            </div>
+        </div>
+
+        <!-- 移动端攻击按钮 -->
+        <div id="attackButton" class="attack-button hidden">
+            <span class="attack-icon">⚔️</span>
         </div>
     </div>
 

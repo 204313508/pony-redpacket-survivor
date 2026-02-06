@@ -36,8 +36,15 @@
 ### 🎯 游戏玩法
 
 #### 控制方式
+
+**电脑端**
 - **WASD / 方向键** - 移动小马
 - **鼠标左键** - 范围攻击
+- **收集红包** - 靠近红包自动收集
+
+**移动端**
+- **左侧虚拟摇杆** - 移动小马
+- **右侧攻击按钮** - 范围攻击
 - **收集红包** - 靠近红包自动收集
 
 #### 升级系统
@@ -221,8 +228,15 @@ pony-redpacket-survivor/
 ### 🎯 How to Play
 
 #### Controls
+
+**Desktop**
 - **WASD / Arrow Keys** - Move pony
 - **Mouse Left Click** - Area attack
+- **Collect Red Packets** - Get close to collect automatically
+
+**Mobile**
+- **Left Virtual Joystick** - Move pony
+- **Right Attack Button** - Area attack
 - **Collect Red Packets** - Get close to collect automatically
 
 #### Upgrade System
