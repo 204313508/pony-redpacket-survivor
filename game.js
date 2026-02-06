@@ -85,6 +85,119 @@ const CONFIG = {
         FOGGY_VIEW_DISTANCE: 400, // 雾天可见距离
         FOGGY_ALPHA: 0.85, // 雾天遮罩透明度
         SNOWY_SPEED_PENALTY: 0.02 // 雪天移速降低（2%）
+    },
+
+    // 技能系统配置
+    SKILL: {
+        // 最大可学习的技能数量
+        MAX_SKILLS: 3,
+        // 技能池配置
+        POOL: {
+            fleetFoot: {
+                id: 'fleetFoot',
+                name: '飞毛腿',
+                icon: '💨',
+                type: 'buff',
+                baseCooldown: 15000, // 15秒
+                baseDuration: 2000, // 2秒
+                baseSpeedBonus: 0.5, // 50%移速
+                levelEffects: {
+                    duration: 200 // 每级增加0.2秒
+                },
+                description: '短暂提升移动速度'
+            },
+            frenzy: {
+                id: 'frenzy',
+                name: '狂热',
+                icon: '🔥',
+                type: 'buff',
+                baseCooldown: 30000, // 30秒
+                baseDuration: 3000, // 3秒
+                baseAttackSpeedBonus: 0.5, // 50%攻速
+                levelEffects: {
+                    duration: 200 // 每级增加0.2秒
+                },
+                description: '短暂降低攻击间隔，提升攻速'
+            },
+            stoneSkin: {
+                id: 'stoneSkin',
+                name: '石化皮肤',
+                icon: '🛡️',
+                type: 'buff',
+                baseCooldown: 30000, // 30秒
+                baseDuration: 2000, // 2秒
+                baseDefenseBonus: 0.4, // 40%防御
+                levelEffects: {
+                    duration: 200 // 每级增加0.2秒
+                },
+                description: '短暂提升防御力'
+            },
+            heal: {
+                id: 'heal',
+                name: '回春术',
+                icon: '💚',
+                type: 'heal',
+                baseCooldown: 30000, // 30秒
+                baseHealPercent: 0.3, // 30%最大生命
+                levelEffects: {
+                    healPercent: 0.01 // 每级增加1%
+                },
+                description: '立即回复生命值'
+            },
+            skyPunishment: {
+                id: 'skyPunishment',
+                name: '天罚',
+                icon: '⚡',
+                type: 'damage',
+                baseCooldown: 60000, // 60秒
+                baseDamagePercent: 0.5, // 50%最大生命值
+                baseMaxDamageMultiplier: 2.5, // 最大不超过2.5倍攻击力
+                levelEffects: {
+                    maxDamageMultiplier: 0.1 // 每级增加0.1倍攻击力阈值
+                },
+                description: '对全屏敌人造成伤害'
+            },
+            healField: {
+                id: 'healField',
+                name: '回血阵',
+                icon: '🌟',
+                type: 'field',
+                baseCooldown: 45000, // 45秒
+                baseDuration: 10000, // 10秒
+                baseRadius: 150, // 回血阵半径
+                baseHealPercentPerSecond: 0.05, // 每秒回复5%
+                levelEffects: {
+                    healPercentPerSecond: 0.01 // 每级增加1%
+                },
+                description: '创建持续回血的区域'
+            },
+            bloodthirst: {
+                id: 'bloodthirst',
+                name: '嗜血术',
+                icon: '🩸',
+                type: 'buff',
+                baseCooldown: 20000, // 20秒
+                baseDuration: 3000, // 3秒
+                baseLifestealBonus: 0.1, // 10%吸血
+                levelEffects: {
+                    duration: 100 // 每级增加0.1秒
+                },
+                description: '短暂提升吸血能力'
+            },
+            blink: {
+                id: 'blink',
+                name: '闪现术',
+                icon: '✨',
+                type: 'movement',
+                baseCooldown: 10000, // 10秒
+                baseDistance: 200, // 闪现距离
+                baseInvincibleDuration: 300, // 无敌持续时间（毫秒）
+                levelEffects: {
+                    cooldown: 100 // 每级减少0.1秒冷却
+                },
+                description: '向当前朝向闪现，期间无敌'
+            }
+        }
     }
 };
 
@@ -251,10 +364,14 @@ class SoundEffect {
     constructor() {
         this.sounds = {};
         this.weatherSounds = {};
+        this.skillSounds = {};
+        this.skillAudioContext = null; // 技能音效的AudioContext
         this.loaded = false;
         this.weatherLoaded = false;
+        this.skillLoaded = false;
         this.volume = 0.5;
         this.weatherVolume = 0.3; // 天气音效音量较低
+        this.skillVolume = 0.4; // 技能音效音量
         this.currentWeatherSound = null; // 当前正在播放的天气音效
     }
 
@@ -375,6 +492,51 @@ class SoundEffect {
             sound.volume = this.weatherVolume;
         });
     }
+
+    // ==================== 技能音效系统 ====================
+    
+    initSkillSounds() {
+        if (this.skillLoaded) return;
+
+        // 加载技能音效文件
+        this.skillSounds = {
+            fleetFoot: new Audio('sounds/skill-fleetFoot.wav'),
+            frenzy: new Audio('sounds/skill-frenzy.wav'),
+            stoneSkin: new Audio('sounds/skill-stoneSkin.wav'),
+            heal: new Audio('sounds/skill-heal.wav'),
+            skyPunishment: new Audio('sounds/skill-skyPunishment.wav'),
+            healField: new Audio('sounds/skill-healField.wav'),
+            bloodthirst: new Audio('sounds/skill-bloodthirst.wav'),
+            blink: new Audio('sounds/skill-blink.wav')
+        };
+
+        // 设置技能音效属性
+        Object.values(this.skillSounds).forEach(sound => {
+            sound.volume = this.skillVolume;
+            sound.load();
+        });
+
+        this.skillLoaded = true;
+    }
+
+    playSkillEffect(skillId) {
+        if (!this.skillLoaded) this.initSkillSounds();
+        
+        const sound = this.skillSounds[skillId];
+        if (sound) {
+            const clonedSound = sound.cloneNode();
+            clonedSound.volume = this.skillVolume;
+            clonedSound.play().catch(e => console.log('技能音效播放失败:', e));
+        }
+    }
+
+    // 设置技能音效音量
+    setSkillVolume(volume) {
+        this.skillVolume = Math.max(0, Math.min(1, volume));
+        Object.values(this.skillSounds).forEach(sound => {
+            sound.volume = this.skillVolume;
+        });
+    }
 }
 
 // ==================== 玩家类 ====================
@@ -421,6 +583,24 @@ class Player {
         this.isHurt = false;
         this.hurtAnimationTime = 0;
         this.hurtAnimationDuration = 400;
+
+        // 技能系统
+        this.playerSkills = {
+            // 已学技能 {skillId: level}
+            learned: {},
+            // 技能冷却 {skillId: lastUseTime}
+            cooldowns: {},
+            // 技能持续效果
+            effects: {
+                fleetFoot: { active: false, endTime: 0 },
+                frenzy: { active: false, endTime: 0 },
+                stoneSkin: { active: false, endTime: 0 },
+                bloodthirst: { active: false, endTime: 0 }
+            },
+            // 闪现无敌状态
+            isInvincible: false,
+            invincibleEndTime: 0
+        };
     }
     
     update(deltaTime, keys, joystickInput = { x: 0, y: 0 }) {
@@ -494,7 +674,12 @@ class Player {
     
     attack() {
         if (this.canAttack()) {
-            this.attackCooldown = CONFIG.PLAYER.ATTACK_COOLDOWN;
+            // 计算攻击冷却时间（考虑狂热技能效果）
+            let cooldownTime = CONFIG.PLAYER.ATTACK_COOLDOWN;
+            if (this.playerSkills.effects.frenzy.active) {
+                cooldownTime = cooldownTime * 0.5; // 狂热效果：攻击冷却减少50%
+            }
+            this.attackCooldown = cooldownTime;
             this.isAttacking = true;
             this.attackAnimationTime = 0;
             return true;
@@ -550,7 +735,171 @@ class Player {
                 break;
         }
     }
-    
+
+    // ==================== 技能系统方法 ====================
+
+    // 学习新技能
+    unlockSkill(skillId) {
+        if (this.playerSkills.learned[skillId]) return false; // 已学习
+        if (Object.keys(this.playerSkills.learned).length >= CONFIG.SKILL.MAX_SKILLS) return false; // 已满
+
+        this.playerSkills.learned[skillId] = 1; // 初始等级1
+        return true;
+    }
+
+    // 升级现有技能
+    upgradeSkill(skillId) {
+        if (!this.playerSkills.learned[skillId]) return false; // 未学习
+
+        const currentLevel = this.playerSkills.learned[skillId];
+        const skillConfig = CONFIG.SKILL.POOL[skillId];
+
+        if (!skillConfig) return false;
+
+        this.playerSkills.learned[skillId] = currentLevel + 1;
+        return true;
+    }
+
+    // 获取技能当前属性（考虑等级加成）
+    getSkillStats(skillId) {
+        const level = this.playerSkills.learned[skillId] || 0;
+        if (level === 0) return null;
+
+        const skillConfig = CONFIG.SKILL.POOL[skillId];
+        if (!skillConfig) return null;
+
+        const stats = {
+            id: skillId,
+            name: skillConfig.name,
+            icon: skillConfig.icon,
+            type: skillConfig.type,
+            level: level,
+            cooldown: skillConfig.baseCooldown
+        };
+
+        // 复制基础属性
+        for (const key in skillConfig) {
+            if (key.startsWith('base') && typeof skillConfig[key] === 'number') {
+                const attrName = key.charAt(4).toLowerCase() + key.substring(5); // baseHealPercent -> healPercent
+                stats[attrName] = skillConfig[key];
+            }
+        }
+
+        // 应用等级加成
+        if (skillConfig.levelEffects) {
+            for (const [key, value] of Object.entries(skillConfig.levelEffects)) {
+                if (stats[key] !== undefined) {
+                    stats[key] = stats[key] + value * (level - 1);
+                }
+            }
+        }
+
+        return stats;
+    }
+
+    // 检查技能是否可用
+    canUseSkill(skillId) {
+        if (!this.playerSkills.learned[skillId]) return false;
+
+        const skillConfig = CONFIG.SKILL.POOL[skillId];
+        const lastUseTime = this.playerSkills.cooldowns[skillId] || 0;
+
+        // 检查冷却
+        const currentTime = Date.now();
+        if (currentTime - lastUseTime < skillConfig.baseCooldown) return false;
+
+        return true;
+    }
+
+    // 使用技能
+    useSkill(skillId) {
+        if (!this.canUseSkill(skillId)) return false;
+
+        const skillConfig = CONFIG.SKILL.POOL[skillId];
+        const stats = this.getSkillStats(skillId);
+
+        // 记录使用时间
+        this.playerSkills.cooldowns[skillId] = Date.now();
+
+        // 根据技能类型应用效果
+        switch (skillId) {
+            case 'fleetFoot':
+                this.playerSkills.effects.fleetFoot.active = true;
+                this.playerSkills.effects.fleetFoot.endTime = Date.now() + stats.duration;
+                break;
+            case 'frenzy':
+                this.playerSkills.effects.frenzy.active = true;
+                this.playerSkills.effects.frenzy.endTime = Date.now() + stats.duration;
+                break;
+            case 'stoneSkin':
+                this.playerSkills.effects.stoneSkin.active = true;
+                this.playerSkills.effects.stoneSkin.endTime = Date.now() + stats.duration;
+                break;
+            case 'heal':
+                const healAmount = this.maxHp * stats.healPercent;
+                this.hp = Math.min(this.maxHp, this.hp + healAmount);
+                break;
+            case 'bloodthirst':
+                this.playerSkills.effects.bloodthirst.active = true;
+                this.playerSkills.effects.bloodthirst.endTime = Date.now() + stats.duration;
+                break;
+            case 'blink':
+                this.playerSkills.isInvincible = true;
+                this.playerSkills.invincibleEndTime = Date.now() + stats.invincibleDuration;
+                // 闪现距离根据当前方向
+                this.x += this.direction * stats.distance;
+                this.x = Utils.clamp(this.x, this.size, CONFIG.MAP_WIDTH - this.size);
+                break;
+        }
+
+        return true;
+    }
+
+    // 更新技能冷却和持续效果
+    updateSkillCooldowns(deltaTime) {
+        const currentTime = Date.now();
+
+        // 更新技能持续效果
+        for (const skillId in this.playerSkills.effects) {
+            const effect = this.playerSkills.effects[skillId];
+            if (effect.active && currentTime >= effect.endTime) {
+                effect.active = false;
+            }
+        }
+
+        // 更新闪现无敌状态
+        if (this.playerSkills.isInvincible && currentTime >= this.playerSkills.invincibleEndTime) {
+            this.playerSkills.isInvincible = false;
+        }
+
+        // 应用持续效果到属性
+        this.applySkillEffects();
+    }
+
+    // 应用技能效果到属性
+    applySkillEffects() {
+        const currentTime = Date.now();
+
+        // 重置速度为基础值
+        this.speed = this.baseSpeed;
+
+        // 飞毛腿效果
+        if (this.playerSkills.effects.fleetFoot.active) {
+            this.speed = this.baseSpeed * (1 + 0.5);
+        }
+    }
+
+    // 获取技能冷却剩余时间（毫秒）
+    getSkillCooldownRemaining(skillId) {
+        const skillConfig = CONFIG.SKILL.POOL[skillId];
+        if (!skillConfig) return 0;
+
+        const lastUseTime = this.playerSkills.cooldowns[skillId] || 0;
+        const cooldownRemaining = skillConfig.baseCooldown - (Date.now() - lastUseTime);
+
+        return Math.max(0, cooldownRemaining);
+    }
+
     draw(ctx, cameraX, cameraY) {
         const screenX = this.x - cameraX;
         const screenY = this.y - cameraY;
@@ -632,6 +981,115 @@ class Player {
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.arc(0, 0, this.size * 1.3, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        // ==================== 技能光环绘制 ====================
+        const currentTime = Date.now();
+
+        // 飞毛腿光环（蓝色，速度提升）
+        if (this.playerSkills.effects.fleetFoot.active) {
+            const remaining = this.playerSkills.effects.fleetFoot.endTime - currentTime;
+            const alpha = Math.min(1, remaining / 1000);
+            
+            ctx.shadowBlur = 25;
+            ctx.shadowColor = 'rgba(100, 200, 255, 0.8)';
+            ctx.strokeStyle = `rgba(100, 200, 255, ${alpha})`;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(0, 0, this.size * 1.4, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // 内层光环
+            ctx.strokeStyle = `rgba(150, 220, 255, ${alpha * 0.7})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, this.size * 1.2, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        // 狂热光环（橙红色，攻速提升）
+        if (this.playerSkills.effects.frenzy.active) {
+            const remaining = this.playerSkills.effects.frenzy.endTime - currentTime;
+            const alpha = Math.min(1, remaining / 1000);
+            
+            ctx.shadowBlur = 25;
+            ctx.shadowColor = 'rgba(255, 100, 50, 0.8)';
+            ctx.strokeStyle = `rgba(255, 100, 50, ${alpha})`;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(0, 0, this.size * 1.4, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // 内层光环
+            ctx.strokeStyle = `rgba(255, 150, 80, ${alpha * 0.7})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, this.size * 1.2, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        // 石化皮肤光环（灰色，防御提升）
+        if (this.playerSkills.effects.stoneSkin.active) {
+            const remaining = this.playerSkills.effects.stoneSkin.endTime - currentTime;
+            const alpha = Math.min(1, remaining / 1000);
+            
+            ctx.shadowBlur = 25;
+            ctx.shadowColor = 'rgba(150, 150, 150, 0.8)';
+            ctx.strokeStyle = `rgba(150, 150, 150, ${alpha})`;
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(0, 0, this.size * 1.5, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // 内层光环
+            ctx.strokeStyle = `rgba(180, 180, 180, ${alpha * 0.7})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, this.size * 1.3, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        // 嗜血术光环（暗红色，吸血）
+        if (this.playerSkills.effects.bloodthirst.active) {
+            const remaining = this.playerSkills.effects.bloodthirst.endTime - currentTime;
+            const alpha = Math.min(1, remaining / 1000);
+            
+            ctx.shadowBlur = 25;
+            ctx.shadowColor = 'rgba(200, 50, 50, 0.8)';
+            ctx.strokeStyle = `rgba(200, 50, 50, ${alpha})`;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(0, 0, this.size * 1.4, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // 内层光环
+            ctx.strokeStyle = `rgba(220, 80, 80, ${alpha * 0.7})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, this.size * 1.2, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        // 闪现无敌光环（金色闪烁）
+        if (this.playerSkills.isInvincible) {
+            const remaining = this.playerSkills.invincibleEndTime - currentTime;
+            const alpha = Math.min(1, remaining / 300);
+            const pulse = Math.sin(Date.now() / 50) * 0.3 + 0.7;
+            
+            ctx.shadowBlur = 30;
+            ctx.shadowColor = `rgba(255, 215, 0, ${alpha * pulse})`;
+            ctx.strokeStyle = `rgba(255, 215, 0, ${alpha * pulse})`;
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(0, 0, this.size * 1.6, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // 内层光环
+            ctx.strokeStyle = `rgba(255, 255, 200, ${alpha * pulse * 0.7})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, this.size * 1.4, 0, Math.PI * 2);
             ctx.stroke();
         }
 
@@ -816,15 +1274,20 @@ class Monster {
     }
     
     takeDamage(damage) {
+        // 计算实际造成的伤害（不超过当前生命值）
+        const actualDamage = Math.min(damage, this.hp);
         this.hp -= damage;
-        
+
         // 触发受伤动画
         if (this.hp > 0) {
             this.isHurt = true;
             this.hurtAnimationTime = 0;
         }
-        
-        return this.hp <= 0;
+
+        return {
+            killed: this.hp <= 0,
+            damage: actualDamage
+        };
     }
     
     draw(ctx, cameraX, cameraY) {
@@ -1012,6 +1475,8 @@ class Boss {
     }
 
     takeDamage(damage) {
+        // 计算实际造成的伤害（不超过当前生命值）
+        const actualDamage = Math.min(damage, this.hp);
         this.hp -= damage;
 
         // 触发受伤动画
@@ -1020,7 +1485,10 @@ class Boss {
             this.hurtAnimationTime = 0;
         }
 
-        return this.hp <= 0;
+        return {
+            killed: this.hp <= 0,
+            damage: actualDamage
+        };
     }
 
     explode() {
@@ -2231,6 +2699,17 @@ class Game {
         this.healthPotions = [];
         this.lightningEffects = [];
 
+        // 技能系统
+        this.skillEffects = [];
+        this.healFields = [];
+
+        // 游戏循环控制
+        this.gameLoopRunning = false;
+        this.gameLoopRequestId = null;
+
+        // 菜单动画控制
+        this.menuAnimationId = null;
+
         // 天气系统
         this.weatherSystem = new WeatherSystem();
 
@@ -2269,6 +2748,7 @@ class Game {
             showAttackRange: true,
             showCollectRange: false,
             autoAttack: true, // 自动攻击
+            showSkillCooldown: true, // 显示技能冷却时间数字
             renderQuality: 'auto', // 渲染质量：'auto', 'high', 'medium', 'low'
             // 红包设置
             redpacketExpValue: 10, // 红包掉落经验
@@ -2387,9 +2867,51 @@ class Game {
                 this.executeAttack();
             }
         });
+
+        // ==================== 技能系统事件监听器 ====================
+
+        // 桌面端技能槽点击事件
+        document.querySelectorAll('.skill-slot').forEach((slot, index) => {
+            slot.addEventListener('click', () => {
+                if (this.state === GameState.PLAYING) {
+                    this.handleSkillSlotClick(index);
+                }
+            });
+        });
+
+        // 移动端技能按钮触摸事件
+        document.querySelectorAll('.mobile-skill-button').forEach((button, index) => {
+            button.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (this.state === GameState.PLAYING) {
+                    this.handleSkillSlotClick(index);
+                }
+            });
+        });
+    }
+
+    // 处理技能槽点击
+    handleSkillSlotClick(slotIndex) {
+        if (!this.player) return;
+
+        const learnedSkills = Object.keys(this.player.playerSkills.learned);
+        if (slotIndex >= learnedSkills.length) return;
+
+        const skillId = learnedSkills[slotIndex];
+        this.handleSkillUse(skillId);
     }
     
     startGame() {
+        // 取消菜单动画（如果正在运行）
+        if (this.menuAnimationId) {
+            cancelAnimationFrame(this.menuAnimationId);
+            this.menuAnimationId = null;
+        }
+
+        // 重置游戏循环状态
+        this.gameLoopRunning = false;
+        this.gameLoopRequestId = null;
+
         this.player = new Player(CONFIG.MAP_WIDTH / 2, CONFIG.MAP_HEIGHT / 2, this.isTouchDevice);
         this.monsters = [];
         this.bosses = [];
@@ -2399,6 +2921,13 @@ class Game {
         this.playerHurtEffects = [];
         this.healthPotions = [];
         this.lightningEffects = [];
+
+        // 清空技能栏UI
+        this.clearSkillBarUI();
+
+        // 重置技能特效
+        this.skillEffects = [];
+        this.healFields = [];
 
         // 重置天气系统
         this.weatherSystem = new WeatherSystem();
@@ -2430,8 +2959,14 @@ class Game {
             // 显示攻击按钮
             document.getElementById('attackButton').classList.remove('hidden');
         }
-        
+
+        // 渲染技能栏
+        this.renderSkillBar();
+
+        // 重置时间
         this.lastTime = performance.now();
+        
+        // 启动游戏循环
         this.gameLoop();
     }
     
@@ -2456,9 +2991,17 @@ class Game {
             const distance = Utils.distance(this.player.x, this.player.y, monster.x, monster.y);
 
             if (distance <= attackRadius) {
-                const killed = monster.takeDamage(this.player.attackPower);
+                const result = monster.takeDamage(this.player.attackPower);
 
-                if (killed) {
+                // 嗜血术吸血效果
+                if (this.player.playerSkills.effects.bloodthirst.active && result.damage > 0) {
+                    const skillConfig = CONFIG.SKILL.POOL.bloodthirst;
+                    const lifestealPercent = skillConfig.baseLifestealBonus;
+                    const healAmount = result.damage * lifestealPercent;
+                    this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmount);
+                }
+
+                if (result.killed) {
                     // 播放怪物死亡音效
                     this.soundEffect.playMonsterDeath();
 
@@ -2477,9 +3020,17 @@ class Game {
             const distance = Utils.distance(this.player.x, this.player.y, boss.x, boss.y);
 
             if (distance <= attackRadius) {
-                const killed = boss.takeDamage(this.player.attackPower);
+                const result = boss.takeDamage(this.player.attackPower);
 
-                if (killed) {
+                // 嗜血术吸血效果
+                if (this.player.playerSkills.effects.bloodthirst.active && result.damage > 0) {
+                    const skillConfig = CONFIG.SKILL.POOL.bloodthirst;
+                    const lifestealPercent = skillConfig.baseLifestealBonus;
+                    const healAmount = result.damage * lifestealPercent;
+                    this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmount);
+                }
+
+                if (result.killed) {
                     // 播放Boss死亡音效
                     this.soundEffect.playMonsterDeath();
 
@@ -2510,7 +3061,10 @@ class Game {
         document.getElementById('upgradeScreen').classList.add('hidden');
         this.state = GameState.PLAYING;
 
+        // 重置时间以避免deltaTime过大
         this.lastTime = performance.now();
+        
+        // 启动游戏循环
         this.gameLoop();
     }
     
@@ -2611,7 +3165,12 @@ class Game {
     }
 
     gameLoop() {
-        if (this.state !== GameState.PLAYING) return;
+        // 防止重复启动游戏循环
+        if (this.state !== GameState.PLAYING) {
+            this.gameLoopRunning = false;
+            this.gameLoopRequestId = null;
+            return;
+        }
 
         const currentTime = performance.now();
         const deltaTime = currentTime - this.lastTime;
@@ -2681,6 +3240,15 @@ class Game {
 
         // 更新玩家
         this.player.update(deltaTime, this.keys, joystickInput);
+
+        // 更新技能冷却和持续效果
+        this.player.updateSkillCooldowns(deltaTime);
+
+        // 更新回血阵
+        this.updateHealFields(deltaTime);
+
+        // 更新技能特效
+        this.updateSkillEffects(deltaTime);
 
         // 更新怪物
         this.monsters.forEach(monster => monster.update(this.player));
@@ -2858,8 +3426,17 @@ class Game {
             for (let j = this.monsters.length - 1; j >= 0; j--) {
                 const monster = this.monsters[j];
                 if (lightning.checkHit(monster)) {
-                    const killed = monster.takeDamage(lightning.damage);
-                    if (killed) {
+                    const result = monster.takeDamage(lightning.damage);
+
+                    // 嗜血术吸血效果
+                    if (this.player.playerSkills.effects.bloodthirst.active && result.damage > 0) {
+                        const skillConfig = CONFIG.SKILL.POOL.bloodthirst;
+                        const lifestealPercent = skillConfig.baseLifestealBonus;
+                        const healAmount = result.damage * lifestealPercent;
+                        this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmount);
+                    }
+
+                    if (result.killed) {
                         this.monsters.splice(j, 1);
                         this.redPackets.push(new RedPacket(monster.x, monster.y, this.isTouchDevice));
                         this.totalKills++;
@@ -2873,8 +3450,17 @@ class Game {
             for (let j = this.bosses.length - 1; j >= 0; j--) {
                 const boss = this.bosses[j];
                 if (lightning.checkHit(boss)) {
-                    const killed = boss.takeDamage(lightning.damage);
-                    if (killed) {
+                    const result = boss.takeDamage(lightning.damage);
+
+                    // 嗜血术吸血效果
+                    if (this.player.playerSkills.effects.bloodthirst.active && result.damage > 0) {
+                        const skillConfig = CONFIG.SKILL.POOL.bloodthirst;
+                        const lifestealPercent = skillConfig.baseLifestealBonus;
+                        const healAmount = result.damage * lifestealPercent;
+                        this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmount);
+                    }
+
+                    if (result.killed) {
                         for (let k = 0; k < boss.redpacketDropCount; k++) {
                             const angle = Math.random() * Math.PI * 2;
                             const dropDistance = Utils.randomRange(30, 80);
@@ -2932,13 +3518,368 @@ class Game {
         this.render();
         
         // 继续循环
-        requestAnimationFrame(() => this.gameLoop());
+        this.gameLoopRequestId = requestAnimationFrame(() => this.gameLoop());
     }
     
     showUpgradeScreen() {
         this.state = GameState.PAUSED;
         document.getElementById('upgradeScreen').classList.remove('hidden');
         document.getElementById('currentLevel').textContent = this.player.level;
+
+        // 生成技能升级选项
+        const skillOptions = this.generateSkillUpgradeOptions();
+        this.renderSkillUpgradeOptions(skillOptions);
+    }
+
+    // ==================== 技能系统方法 ====================
+
+    // 生成3个技能升级选项
+    generateSkillUpgradeOptions() {
+        const learnedSkills = Object.keys(this.player.playerSkills.learned);
+        const allSkills = Object.keys(CONFIG.SKILL.POOL);
+        const maxSkills = CONFIG.SKILL.MAX_SKILLS;
+
+        const options = [];
+        const selected = new Set();
+
+        // 如果已学满，只返回已学技能的升级选项
+        if (learnedSkills.length >= maxSkills) {
+            // 随机选择已学技能
+            const shuffled = [...learnedSkills].sort(() => Math.random() - 0.5);
+            options.push(...shuffled.slice(0, Math.min(3, shuffled.length)));
+        } else {
+            // 计算需要多少新技能和多少升级选项
+            const newSkillCount = Math.min(3, maxSkills - learnedSkills.length);
+            const upgradeCount = 3 - newSkillCount;
+
+            // 选择未学技能
+            const unlearned = allSkills.filter(s => !learnedSkills.includes(s));
+            if (unlearned.length > 0) {
+                const shuffled = [...unlearned].sort(() => Math.random() - 0.5);
+                options.push(...shuffled.slice(0, newSkillCount));
+            }
+
+            // 选择已学技能升级
+            if (upgradeCount > 0 && learnedSkills.length > 0) {
+                const shuffled = [...learnedSkills].sort(() => Math.random() - 0.5);
+                options.push(...shuffled.slice(0, upgradeCount));
+            }
+        }
+
+        // 确保返回3个选项
+        const finalOptions = options.slice(0, 3);
+        return finalOptions;
+    }
+
+    // 获取技能详细描述
+    getSkillDescription(skillId, currentLevel = 0) {
+        const skillConfig = CONFIG.SKILL.POOL[skillId];
+        if (!skillConfig) return '';
+
+        const isNew = currentLevel === 0;
+        const nextLevel = currentLevel + 1;
+
+        let description = `<div class="skill-description">${skillConfig.description}</div>`;
+
+        // 显示基础属性
+        const stats = [];
+        if (skillConfig.baseCooldown) {
+            stats.push(`冷却: ${skillConfig.baseCooldown / 1000}秒`);
+        }
+        if (skillConfig.baseDuration) {
+            stats.push(`持续: ${skillConfig.baseDuration / 1000}秒`);
+        }
+        if (skillConfig.baseSpeedBonus) {
+            stats.push(`移速+${Math.round(skillConfig.baseSpeedBonus * 100)}%`);
+        }
+        if (skillConfig.baseAttackSpeedBonus) {
+            stats.push(`攻速+${Math.round(skillConfig.baseAttackSpeedBonus * 100)}%`);
+        }
+        if (skillConfig.baseDefenseBonus) {
+            stats.push(`防御+${Math.round(skillConfig.baseDefenseBonus * 100)}%`);
+        }
+        if (skillConfig.baseHealPercent) {
+            stats.push(`回复${Math.round(skillConfig.baseHealPercent * 100)}%血量`);
+        }
+        if (skillConfig.baseDamagePercent) {
+            stats.push(`造成${Math.round(skillConfig.baseDamagePercent * 100)}%血量伤害`);
+        }
+        if (skillConfig.baseRadius) {
+            stats.push(`范围: ${skillConfig.baseRadius}`);
+        }
+        if (skillConfig.baseLifestealBonus) {
+            stats.push(`吸血+${Math.round(skillConfig.baseLifestealBonus * 100)}%`);
+        }
+        if (skillConfig.baseDistance) {
+            stats.push(`距离: ${skillConfig.baseDistance}`);
+        }
+
+        if (stats.length > 0) {
+            description += `<div class="skill-stats">${stats.join(' | ')}</div>`;
+        }
+
+        // 显示升级内容
+        if (!isNew && skillConfig.levelEffects) {
+            const upgrades = [];
+            for (const [key, value] of Object.entries(skillConfig.levelEffects)) {
+                if (key === 'duration') {
+                    upgrades.push(`持续时间+${value / 1000}秒`);
+                } else if (key === 'healPercent') {
+                    upgrades.push(`回复+${Math.round(value * 100)}%`);
+                } else if (key === 'healPercentPerSecond') {
+                    upgrades.push(`每秒回复+${Math.round(value * 100)}%`);
+                } else if (key === 'maxDamageMultiplier') {
+                    upgrades.push(`伤害上限+${value}倍`);
+                } else if (key === 'cooldown') {
+                    upgrades.push(`冷却-${value / 1000}秒`);
+                }
+            }
+            if (upgrades.length > 0) {
+                description += `<div class="skill-upgrade-info">升级: ${upgrades.join(' | ')}</div>`;
+            }
+        }
+
+        return description;
+    }
+
+    // 渲染技能升级选项
+    renderSkillUpgradeOptions(skillOptions) {
+        const container = document.getElementById('skillUpgradeOptions');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        skillOptions.forEach(skillId => {
+            const isLearned = this.player.playerSkills.learned[skillId];
+            const skillConfig = CONFIG.SKILL.POOL[skillId];
+            const level = isLearned || 0;
+
+            const button = document.createElement('button');
+            button.className = 'skill-upgrade-option';
+            button.dataset.skill = skillId;
+            button.innerHTML = `
+                <span class="skill-upgrade-icon">${skillConfig.icon}</span>
+                <span class="skill-upgrade-name">${skillConfig.name}</span>
+                <span class="skill-upgrade-level">${isLearned ? `Lv.${level}` : '新技能'}</span>
+                ${this.getSkillDescription(skillId, level)}
+            `;
+
+            container.appendChild(button);
+        });
+
+        // 使用事件委托，避免重复添加监听器
+        container.onSkillButtonClick = (e) => {
+            const button = e.target.closest('.skill-upgrade-option');
+            if (button) {
+                const skillId = button.dataset.skill;
+                // 移除事件监听器，防止重复调用
+                container.removeEventListener('click', container.onSkillButtonClick);
+                this.handleSkillUpgradeChoice(skillId);
+            }
+        };
+
+        container.addEventListener('click', container.onSkillButtonClick);
+    }
+
+    // 处理技能升级选择
+    handleSkillUpgradeChoice(skillId) {
+        // 升级玩家（扣除经验，更新等级和下一级所需经验）
+        this.player.levelUp();
+
+        const isLearned = this.player.playerSkills.learned[skillId];
+
+        if (isLearned) {
+            // 升级现有技能
+            this.player.upgradeSkill(skillId);
+        } else {
+            // 学习新技能
+            this.player.unlockSkill(skillId);
+        }
+
+        // 隐藏升级界面
+        document.getElementById('upgradeScreen').classList.add('hidden');
+        this.state = GameState.PLAYING;
+
+        // 重置时间以避免deltaTime过大
+        this.lastTime = performance.now();
+        
+        // 启动游戏循环
+        this.gameLoop();
+    }
+
+    // 处理技能使用
+    handleSkillUse(skillId) {
+        if (!this.player.canUseSkill(skillId)) return;
+
+        // 使用技能
+        this.player.useSkill(skillId);
+
+        // 获取技能属性
+        const stats = this.player.getSkillStats(skillId);
+        if (!stats) return;
+
+        // 应用技能效果
+        this.applySkillEffect(skillId, stats);
+
+        // 播放技能音效
+        this.soundEffect.playSkillEffect(skillId);
+    }
+
+    // 应用技能效果
+    applySkillEffect(skillId, stats) {
+        const skillConfig = CONFIG.SKILL.POOL[skillId];
+
+        switch (skillId) {
+            case 'fleetFoot':
+            case 'frenzy':
+            case 'stoneSkin':
+            case 'bloodthirst':
+                // 持续效果已经在Player.useSkill中处理
+                break;
+
+            case 'heal':
+                // 立即回血效果已经在Player.useSkill中处理
+                // 创建特效
+                this.skillEffects.push({
+                    type: 'heal',
+                    x: this.player.x,
+                    y: this.player.y,
+                    duration: 1000,
+                    elapsed: 0,
+                    active: true
+                });
+                break;
+
+            case 'skyPunishment':
+                // 天罚：对全屏敌人造成伤害
+                this.applySkyPunishment(stats);
+                break;
+
+            case 'healField':
+                // 创建回血阵
+                this.healFields.push({
+                    x: this.player.x,
+                    y: this.player.y,
+                    radius: stats.radius,
+                    duration: stats.duration,
+                    elapsed: 0,
+                    healPercentPerSecond: stats.healPercentPerSecond,
+                    active: true
+                });
+                break;
+
+            case 'blink':
+                // 闪现效果
+                this.skillEffects.push({
+                    type: 'blink',
+                    x: this.player.x,
+                    y: this.player.y,
+                    duration: 500,
+                    elapsed: 0,
+                    active: true
+                });
+                break;
+        }
+    }
+
+    // 应用天罚效果
+    applySkyPunishment(stats) {
+        const damagePerTarget = this.player.maxHp * stats.damagePercent;
+        const maxDamage = this.player.attackPower * stats.maxDamageMultiplier;
+        const finalDamage = Math.min(damagePerTarget, maxDamage);
+
+        // 对所有怪物造成伤害
+        for (let i = this.monsters.length - 1; i >= 0; i--) {
+            const monster = this.monsters[i];
+            const result = monster.takeDamage(finalDamage);
+
+            // 嗜血术吸血效果
+            if (this.player.playerSkills.effects.bloodthirst.active && result.damage > 0) {
+                const skillConfig = CONFIG.SKILL.POOL.bloodthirst;
+                const lifestealPercent = skillConfig.baseLifestealBonus;
+                const healAmount = result.damage * lifestealPercent;
+                this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmount);
+            }
+
+            if (result.killed) {
+                this.monsters.splice(i, 1);
+                this.redPackets.push(new RedPacket(monster.x, monster.y, this.isTouchDevice));
+                this.totalKills++;
+                this.score += 100;
+                this.soundEffect.playMonsterDeath();
+            }
+        }
+
+        // 对所有Boss造成伤害
+        for (let i = this.bosses.length - 1; i >= 0; i--) {
+            const boss = this.bosses[i];
+            const result = boss.takeDamage(finalDamage);
+
+            // 嗜血术吸血效果
+            if (this.player.playerSkills.effects.bloodthirst.active && result.damage > 0) {
+                const skillConfig = CONFIG.SKILL.POOL.bloodthirst;
+                const lifestealPercent = skillConfig.baseLifestealBonus;
+                const healAmount = result.damage * lifestealPercent;
+                this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmount);
+            }
+
+            if (result.killed) {
+                for (let j = 0; j < boss.redpacketDropCount; j++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const dropDistance = Utils.randomRange(30, 80);
+                    const dropX = boss.x + Math.cos(angle) * dropDistance;
+                    const dropY = boss.y + Math.sin(angle) * dropDistance;
+                    this.redPackets.push(new RedPacket(dropX, dropY, this.isTouchDevice));
+                }
+                this.bosses.splice(i, 1);
+                this.totalKills++;
+                this.score += 500;
+                this.soundEffect.playMonsterDeath();
+            }
+        }
+
+        // 创建全屏闪电特效
+        this.skillEffects.push({
+            type: 'skyPunishment',
+            duration: 1500,
+            elapsed: 0,
+            active: true
+        });
+    }
+
+    // 更新回血阵
+    updateHealFields(deltaTime) {
+        for (let i = this.healFields.length - 1; i >= 0; i--) {
+            const field = this.healFields[i];
+            field.elapsed += deltaTime;
+
+            // 检查玩家是否在回血阵范围内
+            const distance = Utils.distance(this.player.x, this.player.y, field.x, field.y);
+            if (distance <= field.radius) {
+                // 每秒回复生命值
+                const healPerSecond = this.player.maxHp * field.healPercentPerSecond;
+                const healAmount = healPerSecond * (deltaTime / 1000);
+                this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmount);
+            }
+
+            // 检查回血阵是否过期
+            if (field.elapsed >= field.duration) {
+                this.healFields.splice(i, 1);
+            }
+        }
+    }
+
+    // 更新技能特效
+    updateSkillEffects(deltaTime) {
+        for (let i = this.skillEffects.length - 1; i >= 0; i--) {
+            const effect = this.skillEffects[i];
+            effect.elapsed += deltaTime;
+
+            if (effect.elapsed >= effect.duration) {
+                effect.active = false;
+                this.skillEffects.splice(i, 1);
+            }
+        }
     }
 
     showStartScreen() {
@@ -2990,6 +3931,7 @@ class Game {
         document.getElementById('showAttackRange').checked = this.settings.showAttackRange;
         document.getElementById('showCollectRange').checked = this.settings.showCollectRange;
         document.getElementById('autoAttack').checked = this.settings.autoAttack;
+        document.getElementById('showSkillCooldown').checked = this.settings.showSkillCooldown;
         document.getElementById('renderQuality').value = this.settings.renderQuality;
 
         // 同步红包设置
@@ -3053,9 +3995,11 @@ class Game {
         // 如果游戏正在进行，恢复游戏
         if (this.player && this.player.hp > 0) {
             this.state = GameState.PLAYING;
-            // 重置lastTime以避免deltaTime过大
+            
+            // 重置时间以避免deltaTime过大
             this.lastTime = performance.now();
-            // 重新启动游戏循环
+            
+            // 启动游戏循环
             this.gameLoop();
         }
     }
@@ -3065,6 +4009,7 @@ class Game {
         this.settings.showAttackRange = document.getElementById('showAttackRange').checked;
         this.settings.showCollectRange = document.getElementById('showCollectRange').checked;
         this.settings.autoAttack = document.getElementById('autoAttack').checked;
+        this.settings.showSkillCooldown = document.getElementById('showSkillCooldown').checked;
         this.settings.renderQuality = document.getElementById('renderQuality').value || 'auto';
 
         // 读取红包设置
@@ -3106,6 +4051,13 @@ class Game {
     }
     
     gameOver() {
+        // 取消游戏循环（如果正在运行）
+        if (this.gameLoopRequestId) {
+            cancelAnimationFrame(this.gameLoopRequestId);
+            this.gameLoopRequestId = null;
+        }
+        this.gameLoopRunning = false;
+
         this.state = GameState.GAME_OVER;
         document.getElementById('gameOverScreen').classList.remove('hidden');
         document.getElementById('hud').classList.add('hidden');
@@ -3203,6 +4155,24 @@ class Game {
         // 绘制小马受伤特效 - 低质量时简化
         if (quality >= 2) {
             this.playerHurtEffects.forEach(effect => effect.draw(ctx, cameraX, cameraY));
+        }
+
+        // 绘制技能特效 - 低质量时简化
+        if (quality >= 2) {
+            this.skillEffects.forEach(effect => {
+                if (effect.active) {
+                    this.drawSkillEffect(ctx, cameraX, cameraY, effect);
+                }
+            });
+        }
+
+        // 绘制回血阵 - 低质量时简化
+        if (quality >= 2) {
+            this.healFields.forEach(field => {
+                if (field.active) {
+                    this.drawHealField(ctx, cameraX, cameraY, field);
+                }
+            });
         }
 
         // 恢复上下文状态
@@ -3355,7 +4325,9 @@ class Game {
 
         // 如果在菜单状态，继续动画
         if (this.state === GameState.MENU) {
-            requestAnimationFrame(() => this.renderMenuBackground());
+            this.menuAnimationId = requestAnimationFrame(() => this.renderMenuBackground());
+        } else {
+            this.menuAnimationId = null;
         }
     }
     
@@ -3382,6 +4354,293 @@ class Game {
         document.getElementById('weatherName').textContent = this.weatherSystem.getWeatherName();
         document.getElementById('weatherEffect').textContent = this.weatherSystem.getWeatherShortEffect();
         document.getElementById('weatherName').title = this.weatherSystem.getWeatherDescription();
+
+        // 更新技能栏
+        this.updateSkillCooldownUI();
+    }
+
+    // 更新技能冷却UI
+    updateSkillCooldownUI() {
+        if (!this.player) return;
+
+        const learnedSkills = Object.keys(this.player.playerSkills.learned);
+        const skillSlotElements = [
+            document.getElementById('skillSlot1'),
+            document.getElementById('skillSlot2'),
+            document.getElementById('skillSlot3')
+        ];
+
+        const mobileSkillElements = [
+            document.getElementById('mobileSkill1'),
+            document.getElementById('mobileSkill2'),
+            document.getElementById('mobileSkill3')
+        ];
+
+        // 获取设置
+        const showSkillCooldown = this.settings?.showSkillCooldown !== false;
+
+        // 为每个槽位更新显示
+        learnedSkills.forEach((skillId, index) => {
+            if (index >= 3) return;
+
+            const skillConfig = CONFIG.SKILL.POOL[skillId];
+            const skillStats = this.player.getSkillStats(skillId);
+            const cooldownRemaining = this.player.getSkillCooldownRemaining(skillId);
+            const cooldownTotal = skillConfig.baseCooldown;
+
+            // 更新桌面端技能槽
+            if (skillSlotElements[index]) {
+                const iconElement = skillSlotElements[index].querySelector('.skill-slot-icon');
+                const cooldownElement = skillSlotElements[index].querySelector('.skill-slot-cooldown');
+                const cooldownTextElement = skillSlotElements[index].querySelector('.skill-slot-cooldown-text');
+
+                if (iconElement) {
+                    iconElement.textContent = skillConfig.icon;
+                }
+
+                if (cooldownElement) {
+                    const cooldownPercent = (cooldownRemaining / cooldownTotal) * 100;
+                    cooldownElement.style.height = `${cooldownPercent}%`;
+                }
+
+                if (cooldownTextElement) {
+                    if (showSkillCooldown && cooldownRemaining > 0) {
+                        const cooldownSeconds = Math.ceil(cooldownRemaining / 1000);
+                        cooldownTextElement.textContent = `${cooldownSeconds}s`;
+                        cooldownTextElement.style.display = 'block';
+                    } else {
+                        cooldownTextElement.textContent = '';
+                        cooldownTextElement.style.display = 'none';
+                    }
+                }
+            }
+
+            // 更新移动端技能按钮
+            if (mobileSkillElements[index]) {
+                const iconElement = mobileSkillElements[index].querySelector('.mobile-skill-icon');
+                const cooldownElement = mobileSkillElements[index].querySelector('.mobile-skill-cooldown');
+                const cooldownTextElement = mobileSkillElements[index].querySelector('.mobile-skill-cooldown-text');
+
+                if (iconElement) {
+                    iconElement.textContent = skillConfig.icon;
+                }
+
+                if (cooldownElement) {
+                    const cooldownPercent = (cooldownRemaining / cooldownTotal) * 100;
+                    cooldownElement.style.height = `${cooldownPercent}%`;
+                }
+
+                if (cooldownTextElement) {
+                    if (showSkillCooldown && cooldownRemaining > 0) {
+                        const cooldownSeconds = Math.ceil(cooldownRemaining / 1000);
+                        cooldownTextElement.textContent = `${cooldownSeconds}s`;
+                        cooldownTextElement.style.display = 'block';
+                    } else {
+                        cooldownTextElement.textContent = '';
+                        cooldownTextElement.style.display = 'none';
+                    }
+                }
+            }
+        });
+    }
+
+    // 清空技能栏UI
+    clearSkillBarUI() {
+        // 清空桌面端技能槽
+        for (let i = 1; i <= 3; i++) {
+            const skillSlot = document.getElementById(`skillSlot${i}`);
+            if (skillSlot) {
+                const iconElement = skillSlot.querySelector('.skill-slot-icon');
+                const cooldownElement = skillSlot.querySelector('.skill-slot-cooldown');
+                const cooldownTextElement = skillSlot.querySelector('.skill-slot-cooldown-text');
+
+                if (iconElement) iconElement.textContent = '';
+                if (cooldownElement) cooldownElement.style.height = '0%';
+                if (cooldownTextElement) {
+                    cooldownTextElement.textContent = '';
+                    cooldownTextElement.style.display = 'none';
+                }
+            }
+        }
+
+        // 清空移动端技能按钮
+        for (let i = 1; i <= 3; i++) {
+            const mobileSkillButton = document.getElementById(`mobileSkill${i}`);
+            if (mobileSkillButton) {
+                const iconElement = mobileSkillButton.querySelector('.mobile-skill-icon');
+                const cooldownElement = mobileSkillButton.querySelector('.mobile-skill-cooldown');
+                const cooldownTextElement = mobileSkillButton.querySelector('.mobile-skill-cooldown-text');
+
+                if (iconElement) iconElement.textContent = '';
+                if (cooldownElement) cooldownElement.style.height = '0%';
+                if (cooldownTextElement) {
+                    cooldownTextElement.textContent = '';
+                    cooldownTextElement.style.display = 'none';
+                }
+            }
+        }
+    }
+
+    // 渲染技能栏
+    renderSkillBar() {
+        const skillBar = document.getElementById('skillBar');
+        const mobileSkillButtons = document.getElementById('mobileSkillButtons');
+
+        if (!this.player) {
+            skillBar.classList.add('hidden');
+            mobileSkillButtons.classList.add('hidden');
+            return;
+        }
+
+        // 显示技能栏
+        skillBar.classList.remove('hidden');
+        mobileSkillButtons.classList.remove('hidden');
+    }
+
+    // ==================== 绘制技能特效 ====================
+    drawSkillEffect(ctx, cameraX, cameraY, effect) {
+        const screenX = effect.x - cameraX;
+        const screenY = effect.y - cameraY;
+        const progress = effect.elapsed / effect.duration;
+        const alpha = 1 - progress;
+
+        ctx.save();
+
+        switch (effect.type) {
+            case 'heal':
+                // 回春术特效：绿色光圈
+                ctx.globalAlpha = alpha;
+                ctx.strokeStyle = '#2ed573';
+                ctx.lineWidth = 3;
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#2ed573';
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, 50 + progress * 100, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // 内圈
+                ctx.strokeStyle = '#7bed9f';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, 30 + progress * 80, 0, Math.PI * 2);
+                ctx.stroke();
+                break;
+
+            case 'blink':
+                // 闪现术特效：金色闪光
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = 'rgba(255, 215, 0, 0.5)';
+                ctx.shadowBlur = 30;
+                ctx.shadowColor = '#FFD700';
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, 40, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.strokeStyle = '#FFD700';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, 60 - progress * 40, 0, Math.PI * 2);
+                ctx.stroke();
+                break;
+
+            case 'skyPunishment':
+                // 天罚特效：全屏闪电
+                ctx.globalAlpha = alpha * 0.3;
+                ctx.fillStyle = '#FFE259';
+                ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                // 随机闪电线
+                ctx.globalAlpha = alpha;
+                ctx.strokeStyle = '#FFD700';
+                ctx.lineWidth = 2;
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#FFD700';
+                for (let i = 0; i < 10; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(Math.random() * this.canvas.width, 0);
+                    ctx.lineTo(Math.random() * this.canvas.width, this.canvas.height);
+                    ctx.stroke();
+                }
+                break;
+        }
+
+        ctx.restore();
+    }
+
+    // ==================== 绘制回血阵 ====================
+    drawHealField(ctx, cameraX, cameraY, field) {
+        const screenX = field.x - cameraX;
+        const screenY = field.y - cameraY;
+        const remaining = field.endTime - Date.now();
+        const duration = field.duration;
+        const alpha = Math.min(1, remaining / 2000);
+
+        ctx.save();
+
+        // 绘制回血阵范围
+        ctx.globalAlpha = alpha * 0.4;
+        ctx.fillStyle = 'rgba(46, 213, 115, 0.2)';
+        ctx.strokeStyle = 'rgba(46, 213, 115, 0.6)';
+        ctx.lineWidth = 2;
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = 'rgba(46, 213, 115, 0.8)';
+        ctx.beginPath();
+        ctx.arc(screenX, screenY, field.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // 绘制旋转的十字
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = 'rgba(46, 213, 115, 0.8)';
+        ctx.lineWidth = 3;
+        const angle = Date.now() / 1000;
+        
+        ctx.save();
+        ctx.translate(screenX, screenY);
+        ctx.rotate(angle);
+        
+        // 十字线
+        ctx.beginPath();
+        ctx.moveTo(-20, 0);
+        ctx.lineTo(20, 0);
+        ctx.moveTo(0, -20);
+        ctx.lineTo(0, 20);
+        ctx.stroke();
+
+        // 四个角的小十字
+        const crossSize = 8;
+        const crossOffset = 15;
+        
+        ctx.beginPath();
+        ctx.moveTo(-crossOffset - crossSize, -crossOffset);
+        ctx.lineTo(-crossOffset + crossSize, -crossOffset);
+        ctx.moveTo(-crossOffset, -crossOffset - crossSize);
+        ctx.lineTo(-crossOffset, -crossOffset + crossSize);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(crossOffset - crossSize, -crossOffset);
+        ctx.lineTo(crossOffset + crossSize, -crossOffset);
+        ctx.moveTo(crossOffset, -crossOffset - crossSize);
+        ctx.lineTo(crossOffset, -crossOffset + crossSize);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(-crossOffset - crossSize, crossOffset);
+        ctx.lineTo(-crossOffset + crossSize, crossOffset);
+        ctx.moveTo(-crossOffset, crossOffset - crossSize);
+        ctx.lineTo(-crossOffset, crossOffset + crossSize);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(crossOffset - crossSize, crossOffset);
+        ctx.lineTo(crossOffset + crossSize, crossOffset);
+        ctx.moveTo(crossOffset, crossOffset - crossSize);
+        ctx.lineTo(crossOffset, crossOffset + crossSize);
+        ctx.stroke();
+
+        ctx.restore();
+        ctx.restore();
     }
 }
 

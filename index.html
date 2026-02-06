@@ -103,6 +103,14 @@
                         <span class="upgrade-bonus">+0.5 速度</span>
                     </button>
                 </div>
+
+                <!-- 技能升级选项 -->
+                <div id="skillUpgradeSection" class="skill-upgrade-section">
+                    <h3 class="upgrade-section-title">🎯 技能升级</h3>
+                    <div id="skillUpgradeOptions" class="skill-upgrade-options">
+                        <!-- 动态生成 -->
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -155,6 +163,12 @@
                             <label class="setting-label">
                                 <span class="setting-text">自动攻击</span>
                                 <input type="checkbox" id="autoAttack" class="setting-toggle" checked>
+                            </label>
+                        </div>
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                <span class="setting-text">显示技能冷却时间</span>
+                                <input type="checkbox" id="showSkillCooldown" class="setting-toggle" checked>
                             </label>
                         </div>
                         <div class="setting-item">
@@ -328,6 +342,27 @@
             </div>
         </div>
 
+        <!-- 技能栏（桌面端） -->
+        <div id="skillBar" class="skill-bar hidden">
+            <div class="skill-slots">
+                <div id="skillSlot1" class="skill-slot" data-slot="0">
+                    <span class="skill-slot-icon"></span>
+                    <div class="skill-slot-cooldown"></div>
+                    <span class="skill-slot-cooldown-text"></span>
+                </div>
+                <div id="skillSlot2" class="skill-slot" data-slot="1">
+                    <span class="skill-slot-icon"></span>
+                    <div class="skill-slot-cooldown"></div>
+                    <span class="skill-slot-cooldown-text"></span>
+                </div>
+                <div id="skillSlot3" class="skill-slot" data-slot="2">
+                    <span class="skill-slot-icon"></span>
+                    <div class="skill-slot-cooldown"></div>
+                    <span class="skill-slot-cooldown-text"></span>
+                </div>
+            </div>
+        </div>
+
         <!-- 移动端虚拟摇杆 -->
         <div id="joystick" class="joystick hidden">
             <div class="joystick-base">
@@ -338,6 +373,25 @@
         <!-- 移动端攻击按钮 -->
         <div id="attackButton" class="attack-button hidden">
             <span class="attack-icon">⚔️</span>
+        </div>
+
+        <!-- 移动端技能按钮 -->
+        <div id="mobileSkillButtons" class="mobile-skill-buttons hidden">
+            <div id="mobileSkill1" class="mobile-skill-button" data-slot="0">
+                <span class="mobile-skill-icon"></span>
+                <div class="mobile-skill-cooldown"></div>
+                <span class="mobile-skill-cooldown-text"></span>
+            </div>
+            <div id="mobileSkill2" class="mobile-skill-button" data-slot="1">
+                <span class="mobile-skill-icon"></span>
+                <div class="mobile-skill-cooldown"></div>
+                <span class="mobile-skill-cooldown-text"></span>
+            </div>
+            <div id="mobileSkill3" class="mobile-skill-button" data-slot="2">
+                <span class="mobile-skill-icon"></span>
+                <div class="mobile-skill-cooldown"></div>
+                <span class="mobile-skill-cooldown-text"></span>
+            </div>
         </div>
     </div>
 

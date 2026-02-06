@@ -1168,3 +1168,358 @@ body::before {
         font-size: 16px;
     }
 }
+
+/* ==================== 技能系统样式 ==================== */
+
+/* 升级界面中的技能选项 */
+.skill-upgrade-section {
+    margin-top: 30px;
+}
+
+.upgrade-section-title {
+    color: var(--accent-gold);
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 15px;
+    text-align: center;
+    letter-spacing: 1px;
+}
+
+.skill-upgrade-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+}
+
+.skill-upgrade-option {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
+    border: 2px solid rgba(102, 126, 234, 0.5);
+    border-radius: 15px;
+    padding: 20px 15px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+    overflow: hidden;
+}
+
+.skill-upgrade-option::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.3) 0%, rgba(118, 75, 162, 0.3) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.skill-upgrade-option:hover {
+    border-color: rgba(102, 126, 234, 0.8);
+    transform: translateY(-5px) scale(1.05);
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+}
+
+.skill-upgrade-option:hover::before {
+    opacity: 1;
+}
+
+.skill-upgrade-option:active {
+    transform: translateY(-2px) scale(1.02);
+}
+
+.skill-upgrade-icon {
+    font-size: 40px;
+    position: relative;
+    z-index: 1;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+.skill-upgrade-name {
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 700;
+    position: relative;
+    z-index: 1;
+    letter-spacing: 0.5px;
+}
+
+.skill-upgrade-level {
+    color: var(--accent-gold);
+    font-size: 14px;
+    font-weight: 600;
+    position: relative;
+    z-index: 1;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.skill-description {
+    color: var(--text-secondary);
+    font-size: 12px;
+    text-align: center;
+    line-height: 1.4;
+    margin-top: 5px;
+    position: relative;
+    z-index: 1;
+}
+
+.skill-stats {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 11px;
+    text-align: center;
+    margin-top: 5px;
+    position: relative;
+    z-index: 1;
+}
+
+.skill-upgrade-info {
+    color: var(--accent-blue);
+    font-size: 11px;
+    text-align: center;
+    margin-top: 5px;
+    font-weight: 600;
+    position: relative;
+    z-index: 1;
+}
+
+/* ==================== 技能栏（桌面端） ==================== */
+.skill-bar {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 150;
+    pointer-events: auto;
+}
+
+.skill-bar.hidden {
+    display: none;
+}
+
+.skill-slots {
+    display: flex;
+    gap: 12px;
+    background: rgba(20, 18, 45, 0.9);
+    border: 2px solid rgba(102, 126, 234, 0.5);
+    border-radius: 20px;
+    padding: 12px 18px;
+    backdrop-filter: blur(15px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+.skill-slot {
+    width: 70px;
+    height: 70px;
+    background: rgba(102, 126, 234, 0.2);
+    border: 2px solid rgba(102, 126, 234, 0.6);
+    border-radius: 12px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.skill-slot:hover {
+    background: rgba(102, 126, 234, 0.4);
+    border-color: rgba(102, 126, 234, 0.8);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.skill-slot:active {
+    transform: translateY(0);
+}
+
+.skill-slot-icon {
+    font-size: 32px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.skill-slot-cooldown {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 0 0 10px 10px;
+    transition: height 0.1s linear;
+    overflow: hidden;
+}
+
+.skill-slot-cooldown-text {
+    position: absolute;
+    bottom: 5px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    z-index: 2;
+}
+
+/* ==================== 移动端技能按钮 ==================== */
+.mobile-skill-buttons {
+    position: absolute;
+    bottom: 100px;
+    right: 160px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 150;
+    pointer-events: auto;
+}
+
+.mobile-skill-buttons.hidden {
+    display: none;
+}
+
+.mobile-skill-button {
+    width: 65px;
+    height: 65px;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.8) 0%, rgba(118, 75, 162, 0.8) 100%);
+    border: 3px solid rgba(102, 126, 234, 0.8);
+    border-radius: 15px;
+    position: relative;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 30px rgba(102, 126, 234, 0.5), inset 0 0 20px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+}
+
+.mobile-skill-button:active {
+    transform: scale(0.95);
+    box-shadow: 0 0 40px rgba(102, 126, 234, 0.7);
+}
+
+.mobile-skill-icon {
+    font-size: 28px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.mobile-skill-cooldown {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 0 0 12px 12px;
+    transition: height 0.1s linear;
+    overflow: hidden;
+}
+
+.mobile-skill-cooldown-text {
+    position: absolute;
+    bottom: 5px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    z-index: 2;
+}
+
+/* ==================== 响应式设计优化 ==================== */
+@media (pointer: coarse) {
+    .skill-bar.hidden {
+        display: block;
+    }
+    
+    .mobile-skill-buttons.hidden {
+        display: flex;
+    }
+}
+
+@media (pointer: fine) {
+    .skill-bar {
+        display: flex;
+    }
+    
+    .mobile-skill-buttons {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .skill-upgrade-options {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .skill-bar {
+        bottom: 20px;
+    }
+
+    .skill-slots {
+        padding: 10px 14px;
+        gap: 10px;
+    }
+
+    .skill-slot {
+        width: 60px;
+        height: 60px;
+    }
+
+    .skill-slot-icon {
+        font-size: 28px;
+    }
+
+    .mobile-skill-buttons {
+        bottom: 80px;
+        right: 120px;
+    }
+
+    .mobile-skill-button {
+        width: 55px;
+        height: 55px;
+    }
+
+    .mobile-skill-icon {
+        font-size: 24px;
+    }
+}
+
+@media (max-width: 480px) {
+    .skill-upgrade-options {
+        grid-template-columns: 1fr;
+    }
+
+    .skill-slots {
+        padding: 8px 10px;
+        gap: 8px;
+    }
+
+    .skill-slot {
+        width: 50px;
+        height: 50px;
+    }
+
+.skill-slot-icon {
+        font-size: 24px;
+    }
+}
+
+    .mobile-skill-buttons {
+        bottom: 70px;
+        right: 90px;
+    }
+
+    .mobile-skill-button {
+        width: 50px;
+        height: 50px;
+    }
+
+    .mobile-skill-icon {
+        font-size: 22px;
+    }
+}
