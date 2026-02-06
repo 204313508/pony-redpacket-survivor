@@ -28,6 +28,7 @@
 - 🔥 **爽快的战斗体验** - 范围攻击，一次击中多个怪物
 - 👹 **Boss挑战** - 每30秒出现强大的Boss，需要多次击败
 - 💥 **自爆系统** - 怪物和Boss自爆造成伤害，考验走位
+- 🌦️ **动态天气系统** - 每30秒切换天气，影响游戏策略
 - 📈 **RPG成长系统** - 收集红包升级，提升四大属性
 - 🎨 **精美的视觉效果** - 使用Emoji角色，炫酷的攻击特效
 - 🚀 **流畅的游戏体验** - 纯HTML/CSS/JS实现，无需安装
@@ -67,6 +68,30 @@
 - 普通怪物撞击玩家时会自爆，造成伤害
 - Boss可以多次自爆，需要多次击败
 - 利用走位躲避自爆伤害
+
+#### 天气系统
+游戏每30秒随机切换一种天气，每种天气都有独特的效果：
+
+**☀️ 晴天**
+- 攻击力提升（+5 或 +5%，取高值）
+- 温暖的阳光效果
+- 适合快速击败怪物
+
+**💨 风天**
+- 移动速度提升（+0.5 或 +2%，取高值）
+- 飘逸的风线效果
+- 适合快速移动和躲避
+
+**🌧️ 雨天**
+- 每隔5秒在地图随机位置生成一个回复包（💚）
+- 回复包存在10秒，小马踩到后回复生命值（10点或10%最大生命，取高值）
+- 暴雨效果，需要注意收集回复包
+
+**⛈️ 雷天**
+- 每隔3秒在地图随机100范围内出现雷击
+- 雷击有预警圈（范围圈+逐渐变大的实心内圈，预警持续1秒）
+- 被雷击击中的单位（玩家、怪物、Boss）受到伤害（30点或10%最大生命，取高值）
+- 闪电效果震撼，需要快速躲避
 
 #### 游戏目标
 - 尽可能长时间生存
@@ -184,6 +209,20 @@ pony-redpacket-survivor/
 - 生成数量随难度增加
 - Boss属性也随难度增强
 
+#### 天气系统参数
+| 参数 | 数值 |
+|------|------|
+| 天气切换间隔 | 30秒 |
+| 晴天攻击加成 | +5 或 +5%（取高值） |
+| 风天速度加成 | +0.5 或 +2%（取高值） |
+| 雨天回复包生成间隔 | 5秒 |
+| 雨天回复包存在时间 | 10秒 |
+| 雨天回复包回复血量 | 10点 或 10%最大生命（取高值） |
+| 雷天雷击间隔 | 3秒 |
+| 雷天雷击伤害 | 30点 或 10%最大生命（取高值） |
+| 雷天雷击预警时间 | 1秒 |
+| 雷天雷击半径 | 100px |
+
 ### 🎯 得分规则
 
 - 击败普通怪物：+100分
@@ -220,6 +259,7 @@ pony-redpacket-survivor/
 - 🔥 **Exciting Combat** - Area-of-effect attacks, hit multiple enemies at once
 - 👹 **Boss Challenges** - Powerful Bosses appear every 30 seconds, requiring multiple defeats
 - 💥 **Explosion System** - Monsters and Bosses explode on impact, dealing damage
+- 🌦️ **Dynamic Weather System** - Weather changes every 30 seconds, affecting gameplay strategy
 - 📈 **RPG Progression** - Collect red packets to level up and upgrade stats
 - 🎨 **Beautiful Visuals** - Emoji-based characters, cool attack effects
 - 🚀 **Smooth Experience** - Pure HTML/CSS/JS, no installation needed
@@ -259,6 +299,30 @@ Collect enough red packets (EXP) to level up, choose from four stats:
 - Normal monsters explode on impact, dealing damage
 - Bosses can explode multiple times and require multiple defeats
 - Dodge explosion damage with good positioning
+
+#### Weather System
+The game randomly switches between weather types every 30 seconds, each with unique effects:
+
+**☀️ Sunny**
+- Attack Power boosted (+5 or +5%, whichever is higher)
+- Warm sunlight effects
+- Ideal for quickly defeating enemies
+
+**💨 Windy**
+- Movement Speed boosted (+0.5 or +2%, whichever is higher)
+- Graceful wind line effects
+- Perfect for fast movement and dodging
+
+**🌧️ Rainy**
+- Health potions (💚) spawn at random locations every 5 seconds
+- Potions last for 10 seconds, heal HP (10 or 10% max HP, whichever is higher) when collected
+- Rainstorm effects, keep an eye out for health potions
+
+**⛈️ Stormy**
+- Lightning strikes random 100-radius areas every 3 seconds
+- Lightning has warning circles (outer range + expanding inner circle, 1 second warning)
+- Units hit by lightning (player, monsters, Bosses) take damage (30 or 10% max HP, whichever is higher)
+- Impressive lightning effects, requires quick dodging
 
 #### Goal
 - Survive as long as possible
@@ -375,6 +439,20 @@ pony-redpacket-survivor/
 - Monster stats scale with difficulty
 - Spawn count increases with difficulty
 - Boss stats also scale with difficulty
+
+#### Weather System Parameters
+| Parameter | Value |
+|-----------|-------|
+| Weather Change Interval | 30s |
+| Sunny Attack Bonus | +5 or +5% (whichever is higher) |
+| Windy Speed Bonus | +0.5 or +2% (whichever is higher) |
+| Rainy Potion Spawn Interval | 5s |
+| Rainy Potion Duration | 10s |
+| Rainy Potion Heal Amount | 10 or 10% max HP (whichever is higher) |
+| Stormy Lightning Interval | 3s |
+| Stormy Lightning Damage | 30 or 10% max HP (whichever is higher) |
+| Stormy Lightning Warning Duration | 1s |
+| Stormy Lightning Radius | 100px |
 
 ### 🎯 Scoring Rules
 

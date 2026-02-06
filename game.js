@@ -30,7 +30,7 @@ const CONFIG = {
     // 红包配置
     REDPACKET: {
         SIZE: 15,
-        COLLECT_RANGE: 225,
+        COLLECT_RANGE: 125,
         COLLECT_SPEED: 10,
         EXP_VALUE: 10
     },
@@ -63,6 +63,24 @@ const CONFIG = {
         DEFENSE_BONUS: 3,
         SPEED_BONUS: 0.5,
         EXP_MULTIPLIER: 1.3
+    },
+
+    // 天气系统配置
+    WEATHER: {
+        CHANGE_INTERVAL: 30000, // 天气切换间隔（30秒）
+        SUNNY_ATTACK_BONUS: 5, // 晴天攻击加成（点数）
+        SUNNY_ATTACK_BONUS_PERCENT: 0.05, // 晴天攻击加成（百分比）
+        WINDY_SPEED_BONUS: 0.5, // 风天速度加成（点数）
+        WINDY_SPEED_BONUS_PERCENT: 0.02, // 风天速度加成（百分比）
+        RAINY_HEALTHPOTION_INTERVAL: 5000, // 雨天生成回复包间隔（5秒）
+        RAINY_HEALTHPOTION_DURATION: 10000, // 回复包存在时间（10秒）
+        RAINY_HEALTHPOTION_AMOUNT: 10, // 回复包回复血量（点数）
+        RAINY_HEALTHPOTION_PERCENT: 0.1, // 回复包回复血量（百分比）
+        STORMY_LIGHTNING_INTERVAL: 3000, // 雷天雷击间隔（3秒）
+        STORMY_LIGHTNING_DAMAGE: 30, // 雷击伤害（点数）
+        STORMY_LIGHTNING_DAMAGE_PERCENT: 0.1, // 雷击伤害（百分比）
+        STORMY_LIGHTNING_WARNING_DURATION: 1000, // 雷击预警时间（1秒）
+        STORMY_LIGHTNING_RADIUS: 100 // 雷击半径
     }
 };
 
@@ -72,6 +90,14 @@ const GameState = {
     PLAYING: 'playing',
     PAUSED: 'paused',
     GAME_OVER: 'gameOver'
+};
+
+// ==================== 天气类型枚举 ====================
+const WeatherType = {
+    SUNNY: 'sunny', // 晴天：攻击+5
+    WINDY: 'windy', // 风天：移动速度+0.5
+    RAINY: 'rainy', // 雨天：每隔5秒生成回复包
+    STORMY: 'stormy' // 雷天：每隔3秒出现雷击
 };
 
 // ==================== 工具函数 ====================
@@ -287,6 +313,7 @@ class Player {
         this.hp = CONFIG.PLAYER.INITIAL_HP;
         this.maxHp = CONFIG.PLAYER.INITIAL_HP;
         this.attackPower = CONFIG.PLAYER.INITIAL_ATTACK;
+        this.baseAttackPower = CONFIG.PLAYER.INITIAL_ATTACK;
         this.defense = CONFIG.PLAYER.INITIAL_DEFENSE;
         this.isMobile = isMobile;
         
@@ -436,16 +463,18 @@ class Player {
                 break;
             case 'attack':
                 this.attackPower += CONFIG.UPGRADE.ATTACK_BONUS;
+                this.baseAttackPower += CONFIG.UPGRADE.ATTACK_BONUS;
                 break;
             case 'defense':
                 this.defense += CONFIG.UPGRADE.DEFENSE_BONUS;
                 break;
             case 'speed':
                 // 升级速度时应用移动端系数
-                const speedBonus = this.isMobile 
-                    ? CONFIG.UPGRADE.SPEED_BONUS * CONFIG.MOBILE.SPEED_MULTIPLIER 
+                const speedBonus = this.isMobile
+                    ? CONFIG.UPGRADE.SPEED_BONUS * CONFIG.MOBILE.SPEED_MULTIPLIER
                     : CONFIG.UPGRADE.SPEED_BONUS;
                 this.speed += speedBonus;
+                this.baseSpeed += speedBonus;
                 break;
         }
     }
@@ -1268,6 +1297,116 @@ class RedPacket {
     }
 }
 
+// ==================== 回复包类 ====================
+class HealthPotion {
+    constructor(x, y, playerMaxHp) {
+        this.x = x;
+        this.y = y;
+        this.size = 18;
+        this.playerMaxHp = playerMaxHp;
+        const baseAmount = CONFIG.WEATHER.RAINY_HEALTHPOTION_AMOUNT;
+        const percentAmount = playerMaxHp * CONFIG.WEATHER.RAINY_HEALTHPOTION_PERCENT;
+        this.healAmount = Math.max(baseAmount, percentAmount);
+        this.createTime = Date.now();
+        this.lifetime = CONFIG.WEATHER.RAINY_HEALTHPOTION_DURATION;
+        this.bobAngle = Math.random() * Math.PI * 2;
+    }
+
+    update(deltaTime, player) {
+        // 浮动效果
+        this.bobAngle += deltaTime * 0.006;
+
+        // 检查是否过期
+        const elapsed = Date.now() - this.createTime;
+        if (elapsed >= this.lifetime) {
+            return { collected: false, expired: true };
+        }
+
+        // 检查玩家是否收集
+        const distance = Utils.distance(this.x, this.y, player.x, player.y);
+        if (distance < player.size + this.size) {
+            return { collected: true, expired: false };
+        }
+
+        return { collected: false, expired: false };
+    }
+
+    draw(ctx, cameraX, cameraY) {
+        const screenX = this.x - cameraX;
+        const screenY = this.y - cameraY + Math.sin(this.bobAngle) * 4;
+
+        // 计算生命周期进度
+        const elapsed = Date.now() - this.createTime;
+        const progress = elapsed / this.lifetime;
+
+        ctx.save();
+        ctx.translate(screenX, screenY);
+
+        // 剩余时间淡出效果
+        const alpha = progress > 0.7 ? 1 - (progress - 0.7) / 0.3 : 1;
+
+        // 外围光环
+        ctx.strokeStyle = `rgba(46, 213, 115, ${alpha * 0.6})`;
+        ctx.lineWidth = 2;
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = 'rgba(46, 213, 115, 0.8)';
+        ctx.beginPath();
+        ctx.arc(0, 0, this.size * 0.9, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // 内部绿色光晕
+        const innerAlpha = 0.2 + Math.sin(Date.now() * 0.004) * 0.1;
+        ctx.fillStyle = `rgba(46, 213, 115, ${innerAlpha * alpha})`;
+        ctx.beginPath();
+        ctx.arc(0, 0, this.size * 0.7, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 重置所有效果，确保emoji完全清晰
+        ctx.shadowBlur = 0;
+        ctx.shadowColor = 'transparent';
+        ctx.globalAlpha = alpha;
+        ctx.globalCompositeOperation = 'source-over';
+
+        // 绘制回复包emoji（使用💚）
+        ctx.font = `${this.size * 2.2}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('💚', 0, 0);
+
+        ctx.restore();
+    }
+
+    // 只绘制emoji，确保在所有特效层之上显示
+    drawEmojiOnly(ctx, cameraX, cameraY) {
+        const screenX = this.x - cameraX;
+        const screenY = this.y - cameraY + Math.sin(this.bobAngle) * 4;
+
+        // 计算生命周期进度
+        const elapsed = Date.now() - this.createTime;
+        const progress = elapsed / this.lifetime;
+
+        ctx.save();
+        ctx.translate(screenX, screenY);
+
+        // 剩余时间淡出效果
+        const alpha = progress > 0.7 ? 1 - (progress - 0.7) / 0.3 : 1;
+
+        // 重置所有效果，确保emoji完全清晰
+        ctx.shadowBlur = 0;
+        ctx.shadowColor = 'transparent';
+        ctx.globalAlpha = alpha;
+        ctx.globalCompositeOperation = 'source-over';
+
+        // 绘制回复包emoji
+        ctx.font = `${this.size * 2.2}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('💚', 0, 0);
+
+        ctx.restore();
+    }
+}
+
 // ==================== 攻击效果类 ====================
 class AttackEffect {
     constructor(x, y, direction, attackRange) {
@@ -1507,6 +1646,463 @@ class PlayerHurtEffect {
     }
 }
 
+// ==================== 雷击特效类 ====================
+class LightningEffect {
+    constructor(x, y, playerMaxHp) {
+        this.x = x;
+        this.y = y;
+        this.warningDuration = CONFIG.WEATHER.STORMY_LIGHTNING_WARNING_DURATION;
+        this.warningElapsed = 0;
+        this.strikeDuration = 300;
+        this.strikeElapsed = 0;
+        this.radius = CONFIG.WEATHER.STORMY_LIGHTNING_RADIUS;
+        const baseDamage = CONFIG.WEATHER.STORMY_LIGHTNING_DAMAGE;
+        const percentDamage = playerMaxHp * CONFIG.WEATHER.STORMY_LIGHTNING_DAMAGE_PERCENT;
+        this.damage = Math.max(baseDamage, percentDamage);
+        this.hasStruck = false;
+        this.active = true;
+        this.struckUnits = []; // 记录已击中的单位
+    }
+
+    update(deltaTime) {
+        if (!this.hasStruck) {
+            // 预警阶段
+            this.warningElapsed += deltaTime;
+            if (this.warningElapsed >= this.warningDuration) {
+                this.hasStruck = true;
+            }
+        } else {
+            // 雷击后效果
+            this.strikeElapsed += deltaTime;
+            if (this.strikeElapsed >= this.strikeDuration) {
+                this.active = false;
+            }
+        }
+    }
+
+    // 检测单位是否被雷击
+    checkHit(unit) {
+        if (!this.hasStruck) return false;
+        if (this.struckUnits.includes(unit)) return false;
+
+        const distance = Utils.distance(this.x, this.y, unit.x, unit.y);
+        if (distance <= this.radius) {
+            this.struckUnits.push(unit);
+            return true;
+        }
+        return false;
+    }
+
+    draw(ctx, cameraX, cameraY) {
+        if (!this.active) return;
+
+        const screenX = this.x - cameraX;
+        const screenY = this.y - cameraY;
+
+        ctx.save();
+
+        if (!this.hasStruck) {
+            // 预警阶段
+            const warningProgress = this.warningElapsed / this.warningDuration;
+            const innerRadius = this.radius * warningProgress;
+
+            // 外围范围圈
+            ctx.strokeStyle = `rgba(255, 165, 0, ${0.8 + Math.sin(Date.now() * 0.02) * 0.2})`;
+            ctx.lineWidth = 3;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = 'rgba(255, 165, 0, 0.8)';
+            ctx.beginPath();
+            ctx.arc(screenX, screenY, this.radius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // 逐渐变大的实心内圈
+            ctx.fillStyle = `rgba(255, 140, 0, ${0.3 * warningProgress})`;
+            ctx.beginPath();
+            ctx.arc(screenX, screenY, innerRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 内圈边缘
+            ctx.strokeStyle = `rgba(255, 255, 0, ${0.6 + Math.sin(Date.now() * 0.03) * 0.2})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(screenX, screenY, innerRadius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // 中心警告符号
+            ctx.fillStyle = `rgba(255, 0, 0, ${0.8 + Math.sin(Date.now() * 0.01) * 0.2})`;
+            ctx.font = '24px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('⚡', screenX, screenY);
+        } else {
+            // 雷击效果
+            const strikeProgress = this.strikeElapsed / this.strikeDuration;
+            const alpha = 1 - strikeProgress;
+
+            // 闪电光芒
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.fillRect(screenX - this.radius, screenY - this.radius, this.radius * 2, this.radius * 2);
+
+            // 主闪电柱
+            const gradient = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, this.radius);
+            gradient.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
+            gradient.addColorStop(0.3, `rgba(255, 200, 0, ${alpha * 0.8})`);
+            gradient.addColorStop(0.6, `rgba(255, 140, 0, ${alpha * 0.5})`);
+            gradient.addColorStop(1, `rgba(100, 100, 255, 0)`);
+
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(screenX, screenY, this.radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 闪电分支效果
+            ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.9})`;
+            ctx.lineWidth = 3;
+            ctx.shadowBlur = 30;
+            ctx.shadowColor = 'rgba(255, 200, 0, 0.9)';
+
+            const branchCount = 6;
+            for (let i = 0; i < branchCount; i++) {
+                const angle = (Math.PI * 2 / branchCount) * i + Math.random() * 0.3;
+                const length = this.radius * (0.5 + Math.random() * 0.5);
+
+                ctx.beginPath();
+                ctx.moveTo(screenX, screenY);
+                ctx.lineTo(
+                    screenX + Math.cos(angle) * length,
+                    screenY + Math.sin(angle) * length
+                );
+                ctx.stroke();
+            }
+
+            // 冲击波
+            const waveRadius = this.radius * (1 + strikeProgress * 2);
+            ctx.strokeStyle = `rgba(100, 100, 255, ${alpha * 0.6})`;
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(screenX, screenY, waveRadius, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        ctx.restore();
+    }
+}
+
+// ==================== 天气系统类 ====================
+class WeatherSystem {
+    constructor() {
+        this.currentWeather = WeatherType.SUNNY;
+        this.lastWeatherChangeTime = 0;
+        this.lastRainyPotionTime = 0;
+        this.lastStormyLightningTime = 0;
+    }
+
+    update(currentTime, player, mapWidth, mapHeight) {
+        // 检查是否需要切换天气
+        if (currentTime - this.lastWeatherChangeTime >= CONFIG.WEATHER.CHANGE_INTERVAL) {
+            this.changeWeather();
+            this.lastWeatherChangeTime = currentTime;
+        }
+
+        // 根据当前天气执行相应的逻辑
+        let healthPotions = [];
+        let lightningEffects = [];
+
+        if (this.currentWeather === WeatherType.RAINY) {
+            // 雨天：每隔5秒生成回复包
+            if (currentTime - this.lastRainyPotionTime >= CONFIG.WEATHER.RAINY_HEALTHPOTION_INTERVAL) {
+                healthPotions.push(this.spawnHealthPotion(mapWidth, mapHeight, player.maxHp));
+                this.lastRainyPotionTime = currentTime;
+            }
+        } else if (this.currentWeather === WeatherType.STORMY) {
+            // 雷天：每隔3秒生成雷击
+            if (currentTime - this.lastStormyLightningTime >= CONFIG.WEATHER.STORMY_LIGHTNING_INTERVAL) {
+                lightningEffects.push(this.spawnLightning(mapWidth, mapHeight, player.maxHp));
+                this.lastStormyLightningTime = currentTime;
+            }
+        }
+
+        return { healthPotions, lightningEffects };
+    }
+
+    changeWeather() {
+        const weathers = Object.values(WeatherType);
+        // 随机切换到不同的天气
+        let newWeather;
+        do {
+            newWeather = weathers[Math.floor(Math.random() * weathers.length)];
+        } while (newWeather === this.currentWeather);
+
+        this.currentWeather = newWeather;
+        console.log('天气切换为:', this.currentWeather);
+    }
+
+    getSpeedBonus() {
+        if (this.currentWeather === WeatherType.WINDY) {
+            return CONFIG.WEATHER.WINDY_SPEED_BONUS;
+        }
+        return 0;
+    }
+
+    getSpeedBonusPercent() {
+        if (this.currentWeather === WeatherType.WINDY) {
+            return CONFIG.WEATHER.WINDY_SPEED_BONUS_PERCENT;
+        }
+        return 0;
+    }
+
+    getAttackBonus() {
+        if (this.currentWeather === WeatherType.SUNNY) {
+            return CONFIG.WEATHER.SUNNY_ATTACK_BONUS;
+        }
+        return 0;
+    }
+
+    getAttackBonusPercent() {
+        if (this.currentWeather === WeatherType.SUNNY) {
+            return CONFIG.WEATHER.SUNNY_ATTACK_BONUS_PERCENT;
+        }
+        return 0;
+    }
+
+    getHealthPotionAmount(maxHp) {
+        if (this.currentWeather === WeatherType.RAINY) {
+            const baseAmount = CONFIG.WEATHER.RAINY_HEALTHPOTION_AMOUNT;
+            const percentAmount = maxHp * CONFIG.WEATHER.RAINY_HEALTHPOTION_PERCENT;
+            return Math.max(baseAmount, percentAmount);
+        }
+        return 0;
+    }
+
+    getLightningDamage(maxHp) {
+        if (this.currentWeather === WeatherType.STORMY) {
+            const baseDamage = CONFIG.WEATHER.STORMY_LIGHTNING_DAMAGE;
+            const percentDamage = maxHp * CONFIG.WEATHER.STORMY_LIGHTNING_DAMAGE_PERCENT;
+            return Math.max(baseDamage, percentDamage);
+        }
+        return 0;
+    }
+
+    spawnHealthPotion(mapWidth, mapHeight, playerMaxHp) {
+        // 在地图内随机位置生成回复包
+        const x = Utils.randomRange(50, mapWidth - 50);
+        const y = Utils.randomRange(50, mapHeight - 50);
+        return new HealthPotion(x, y, playerMaxHp);
+    }
+
+    spawnLightning(mapWidth, mapHeight, playerMaxHp) {
+        // 在地图内随机位置生成雷击
+        const x = Utils.randomRange(100, mapWidth - 100);
+        const y = Utils.randomRange(100, mapHeight - 100);
+        return new LightningEffect(x, y, playerMaxHp);
+    }
+
+    drawBackgroundEffect(ctx, canvasWidth, canvasHeight) {
+        ctx.save();
+
+        switch (this.currentWeather) {
+            case WeatherType.SUNNY:
+                this.drawSunnyEffect(ctx, canvasWidth, canvasHeight);
+                break;
+            case WeatherType.WINDY:
+                this.drawWindyEffect(ctx, canvasWidth, canvasHeight);
+                break;
+            case WeatherType.RAINY:
+                this.drawRainyEffect(ctx, canvasWidth, canvasHeight);
+                break;
+            case WeatherType.STORMY:
+                this.drawStormyEffect(ctx, canvasWidth, canvasHeight);
+                break;
+        }
+
+        ctx.restore();
+    }
+
+    drawSunnyEffect(ctx, width, height) {
+        // 晴天：温暖的阳光效果
+        const time = Date.now();
+
+        // 阳光光晕
+        const gradient = ctx.createRadialGradient(
+            width * 0.8, height * 0.1, 0,
+            width * 0.8, height * 0.1, width * 0.5
+        );
+        gradient.addColorStop(0, 'rgba(255, 255, 200, 0.1)');
+        gradient.addColorStop(0.5, 'rgba(255, 200, 100, 0.05)');
+        gradient.addColorStop(1, 'rgba(255, 150, 50, 0)');
+
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+
+        // 漂浮的阳光粒子
+        const particleCount = 10;
+        for (let i = 0; i < particleCount; i++) {
+            const x = (Math.sin(time * 0.0003 + i * 0.8) * 0.5 + 0.5) * width;
+            const y = (Math.cos(time * 0.0002 + i * 0.6) * 0.5 + 0.5) * height;
+            const size = 3 + Math.sin(time * 0.001 + i) * 2;
+
+            ctx.fillStyle = `rgba(255, 255, 200, ${0.3 + Math.sin(time * 0.002 + i) * 0.2})`;
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    drawWindyEffect(ctx, width, height) {
+        // 风天：飘逸的风效果
+        const time = Date.now();
+
+        // 风的线条
+        ctx.strokeStyle = 'rgba(200, 230, 255, 0.2)';
+        ctx.lineWidth = 2;
+
+        const windLineCount = 30;
+        for (let i = 0; i < windLineCount; i++) {
+            const x = ((i * 67 + time * 0.8) % (width + 200)) - 100;
+            const y = (i * 43 + Math.sin(i) * height) % height;
+            const length = 50 + Math.sin(time * 0.003 + i * 0.5) * 30;
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + length, y + Math.sin(time * 0.002 + i) * 10);
+            ctx.stroke();
+        }
+
+        // 风的粒子
+        const particleCount = 20;
+        for (let i = 0; i < particleCount; i++) {
+            const x = ((i * 53 + time * 1.2) % (width + 100)) - 50;
+            const y = (i * 37 + Math.sin(i) * height) % height;
+            const size = 2 + Math.sin(time * 0.001 + i) * 1;
+
+            ctx.fillStyle = `rgba(220, 240, 255, ${0.2 + Math.sin(time * 0.002 + i) * 0.15})`;
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // 风天整体色调
+        ctx.fillStyle = 'rgba(200, 220, 255, 0.03)';
+        ctx.fillRect(0, 0, width, height);
+    }
+
+    drawRainyEffect(ctx, width, height) {
+        // 雨天：雨滴效果
+        const time = Date.now();
+
+        // 雨滴
+        ctx.strokeStyle = 'rgba(100, 150, 255, 0.3)';
+        ctx.lineWidth = 1;
+
+        const rainCount = 100;
+        for (let i = 0; i < rainCount; i++) {
+            const x = ((i * 37 + time * 0.2) % width);
+            const y = ((i * 53 + time * 0.8) % height);
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - 2, y + 15);
+            ctx.stroke();
+        }
+
+        // 雨天整体色调
+        ctx.fillStyle = 'rgba(100, 150, 255, 0.05)';
+        ctx.fillRect(0, 0, width, height);
+    }
+
+    drawStormyEffect(ctx, width, height) {
+        // 雷天：闪电和暴雨效果
+        const time = Date.now();
+
+        // 偶尔的闪电闪光
+        const flashIntensity = Math.sin(time * 0.01) > 0.95 ? 0.2 : 0;
+        if (flashIntensity > 0) {
+            ctx.fillStyle = `rgba(200, 200, 255, ${flashIntensity})`;
+            ctx.fillRect(0, 0, width, height);
+        }
+
+        // 暴雨
+        ctx.strokeStyle = 'rgba(150, 180, 255, 0.4)';
+        ctx.lineWidth = 2;
+
+        const rainCount = 150;
+        for (let i = 0; i < rainCount; i++) {
+            const x = ((i * 37 + time * 0.4) % width);
+            const y = ((i * 53 + time * 1.2) % height);
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - 3, y + 20);
+            ctx.stroke();
+        }
+
+        // 雷天整体色调
+        ctx.fillStyle = 'rgba(80, 80, 120, 0.1)';
+        ctx.fillRect(0, 0, width, height);
+    }
+
+    getWeatherIcon() {
+        switch (this.currentWeather) {
+            case WeatherType.SUNNY:
+                return '☀️';
+            case WeatherType.WINDY:
+                return '💨';
+            case WeatherType.RAINY:
+                return '🌧️';
+            case WeatherType.STORMY:
+                return '⛈️';
+            default:
+                return '☀️';
+        }
+    }
+
+    getWeatherName() {
+        switch (this.currentWeather) {
+            case WeatherType.SUNNY:
+                return '晴天';
+            case WeatherType.WINDY:
+                return '风天';
+            case WeatherType.RAINY:
+                return '雨天';
+            case WeatherType.STORMY:
+                return '雷天';
+            default:
+                return '晴天';
+        }
+    }
+
+    getWeatherShortEffect() {
+        switch (this.currentWeather) {
+            case WeatherType.SUNNY:
+                return '攻击提升';
+            case WeatherType.WINDY:
+                return '速度提升';
+            case WeatherType.RAINY:
+                return '生成回复包';
+            case WeatherType.STORMY:
+                return '随机落雷';
+            default:
+                return '';
+        }
+    }
+
+    getWeatherDescription() {
+        switch (this.currentWeather) {
+            case WeatherType.SUNNY:
+                return '攻击力 +5';
+            case WeatherType.WINDY:
+                return '移动速度 +0.5';
+            case WeatherType.RAINY:
+                return '每隔5秒生成回复包';
+            case WeatherType.STORMY:
+                return '每隔3秒出现雷击';
+            default:
+                return '';
+        }
+    }
+}
+
 // ==================== 游戏主类 ====================
 class Game {
     constructor() {
@@ -1527,6 +2123,11 @@ class Game {
         this.attackEffects = [];
         this.monsterExplosionEffects = [];
         this.playerHurtEffects = [];
+        this.healthPotions = [];
+        this.lightningEffects = [];
+
+        // 天气系统
+        this.weatherSystem = new WeatherSystem();
 
         this.score = 0;
         this.totalRedPackets = 0;
@@ -1672,6 +2273,11 @@ class Game {
         this.attackEffects = [];
         this.monsterExplosionEffects = [];
         this.playerHurtEffects = [];
+        this.healthPotions = [];
+        this.lightningEffects = [];
+
+        // 重置天气系统
+        this.weatherSystem = new WeatherSystem();
 
         this.score = 0;
         this.totalRedPackets = 0;
@@ -1837,7 +2443,36 @@ class Game {
         
         // 更新难度
         this.updateDifficulty();
-        
+
+        // 更新天气系统
+        const weatherResult = this.weatherSystem.update(currentTime, this.player, CONFIG.MAP_WIDTH, CONFIG.MAP_HEIGHT);
+        if (weatherResult.healthPotions.length > 0) {
+            this.healthPotions.push(...weatherResult.healthPotions);
+        }
+        if (weatherResult.lightningEffects.length > 0) {
+            this.lightningEffects.push(...weatherResult.lightningEffects);
+        }
+
+        // 应用风天速度加成
+        const speedBonus = this.weatherSystem.getSpeedBonus();
+        const speedBonusPercent = this.weatherSystem.getSpeedBonusPercent();
+        if (speedBonus > 0) {
+            const percentSpeed = this.player.baseSpeed * speedBonusPercent;
+            this.player.speed = this.player.baseSpeed + Math.max(speedBonus, percentSpeed);
+        } else {
+            this.player.speed = this.player.baseSpeed;
+        }
+
+        // 应用晴天攻击加成
+        const attackBonus = this.weatherSystem.getAttackBonus();
+        const attackBonusPercent = this.weatherSystem.getAttackBonusPercent();
+        if (attackBonus > 0) {
+            const percentAttack = this.player.baseAttackPower * attackBonusPercent;
+            this.player.attackPower = this.player.baseAttackPower + Math.max(attackBonus, percentAttack);
+        } else {
+            this.player.attackPower = this.player.baseAttackPower;
+        }
+
         // 生成怪物
         this.spawnMonster(currentTime);
 
@@ -1959,7 +2594,78 @@ class Game {
                 }
             }
         }
-        
+
+        // 更新回复包
+        for (let i = this.healthPotions.length - 1; i >= 0; i--) {
+            const potion = this.healthPotions[i];
+            const result = potion.update(deltaTime, this.player);
+
+            if (result.expired) {
+                this.healthPotions.splice(i, 1);
+            } else if (result.collected) {
+                this.player.hp = Math.min(this.player.maxHp, this.player.hp + potion.healAmount);
+                this.healthPotions.splice(i, 1);
+                this.soundEffect.playCollect();
+            }
+        }
+
+        // 更新雷击效果
+        for (let i = this.lightningEffects.length - 1; i >= 0; i--) {
+            const lightning = this.lightningEffects[i];
+            lightning.update(deltaTime);
+
+            // 检查雷击是否击中玩家
+            if (lightning.hasStruck && lightning.checkHit(this.player)) {
+                this.player.takeDamage(lightning.damage);
+                this.playerHurtEffects.push(new PlayerHurtEffect(this.player.x, this.player.y));
+
+                if (this.player.hp <= 0) {
+                    this.gameOver();
+                    return;
+                }
+            }
+
+            // 检查雷击是否击中怪物
+            for (let j = this.monsters.length - 1; j >= 0; j--) {
+                const monster = this.monsters[j];
+                if (lightning.checkHit(monster)) {
+                    const killed = monster.takeDamage(lightning.damage);
+                    if (killed) {
+                        this.monsters.splice(j, 1);
+                        this.redPackets.push(new RedPacket(monster.x, monster.y, this.isTouchDevice));
+                        this.totalKills++;
+                        this.score += 100;
+                        this.soundEffect.playMonsterDeath();
+                    }
+                }
+            }
+
+            // 检查雷击是否击中Boss
+            for (let j = this.bosses.length - 1; j >= 0; j--) {
+                const boss = this.bosses[j];
+                if (lightning.checkHit(boss)) {
+                    const killed = boss.takeDamage(lightning.damage);
+                    if (killed) {
+                        for (let k = 0; k < boss.redpacketDropCount; k++) {
+                            const angle = Math.random() * Math.PI * 2;
+                            const dropDistance = Utils.randomRange(30, 80);
+                            const dropX = boss.x + Math.cos(angle) * dropDistance;
+                            const dropY = boss.y + Math.sin(angle) * dropDistance;
+                            this.redPackets.push(new RedPacket(dropX, dropY, this.isTouchDevice));
+                        }
+                        this.bosses.splice(j, 1);
+                        this.totalKills++;
+                        this.score += 500;
+                        this.soundEffect.playMonsterDeath();
+                    }
+                }
+            }
+
+            if (!lightning.active) {
+                this.lightningEffects.splice(i, 1);
+            }
+        }
+
         // 更新攻击效果
         for (let i = this.attackEffects.length - 1; i >= 0; i--) {
             const effect = this.attackEffects[i];
@@ -2208,10 +2914,19 @@ class Game {
         
         // 绘制地图背景
         this.drawMap(ctx, cameraX, cameraY);
-        
+
+        // 绘制天气背景效果
+        this.weatherSystem.drawBackgroundEffect(ctx, this.canvas.width, this.canvas.height);
+
         // 绘制红包
         this.redPackets.forEach(redPacket => redPacket.draw(ctx, cameraX, cameraY));
-        
+
+        // 绘制回复包
+        this.healthPotions.forEach(potion => potion.draw(ctx, cameraX, cameraY));
+
+        // 绘制雷击预警和特效
+        this.lightningEffects.forEach(lightning => lightning.draw(ctx, cameraX, cameraY));
+
         // 绘制怪物
         this.monsters.forEach(monster => monster.draw(ctx, cameraX, cameraY));
 
@@ -2241,6 +2956,9 @@ class Game {
 
         // 重新绘制所有红包的emoji（确保在特效层之上）
         this.redPackets.forEach(redPacket => redPacket.drawEmojiOnly(ctx, cameraX, cameraY));
+
+        // 重新绘制所有回复包的emoji（确保在特效层之上）
+        this.healthPotions.forEach(potion => potion.drawEmojiOnly(ctx, cameraX, cameraY));
 
         // 恢复上下文状态
         ctx.restore();
@@ -2413,6 +3131,12 @@ class Game {
         document.getElementById('scoreDisplay').textContent = this.score;
         document.getElementById('killCount').textContent = this.totalKills;
         document.getElementById('redpacketCount').textContent = this.totalRedPackets;
+
+        // 更新天气显示
+        document.getElementById('weatherIcon').textContent = this.weatherSystem.getWeatherIcon();
+        document.getElementById('weatherName').textContent = this.weatherSystem.getWeatherName();
+        document.getElementById('weatherEffect').textContent = this.weatherSystem.getWeatherShortEffect();
+        document.getElementById('weatherName').title = this.weatherSystem.getWeatherDescription();
     }
 }
 

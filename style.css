@@ -240,6 +240,23 @@ body::before {
     letter-spacing: 1px;
 }
 
+/* 天气显示 */
+.weather-display {
+    border-color: rgba(102, 126, 234, 0.5);
+    padding: 12px 14px;
+}
+
+.weather-name {
+    min-width: 60px;
+}
+
+.weather-effect {
+    font-size: 14px;
+    min-width: auto;
+    font-weight: 600;
+    opacity: 0.8;
+}
+
 /* ==================== 屏幕界面通用样式 ==================== */
 .screen {
     position: absolute;
@@ -751,6 +768,10 @@ body::before {
     .stat-value {
         font-size: 14px;
         min-width: 40px;
+    }
+
+    .weather-effect {
+        font-size: 12px;
     }
     
     .upgrade-options {
