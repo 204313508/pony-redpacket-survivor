@@ -1,32 +1,75 @@
+/* ==================== 全局样式 ==================== */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --gold-gradient: linear-gradient(135deg, #f5af19 0%, #f12711 100%);
+    --neon-gold: linear-gradient(135deg, #FFE259 0%, #FFA751 100%);
+    --glass-bg: rgba(255, 255, 255, 0.1);
+    --glass-border: rgba(255, 255, 255, 0.2);
+    --dark-overlay: rgba(0, 0, 0, 0.7);
+    --text-primary: #ffffff;
+    --text-secondary: #a0a0a0;
+    --accent-gold: #ffd700;
+    --accent-red: #ff4757;
+    --accent-blue: #2ed573;
+    --shadow-neon: 0 0 20px rgba(102, 126, 234, 0.5);
+    --shadow-gold: 0 0 30px rgba(255, 215, 0, 0.4);
+}
+
 body {
-    font-family: 'Microsoft YaHei', 'SimHei', sans-serif;
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    font-family: 'Segoe UI', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: linear-gradient(-45deg, #0f0c29, #302b63, #24243e, #1a1a2e);
+    background-size: 400% 400%;
+    animation: gradientBG 15s ease infinite;
     overflow: hidden;
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
+    position: relative;
+}
+
+/* 动态背景效果 */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 20% 50%, rgba(102, 126, 234, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(245, 87, 108, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(240, 147, 251, 0.05) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+@keyframes gradientBG {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
 #game-container {
     position: relative;
     width: 100vw;
     height: 100vh;
+    z-index: 1;
 }
 
 #gameCanvas {
     display: block;
-    background: #0a0a0a;
+    background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a0f 100%);
     cursor: crosshair;
 }
 
-/* HUD */
+/* ==================== HUD 界面 ==================== */
 .hud {
     position: absolute;
     top: 20px;
@@ -36,101 +79,168 @@ body {
     justify-content: space-between;
     align-items: flex-start;
     pointer-events: none;
-    z-index: 10;
+    z-index: 100;
+    padding: 15px;
 }
 
 .hud.hidden {
     display: none;
 }
-    top: 20px;
-    left: 20px;
-    right: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    pointer-events: none;
-    z-index: 10;
-}
 
 .hud-section {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
 }
 
 .hud-section.stats {
     flex-direction: row;
-    gap: 20px;
+    gap: 15px;
 }
 
+/* 血条和经验条容器 */
 .health-bar-container,
 .exp-bar-container {
     display: flex;
     align-items: center;
-    gap: 10px;
-    min-width: 200px;
+    gap: 12px;
+    min-width: 220px;
+    padding: 10px 15px;
+    background: rgba(15, 12, 41, 0.85);
+    border: 1px solid var(--glass-border);
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.health-bar-container:hover,
+.exp-bar-container:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
 }
 
 .bar-label {
-    color: #fff;
-    font-weight: bold;
-    font-size: 14px;
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 13px;
     min-width: 40px;
+    letter-spacing: 1px;
+    text-shadow: 0 0 10px currentColor;
 }
 
 .health-bar,
 .exp-bar {
     flex: 1;
-    height: 20px;
-    background: rgba(0, 0, 0, 0.7);
-    border-radius: 10px;
+    height: 14px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
     overflow: hidden;
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
 }
 
 .health-fill {
     height: 100%;
-    background: linear-gradient(90deg, #ff4444 0%, #ff6b6b 100%);
-    transition: width 0.3s ease;
-    box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+    background: linear-gradient(90deg, #ff4757 0%, #ff6b81 50%, #ff4757 100%);
+    background-size: 200% 100%;
+    animation: healthGlow 2s ease infinite;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 15px rgba(255, 71, 87, 0.6);
+    position: relative;
+}
+
+.health-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%);
+    animation: shimmer 2s ease infinite;
 }
 
 .exp-fill {
     height: 100%;
-    background: linear-gradient(90deg, #4444ff 0%, #6b6bff 100%);
-    transition: width 0.3s ease;
-    box-shadow: 0 0 10px rgba(68, 68, 255, 0.5);
+    background: linear-gradient(90deg, #2ed573 0%, #7bed9f 50%, #2ed573 100%);
+    background-size: 200% 100%;
+    animation: expGlow 2s ease infinite;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 15px rgba(46, 213, 115, 0.6);
+    position: relative;
+}
+
+.exp-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%);
+    animation: shimmer 2s ease infinite 1s;
+}
+
+@keyframes healthGlow {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+@keyframes expGlow {
+    0%, 100% { background-position: 100% 50%; }
+    50% { background-position: 0% 50%; }
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
 }
 
 .bar-text {
-    color: #fff;
+    color: var(--text-primary);
     font-size: 12px;
-    min-width: 70px;
+    min-width: 80px;
     text-align: right;
+    font-weight: 600;
+    letter-spacing: 0.5px;
 }
 
+/* 统计数据项 */
 .stat-item {
     display: flex;
     align-items: center;
-    gap: 5px;
-    background: rgba(0, 0, 0, 0.7);
-    padding: 8px 15px;
-    border-radius: 20px;
-    border: 2px solid rgba(255, 255, 255, 0.2);
+    gap: 8px;
+    background: rgba(15, 12, 41, 0.85);
+    padding: 12px 18px;
+    border-radius: 25px;
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.stat-item:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+    border-color: rgba(255, 215, 0, 0.4);
 }
 
 .stat-icon {
-    font-size: 20px;
+    font-size: 22px;
+    filter: drop-shadow(0 0 8px currentColor);
 }
 
 .stat-value {
-    color: #fff;
-    font-weight: bold;
-    font-size: 16px;
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 18px;
     min-width: 50px;
+    text-shadow: 0 0 10px currentColor;
+    letter-spacing: 1px;
 }
 
-/* Screens */
+/* ==================== 屏幕界面通用样式 ==================== */
 .screen {
     position: absolute;
     top: 0;
@@ -140,26 +250,20 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    background: rgba(0, 0, 0, 0.85);
-    z-index: 100;
-    backdrop-filter: blur(5px);
+    background: radial-gradient(ellipse at center, rgba(15, 12, 41, 0.95) 0%, rgba(10, 10, 15, 0.98) 100%);
+    z-index: 200;
+    backdrop-filter: blur(20px);
+    animation: fadeInScreen 0.5s ease;
 }
 
 .screen.hidden {
     display: none;
 }
 
-.screen-content {
-    text-align: center;
-    max-width: 600px;
-    padding: 40px;
-    animation: fadeIn 0.5s ease;
-}
-
-@keyframes fadeIn {
+@keyframes fadeInScreen {
     from {
         opacity: 0;
-        transform: scale(0.9);
+        transform: scale(0.95);
     }
     to {
         opacity: 1;
@@ -167,156 +271,315 @@ body {
     }
 }
 
+.screen-content {
+    text-align: center;
+    max-width: 700px;
+    padding: 50px 60px;
+    background: rgba(20, 18, 45, 0.9);
+    border-radius: 30px;
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 80px rgba(102, 126, 234, 0.1);
+    animation: contentFloat 0.6s ease;
+}
+
+@keyframes contentFloat {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ==================== 开始界面 ==================== */
 .game-title {
-    font-size: 48px;
-    color: #ffd700;
-    margin-bottom: 20px;
-    text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    font-size: 56px;
+    font-weight: 900;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    filter: drop-shadow(0 4px 20px rgba(255, 215, 0, 0.3));
+    letter-spacing: 2px;
+    animation: titlePulse 2s ease-in-out infinite;
+}
+
+.title-emoji {
+    font-size: 64px;
+    line-height: 1;
+    filter: none;
+}
+
+.title-text {
+    background: linear-gradient(135deg, #FFE259 0%, #FFA751 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: none;
+}
+
+@keyframes titlePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
 }
 
 .game-subtitle {
-    font-size: 20px;
-    color: #aaa;
-    margin-bottom: 30px;
+    font-size: 22px;
+    color: var(--text-secondary);
+    margin-bottom: 35px;
+    font-weight: 500;
+    letter-spacing: 1px;
 }
 
 .controls-info {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 20px;
-    border-radius: 10px;
-    margin-bottom: 30px;
+    background: rgba(102, 126, 234, 0.1);
+    border: 1px solid rgba(102, 126, 234, 0.3);
+    padding: 25px 30px;
+    border-radius: 20px;
+    margin-bottom: 35px;
     text-align: left;
+    backdrop-filter: blur(10px);
 }
 
 .controls-info h3 {
-    color: #ffd700;
-    margin-bottom: 15px;
-    font-size: 18px;
+    color: var(--accent-gold);
+    margin-bottom: 18px;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
 }
 
 .controls-info p {
-    color: #fff;
-    margin: 8px 0;
-    font-size: 14px;
+    color: var(--text-primary);
+    margin: 12px 0;
+    font-size: 15px;
+    line-height: 1.6;
+    transition: color 0.2s ease;
+}
+
+.controls-info p:hover {
+    color: var(--accent-gold);
+}
+
+.controls-info strong {
+    color: var(--accent-gold);
+    font-weight: 700;
+}
+
+.controls-info .emoji {
+    font-size: 18px;
+    margin-right: 5px;
+    filter: none;
 }
 
 .game-button {
-    background: linear-gradient(135deg, #ff6b6b 0%, #ff4444 100%);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: #fff;
     border: none;
-    padding: 15px 50px;
-    font-size: 20px;
-    font-weight: bold;
-    border-radius: 30px;
+    padding: 18px 60px;
+    font-size: 22px;
+    font-weight: 800;
+    border-radius: 50px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 5px 20px rgba(255, 68, 68, 0.4);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 8px 30px rgba(102, 126, 234, 0.4), 0 0 0 rgba(102, 126, 234, 0);
+    position: relative;
+    overflow: hidden;
+    letter-spacing: 2px;
+}
+
+.game-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s ease;
+}
+
+.game-button:hover::before {
+    left: 100%;
 }
 
 .game-button:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(255, 68, 68, 0.6);
+    transform: translateY(-5px) scale(1.05);
+    box-shadow: 0 12px 40px rgba(102, 126, 234, 0.6), 0 0 30px rgba(102, 126, 234, 0.3);
 }
 
 .game-button:active {
-    transform: translateY(0);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
 }
 
-/* Upgrade Screen */
+/* ==================== 升级界面 ==================== */
 .screen-title {
-    font-size: 36px;
-    color: #ffd700;
+    font-size: 42px;
+    font-weight: 900;
     margin-bottom: 20px;
-    text-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 2px;
+    filter: drop-shadow(0 4px 15px rgba(240, 147, 251, 0.3));
 }
 
 .level-info {
-    color: #fff;
-    font-size: 18px;
-    margin-bottom: 30px;
+    color: var(--text-primary);
+    font-size: 20px;
+    margin-bottom: 35px;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+.level-info span {
+    color: var(--accent-gold);
+    font-weight: 800;
+    font-size: 24px;
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
 }
 
 .upgrade-options {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
+    gap: 18px;
 }
 
 .upgrade-option {
-    background: linear-gradient(135deg, rgba(100, 100, 255, 0.3) 0%, rgba(68, 68, 255, 0.3) 100%);
-    border: 2px solid rgba(100, 100, 255, 0.5);
-    border-radius: 15px;
-    padding: 20px;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
+    border: 2px solid rgba(102, 126, 234, 0.4);
+    border-radius: 20px;
+    padding: 25px 20px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
+}
+
+.upgrade-option::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.3) 0%, rgba(118, 75, 162, 0.3) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
 .upgrade-option:hover {
-    background: linear-gradient(135deg, rgba(100, 100, 255, 0.5) 0%, rgba(68, 68, 255, 0.5) 100%);
-    border-color: rgba(150, 150, 255, 0.8);
-    transform: scale(1.05);
-    box-shadow: 0 5px 20px rgba(100, 100, 255, 0.4);
+    border-color: rgba(102, 126, 234, 0.8);
+    transform: translateY(-5px) scale(1.05);
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+}
+
+.upgrade-option:hover::before {
+    opacity: 1;
+}
+
+.upgrade-option:active {
+    transform: translateY(-2px) scale(1.02);
 }
 
 .upgrade-icon {
-    font-size: 40px;
+    font-size: 48px;
+    position: relative;
+    z-index: 1;
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.3));
 }
 
 .upgrade-name {
-    color: #fff;
+    color: var(--text-primary);
     font-size: 18px;
-    font-weight: bold;
+    font-weight: 700;
+    position: relative;
+    z-index: 1;
+    letter-spacing: 1px;
 }
 
 .upgrade-bonus {
-    color: #ffd700;
+    color: var(--accent-gold);
     font-size: 14px;
+    font-weight: 600;
+    position: relative;
+    z-index: 1;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
 }
 
-/* Game Over Screen */
+/* ==================== 游戏结束界面 ==================== */
+.game-over-screen .screen-title {
+    background: linear-gradient(135deg, #ff4757 0%, #ff6b81 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 4px 15px rgba(255, 71, 87, 0.3));
+}
+
 .stats-summary {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(102, 126, 234, 0.1);
+    border: 1px solid rgba(102, 126, 234, 0.3);
     padding: 30px;
-    border-radius: 15px;
-    margin-bottom: 30px;
+    border-radius: 20px;
+    margin-bottom: 35px;
+    backdrop-filter: blur(10px);
 }
 
 .stat-summary-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px 20px;
-    margin: 10px 0;
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 10px;
+    padding: 18px 25px;
+    margin: 12px 0;
+    background: rgba(20, 18, 45, 0.8);
+    border-radius: 15px;
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    transition: all 0.3s ease;
+}
+
+.stat-summary-item:hover {
+    transform: translateX(10px);
+    border-color: rgba(102, 126, 234, 0.5);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
 }
 
 .stat-summary-icon {
-    font-size: 30px;
+    font-size: 36px;
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.3));
 }
 
 .stat-summary-label {
-    color: #fff;
+    color: var(--text-primary);
     font-size: 18px;
-    font-weight: bold;
+    font-weight: 600;
+    letter-spacing: 1px;
 }
 
 .stat-summary-value {
-    color: #ffd700;
-    font-size: 24px;
-    font-weight: bold;
+    color: var(--accent-gold);
+    font-size: 28px;
+    font-weight: 800;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    letter-spacing: 2px;
 }
 
-/* Mobile Controls */
+/* ==================== 移动端控制 ==================== */
 .joystick {
     position: absolute;
-    bottom: 80px;
-    left: 30px;
-    z-index: 50;
+    bottom: 100px;
+    left: 40px;
+    z-index: 150;
     pointer-events: auto;
 }
 
@@ -325,45 +588,63 @@ body {
 }
 
 .joystick-base {
-    width: 120px;
-    height: 120px;
-    background: rgba(255, 255, 255, 0.15);
-    border: 3px solid rgba(255, 255, 255, 0.3);
+    width: 140px;
+    height: 140px;
+    background: rgba(20, 18, 45, 0.8);
+    border: 3px solid rgba(102, 126, 234, 0.5);
     border-radius: 50%;
     position: relative;
-    backdrop-filter: blur(5px);
+    backdrop-filter: blur(15px);
+    box-shadow: 0 0 30px rgba(102, 126, 234, 0.3), inset 0 0 20px rgba(0, 0, 0, 0.5);
+    transition: all 0.3s ease;
+}
+
+.joystick-base:active {
+    box-shadow: 0 0 40px rgba(102, 126, 234, 0.5), inset 0 0 10px rgba(0, 0, 0, 0.3);
 }
 
 .joystick-stick {
-    width: 50px;
-    height: 50px;
-    background: rgba(255, 215, 0, 0.8);
-    border: 2px solid rgba(255, 215, 0, 1);
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: 3px solid rgba(102, 126, 234, 0.8);
     border-radius: 50%;
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+    box-shadow: 0 0 20px rgba(102, 126, 234, 0.6);
     transition: transform 0.05s ease-out;
+}
+
+.joystick-stick::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 30px;
+    height: 30px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
 }
 
 .attack-button {
     position: absolute;
-    bottom: 80px;
-    right: 30px;
-    width: 80px;
-    height: 80px;
-    background: rgba(255, 68, 68, 0.8);
-    border: 3px solid rgba(255, 68, 68, 1);
+    bottom: 100px;
+    right: 40px;
+    width: 100px;
+    height: 100px;
+    background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
+    border: 3px solid rgba(245, 87, 108, 0.8);
     border-radius: 50%;
     display: flex;
     justify-content: center;
     align-items: center;
     cursor: pointer;
-    z-index: 50;
+    z-index: 150;
     pointer-events: auto;
-    box-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
+    box-shadow: 0 0 30px rgba(245, 87, 108, 0.5), inset 0 0 20px rgba(0, 0, 0, 0.2);
     transition: all 0.2s ease;
 }
 
@@ -371,16 +652,39 @@ body {
     display: none;
 }
 
+.attack-button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.attack-button:hover::before {
+    opacity: 1;
+}
+
 .attack-button:active {
     transform: scale(0.95);
-    background: rgba(255, 68, 68, 1);
+    box-shadow: 0 0 40px rgba(245, 87, 108, 0.7);
+}
+
+.attack-button:active::before {
+    opacity: 0.5;
 }
 
 .attack-icon {
-    font-size: 36px;
+    font-size: 42px;
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.3));
 }
 
-/* Show mobile controls on touch devices */
+/* ==================== 响应式设计 ==================== */
 @media (pointer: coarse) {
     .joystick.hidden {
         display: block;
@@ -391,10 +695,454 @@ body {
     }
 }
 
-/* Hide mobile controls on devices with fine pointer (mouse) */
 @media (pointer: fine) {
     .joystick,
     .attack-button {
         display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .screen-content {
+        padding: 35px 25px;
+        max-width: 90%;
+    }
+    
+    .game-title {
+        font-size: 36px;
+        gap: 8px;
+    }
+    
+    .title-emoji {
+        font-size: 40px;
+    }
+    
+    .game-subtitle {
+        font-size: 16px;
+    }
+    
+    .hud {
+        padding: 10px;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .hud-section {
+        width: 100%;
+    }
+    
+    .hud-section.stats {
+        flex-wrap: wrap;
+    }
+    
+    .health-bar-container,
+    .exp-bar-container {
+        min-width: 100%;
+    }
+    
+    .stat-item {
+        padding: 8px 12px;
+    }
+    
+    .stat-icon {
+        font-size: 18px;
+    }
+    
+    .stat-value {
+        font-size: 14px;
+        min-width: 40px;
+    }
+    
+    .upgrade-options {
+        grid-template-columns: 1fr;
+    }
+    
+    .joystick {
+        bottom: 80px;
+        left: 20px;
+    }
+    
+    .joystick-base {
+        width: 110px;
+        height: 110px;
+    }
+    
+    .joystick-stick {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .attack-button {
+        bottom: 80px;
+        right: 20px;
+        width: 80px;
+        height: 80px;
+    }
+    
+    .attack-icon {
+        font-size: 32px;
+    }
+}
+
+@media (max-width: 480px) {
+    .game-title {
+        font-size: 28px;
+        gap: 6px;
+        flex-direction: column;
+    }
+    
+    .title-emoji {
+        font-size: 32px;
+    }
+    
+    .game-subtitle {
+        font-size: 14px;
+    }
+    
+    .controls-info {
+        padding: 15px;
+    }
+    
+    .controls-info h3 {
+        font-size: 16px;
+    }
+    
+    .controls-info p {
+        font-size: 13px;
+    }
+    
+    .game-button {
+        padding: 14px 40px;
+        font-size: 18px;
+    }
+    
+    .screen-title {
+        font-size: 28px;
+    }
+    
+    .level-info {
+        font-size: 16px;
+    }
+    
+    .upgrade-option {
+        padding: 20px 15px;
+    }
+    
+    .upgrade-icon {
+        font-size: 36px;
+    }
+    
+    .upgrade-name {
+        font-size: 16px;
+    }
+    
+    .upgrade-bonus {
+        font-size: 12px;
+    }
+    
+    .stats-summary {
+        padding: 20px;
+    }
+    
+    .stat-summary-item {
+        padding: 12px 15px;
+    }
+    
+    .stat-summary-icon {
+        font-size: 28px;
+    }
+    
+    .stat-summary-label {
+        font-size: 14px;
+    }
+    
+    .stat-summary-value {
+        font-size: 20px;
+    }
+}
+
+/* ==================== 滚动条样式 ==================== */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(20, 18, 45, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+/* ==================== 选择文本样式 ==================== */
+::selection {
+    background: rgba(102, 126, 234, 0.3);
+    color: var(--text-primary);
+}
+
+/* ==================== 辅助功能 ==================== */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ==================== 设置按钮 ==================== */
+.settings-button {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.8) 0%, rgba(118, 75, 162, 0.8) 100%);
+    border: 2px solid rgba(102, 126, 234, 0.6);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    pointer-events: auto;
+}
+
+.settings-button:hover {
+    transform: rotate(90deg) scale(1.1);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+    border-color: rgba(102, 126, 234, 0.8);
+}
+
+.settings-button:active {
+    transform: rotate(90deg) scale(1.05);
+}
+
+/* ==================== 设置界面 ==================== */
+.settings-screen .screen-content {
+    max-width: 700px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.settings-container {
+    max-height: 60vh;
+    overflow-y: auto;
+    margin: 20px 0;
+    padding-right: 10px;
+}
+
+.settings-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.settings-container::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+}
+
+.settings-container::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 3px;
+}
+
+.settings-section {
+    margin-bottom: 30px;
+}
+
+.settings-section-title {
+    color: var(--accent-gold);
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 15px;
+    text-align: left;
+    padding-bottom: 8px;
+    border-bottom: 2px solid rgba(255, 215, 0, 0.3);
+    letter-spacing: 1px;
+}
+
+.settings-options {
+    margin: 30px 0;
+}
+
+.setting-item {
+    margin: 12px 0;
+}
+
+.setting-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 18px;
+    background: rgba(102, 126, 234, 0.1);
+    border: 2px solid rgba(102, 126, 234, 0.3);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.setting-label:hover {
+    background: rgba(102, 126, 234, 0.2);
+    border-color: rgba(102, 126, 234, 0.5);
+    transform: translateX(3px);
+}
+
+.setting-text {
+    color: var(--text-primary);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.setting-toggle {
+    appearance: none;
+    width: 50px;
+    height: 28px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 14px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    flex-shrink: 0;
+}
+
+.setting-toggle::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.setting-toggle:checked {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: rgba(102, 126, 234, 0.6);
+}
+
+.setting-toggle:checked::before {
+    left: 24px;
+    background: #ffffff;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.setting-toggle:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+}
+
+.setting-input {
+    width: 100px;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.setting-input:focus {
+    outline: none;
+    border-color: rgba(102, 126, 234, 0.6);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+.setting-input:hover {
+    border-color: rgba(102, 126, 234, 0.5);
+}
+
+.settings-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 30px;
+}
+
+.game-button.secondary {
+    background: rgba(102, 126, 234, 0.3);
+    border: 2px solid rgba(102, 126, 234, 0.5);
+}
+
+.game-button.secondary:hover {
+    background: rgba(102, 126, 234, 0.5);
+    border-color: rgba(102, 126, 234, 0.7);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+/* ==================== 响应式优化 ==================== */
+@media (max-width: 768px) {
+    .settings-button {
+        width: 45px;
+        height: 45px;
+        font-size: 20px;
+    }
+
+    .settings-screen .screen-content {
+        padding: 30px 20px;
+        max-width: 95%;
+        max-height: 95vh;
+    }
+
+    .settings-container {
+        max-height: 50vh;
+    }
+
+    .settings-section-title {
+        font-size: 16px;
+    }
+
+    .setting-label {
+        padding: 10px 12px;
+    }
+
+    .setting-text {
+        font-size: 13px;
+    }
+
+    .setting-toggle {
+        width: 45px;
+        height: 26px;
+    }
+
+    .setting-toggle::before {
+        width: 18px;
+        height: 18px;
+    }
+
+    .setting-toggle:checked::before {
+        left: 21px;
+    }
+
+    .setting-input {
+        width: 80px;
+        padding: 6px 10px;
+        font-size: 13px;
+    }
+
+    .settings-buttons {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .game-button {
+        width: 100%;
+        padding: 12px 30px;
+        font-size: 16px;
     }
 }

@@ -8,10 +8,11 @@ const CONFIG = {
     MOBILE: {
         SPEED_MULTIPLIER: 0.45, // 移动端速度系数（降低以便更精确控制）
         ATTACK_RANGE_MULTIPLIER: 1.1, // 移动端攻击范围系数
+        COLLECT_RANGE_MULTIPLIER: 1.3, // 移动端收集范围系数（确保收集范围比攻击范围大）
         CAMERA_ZOOM: 0.7, // 移动端摄像机缩放（小于1表示缩小视野，让玩家看到更大区域）
         REDPACKET_COLLECT_SPEED_MULTIPLIER: 0.6 // 移动端红包收集速度系数
     },
-    
+
     // 玩家初始属性
     PLAYER: {
         INITIAL_HP: 100,
@@ -22,14 +23,14 @@ const CONFIG = {
         INITIAL_EXP: 0,
         INITIAL_EXP_TO_LEVEL: 100,
         SIZE: 30,
-        ATTACK_RANGE: 150,
+        ATTACK_RANGE: 160,
         ATTACK_COOLDOWN: 400
     },
 
     // 红包配置
     REDPACKET: {
         SIZE: 15,
-        COLLECT_RANGE: 150,
+        COLLECT_RANGE: 225,
         COLLECT_SPEED: 10,
         EXP_VALUE: 10
     },
@@ -496,28 +497,11 @@ class Player {
         ctx.translate(screenX + hurtShakeX, screenY + shakeY + hurtShakeY);
         ctx.scale(this.direction * attackScale * hurtScale, attackScale * hurtScale);
 
-        // 攻击时的发光效果
-        if (attackGlow) {
-            ctx.shadowBlur = 30;
-            ctx.shadowColor = '#FFD700';
-        }
-
-        // 受伤时的红色发光效果
-        if (hurtGlow) {
-            const alpha = 1 - (this.hurtAnimationTime / this.hurtAnimationDuration);
-            ctx.shadowBlur = 25;
-            ctx.shadowColor = `rgba(255, 0, 0, ${alpha})`;
-        }
-
-        // 绘制小马emoji
-        ctx.font = `${this.size * 2.5}px Arial`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('🐴', 0, 0);
-
-        // 攻击时的额外光环
+        // 先绘制光环（在emoji后面）
         if (attackGlow) {
             const alpha = 1 - (this.attackAnimationTime / this.attackAnimationDuration);
+            ctx.shadowBlur = 30;
+            ctx.shadowColor = '#FFD700';
             ctx.strokeStyle = `rgba(255, 215, 0, ${alpha})`;
             ctx.lineWidth = 4;
             ctx.beginPath();
@@ -532,9 +516,10 @@ class Player {
             ctx.stroke();
         }
 
-        // 受伤时的红色光环
         if (hurtGlow) {
             const alpha = 1 - (this.hurtAnimationTime / this.hurtAnimationDuration);
+            ctx.shadowBlur = 25;
+            ctx.shadowColor = `rgba(255, 0, 0, ${alpha})`;
             ctx.strokeStyle = `rgba(255, 0, 0, ${alpha})`;
             ctx.lineWidth = 4;
             ctx.beginPath();
@@ -549,38 +534,71 @@ class Player {
             ctx.stroke();
         }
 
-        ctx.shadowBlur = 0; // 重置发光效果
+        // 重置所有效果，确保emoji完全清晰
+        ctx.shadowBlur = 0;
+        ctx.shadowColor = 'transparent';
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
+
+        // 绘制小马emoji
+        ctx.font = `${this.size * 2.5}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🐴', 0, 0);
 
         ctx.restore();
 
-        // 攻击范围指示器（移动时显示，攻击时更明显）
-        const showAttackRange = this.isMoving || this.isAttacking;
-        if (showAttackRange) {
-            const rangeAlpha = this.isAttacking ? 0.8 : 0.4;
+        // 攻击范围指示器（根据设置决定是否显示）
+        const shouldShowAttackRange = (this.isMoving || this.isAttacking) && 
+                                       (!window.gameSettings || window.gameSettings.showAttackRange);
+        
+        if (shouldShowAttackRange) {
+            const rangeAlpha = this.isAttacking ? 0.9 : 0.6;
             const rangeLineWidth = this.isAttacking ? 4 : 2;
 
             ctx.save();
+            
+            // 单一圆环 - 金色（不放大，确保与实际攻击范围一致）
             ctx.strokeStyle = `rgba(255, 215, 0, ${rangeAlpha})`;
             ctx.lineWidth = rangeLineWidth;
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = `rgba(255, 215, 0, ${rangeAlpha})`;
+            ctx.shadowBlur = this.isAttacking ? 20 : 10;
+            ctx.shadowColor = 'rgba(255, 215, 0, 0.8)';
             ctx.beginPath();
             ctx.arc(screenX, screenY, this.attackRange, 0, Math.PI * 2);
             ctx.stroke();
-
-            // 攻击时内部填充和虚线效果
+            
+            // 攻击时内部填充效果（不放大）
             if (this.isAttacking) {
                 const fillAlpha = 0.15 * (1 - this.attackAnimationTime / this.attackAnimationDuration);
                 ctx.fillStyle = `rgba(255, 215, 0, ${fillAlpha})`;
                 ctx.fill();
-
-                // 虚线圆环
-                ctx.strokeStyle = `rgba(255, 255, 255, ${rangeAlpha * 0.7})`;
-                ctx.setLineDash([10, 5]);
-                ctx.beginPath();
-                ctx.arc(screenX, screenY, this.attackRange * 0.8, 0, Math.PI * 2);
-                ctx.stroke();
             }
+            
+            ctx.restore();
+        }
+
+        // 红包收集范围指示器（根据设置决定是否显示）
+        // 移动端使用专门的收集范围系数
+        const collectRange = this.isMobile
+            ? CONFIG.REDPACKET.COLLECT_RANGE * CONFIG.MOBILE.COLLECT_RANGE_MULTIPLIER
+            : CONFIG.REDPACKET.COLLECT_RANGE;
+        
+        // 检查是否显示收集范围（通过全局设置）
+        if (window.gameSettings && window.gameSettings.showCollectRange) {
+            const collectAlpha = 0.4;
+            
+            ctx.save();
+            
+            // 单一圆环 - 绿色
+            ctx.strokeStyle = `rgba(46, 213, 115, ${collectAlpha})`;
+            ctx.lineWidth = 2;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'rgba(46, 213, 115, 0.5)';
+            ctx.setLineDash([6, 4]);
+            ctx.beginPath();
+            ctx.arc(screenX, screenY, collectRange, 0, Math.PI * 2);
+            ctx.stroke();
+            
             ctx.restore();
         }
 
@@ -598,6 +616,52 @@ class Player {
             ctx.fill();
         }
     }
+
+    // 只绘制emoji，确保在所有特效层之上显示
+    drawEmojiOnly(ctx, cameraX, cameraY) {
+        const screenX = this.x - cameraX;
+        const screenY = this.y - cameraY;
+
+        // 攻击动画计算
+        let attackScale = 1;
+        let shakeY = 0;
+
+        if (this.isAttacking) {
+            const progress = this.attackAnimationTime / this.attackAnimationDuration;
+            shakeY = Math.sin(progress * Math.PI * 4) * 5;
+            attackScale = 1 + Math.sin(progress * Math.PI) * 0.3;
+        }
+
+        // 受伤动画计算
+        let hurtShakeX = 0;
+        let hurtShakeY = 0;
+        let hurtScale = 1;
+
+        if (this.isHurt) {
+            const progress = this.hurtAnimationTime / this.hurtAnimationDuration;
+            hurtShakeX = Math.sin(progress * Math.PI * 12) * this.size * 0.2;
+            hurtShakeY = Math.cos(progress * Math.PI * 12) * this.size * 0.2;
+            hurtScale = 1 + Math.sin(progress * Math.PI * 2) * 0.15;
+        }
+
+        ctx.save();
+        ctx.translate(screenX + hurtShakeX, screenY + shakeY + hurtShakeY);
+        ctx.scale(this.direction * attackScale * hurtScale, attackScale * hurtScale);
+
+        // 重置所有效果，确保emoji完全清晰
+        ctx.shadowBlur = 0;
+        ctx.shadowColor = 'transparent';
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
+
+        // 绘制小马emoji
+        ctx.font = `${this.size * 2.5}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🐴', 0, 0);
+
+        ctx.restore();
+    }
 }
 
 // ==================== 怪物类 ====================
@@ -605,14 +669,19 @@ class Monster {
     constructor(x, y, difficultyMultiplier) {
         this.x = x;
         this.y = y;
-        this.baseHp = CONFIG.MONSTER.INITIAL_HP;
-        this.hp = Math.floor(this.baseHp * difficultyMultiplier);
+        
+        // 获取游戏设置
+        const settings = window.gameSettings || {};
+        
+        // 使用设置中的数值
+        this.baseHp = settings.monsterInitialHP || CONFIG.MONSTER.INITIAL_HP;
+        this.hp = Math.floor(this.baseHp * (1 + (difficultyMultiplier - 1) * (settings.monsterHPGrowth || 0.1) * 10));
         this.maxHp = this.hp;
-        this.attack = Math.floor(CONFIG.MONSTER.INITIAL_ATTACK * difficultyMultiplier);
-        this.speed = CONFIG.MONSTER.INITIAL_SPEED + (difficultyMultiplier - 1) * 0.3;
-        this.size = CONFIG.MONSTER.INITIAL_SIZE + (difficultyMultiplier - 1) * 2;
+        this.attack = Math.floor((settings.monsterInitialAttack || CONFIG.MONSTER.INITIAL_ATTACK) * (1 + (difficultyMultiplier - 1) * (settings.monsterAttackGrowth || 0.05) * 10));
+        this.speed = (settings.monsterInitialSpeed || CONFIG.MONSTER.INITIAL_SPEED) * (1 + (difficultyMultiplier - 1) * (settings.monsterSpeedGrowth || 0.02) * 10);
+        this.size = (settings.monsterInitialSize || CONFIG.MONSTER.INITIAL_SIZE) + (difficultyMultiplier - 1) * 2;
         this.damage = this.attack;
-        this.expValue = Math.floor(CONFIG.REDPACKET.EXP_VALUE * difficultyMultiplier);
+        this.expValue = Math.floor((settings.monsterExpValue || CONFIG.REDPACKET.EXP_VALUE) * difficultyMultiplier);
         
         // 受伤动画相关
         this.isHurt = false;
@@ -658,8 +727,8 @@ class Monster {
             const progress = this.hurtAnimationTime / this.hurtAnimationDuration;
             
             // 受伤时晃动
-            shakeX = Math.sin(progress * Math.PI * 10) * this.size * 0.15;
-            shakeY = Math.cos(progress * Math.PI * 10) * this.size * 0.15;
+            shakeX = Math.sin(progress * Math.PI * 12) * this.size * 0.2;
+            shakeY = Math.cos(progress * Math.PI * 12) * this.size * 0.2;
             
             // 更新动画时间
             this.hurtAnimationTime += 16;
@@ -668,54 +737,122 @@ class Monster {
             }
         }
         
-        // 绘制红包怪物（使用emoji）
+        // 绘制怪物的光环（始终存在）
         ctx.save();
         ctx.translate(screenX + shakeX, screenY + shakeY);
-        ctx.scale(scale, scale);
-        
+
+        // 怪物周围的光环（使用stroke而不是fill，避免遮挡emoji）
+        const auraAlpha = 0.3 + Math.sin(Date.now() * 0.003) * 0.1;
+        ctx.strokeStyle = `rgba(245, 87, 108, ${auraAlpha * 0.5})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(0, 0, this.size * 1.3, 0, Math.PI * 2);
+        ctx.stroke();
+
         // 受伤时的发光效果
         if (this.isHurt) {
-            ctx.shadowBlur = 20;
-            ctx.shadowColor = '#ffffff';
+            const alpha = 1 - (this.hurtAnimationTime / this.hurtAnimationDuration);
+            ctx.shadowBlur = 30;
+            ctx.shadowColor = `rgba(255, 255, 255, ${alpha})`;
+
+            // 受伤时的白色光环
+            ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(0, 0, this.size * 1.0, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // 第二层光环
+            ctx.strokeStyle = `rgba(245, 87, 108, ${alpha * 0.7})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, this.size * 1.2, 0, Math.PI * 2);
+            ctx.stroke();
         }
-        
+
+        // 重置所有效果，确保emoji完全清晰
+        ctx.shadowBlur = 0;
+        ctx.shadowColor = 'transparent';
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
+
         // 绘制红包emoji
         ctx.font = `${this.size * 1.8}px Arial`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('🧧', 0, 0);
+
+        ctx.restore();
         
-        // 受伤时的额外光环
-        if (this.isHurt) {
-            const alpha = 1 - (this.hurtAnimationTime / this.hurtAnimationDuration);
-            ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.arc(0, 0, this.size * 0.9, 0, Math.PI * 2);
-            ctx.stroke();
-        }
+        // 绘制血条（在restore之后，确保血条不受translate影响）
+        ctx.save();
+        ctx.translate(screenX + shakeX, screenY + shakeY);
         
-        ctx.shadowBlur = 0;
-        
-        // 血条
         const healthPercent = this.hp / this.maxHp;
-        const barWidth = this.size * 1.2;
-        const barHeight = 6;
-        const barY = -this.size * 0.8;
+        const barWidth = this.size * 1.4;
+        const barHeight = 8;
+        const barY = -this.size * 1.0;
         
         // 血条背景
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.fillRect(-barWidth / 2, barY, barWidth, barHeight);
-        
-        // 血条填充
-        const barColor = healthPercent > 0.5 ? '#44ff44' : healthPercent > 0.25 ? '#ffaa00' : '#ff4444';
-        ctx.fillStyle = barColor;
-        ctx.fillRect(-barWidth / 2, barY, barWidth * healthPercent, barHeight);
+        const barBgGradient = ctx.createLinearGradient(-barWidth / 2, 0, barWidth / 2, 0);
+        barBgGradient.addColorStop(0, 'rgba(0, 0, 0, 0.8)');
+        barBgGradient.addColorStop(0.5, 'rgba(0, 0, 0, 0.6)');
+        barBgGradient.addColorStop(1, 'rgba(0, 0, 0, 0.8)');
+        ctx.fillStyle = barBgGradient;
+        ctx.beginPath();
+        ctx.roundRect(-barWidth / 2, barY, barWidth, barHeight, 4);
+        ctx.fill();
         
         // 血条边框
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(-barWidth / 2, barY, barWidth, barHeight);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        // 血条填充（渐变色）
+        const barColor = healthPercent > 0.5 ? '#2ed573' : healthPercent > 0.25 ? '#ffa502' : '#ff4757';
+        const fillGradient = ctx.createLinearGradient(-barWidth / 2, 0, barWidth / 2, 0);
+        fillGradient.addColorStop(0, barColor);
+        fillGradient.addColorStop(1, healthPercent > 0.5 ? '#7bed9f' : healthPercent > 0.25 ? '#ffbe76' : '#ff6b81');
+        
+        ctx.fillStyle = fillGradient;
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = barColor;
+        ctx.beginPath();
+        ctx.roundRect(-barWidth / 2 + 2, barY + 2, (barWidth - 4) * healthPercent, barHeight - 4, 2);
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    // 只绘制emoji，确保在所有特效层之上显示
+    drawEmojiOnly(ctx, cameraX, cameraY) {
+        const screenX = this.x - cameraX;
+        const screenY = this.y - cameraY;
+
+        // 受伤动画效果
+        let shakeX = 0;
+        let shakeY = 0;
+
+        if (this.isHurt) {
+            const progress = this.hurtAnimationTime / this.hurtAnimationDuration;
+            shakeX = Math.sin(progress * Math.PI * 12) * this.size * 0.2;
+            shakeY = Math.cos(progress * Math.PI * 12) * this.size * 0.2;
+        }
+
+        ctx.save();
+        ctx.translate(screenX + shakeX, screenY + shakeY);
+
+        // 重置所有效果，确保emoji完全清晰
+        ctx.shadowBlur = 0;
+        ctx.shadowColor = 'transparent';
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
+
+        // 绘制红包emoji
+        ctx.font = `${this.size * 1.8}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🧧', 0, 0);
 
         ctx.restore();
     }
@@ -726,14 +863,19 @@ class Boss {
     constructor(x, y, difficultyMultiplier) {
         this.x = x;
         this.y = y;
-        this.hp = Math.floor(CONFIG.BOSS.INITIAL_HP * difficultyMultiplier);
+        
+        // 获取游戏设置
+        const settings = window.gameSettings || {};
+        
+        // 使用设置中的数值
+        this.hp = Math.floor((settings.bossInitialHP || CONFIG.BOSS.INITIAL_HP) * (1 + (difficultyMultiplier - 1) * (settings.bossHPGrowth || 0.15) * 10));
         this.maxHp = this.hp;
-        this.attack = Math.floor(CONFIG.BOSS.ATTACK * difficultyMultiplier);
-        this.speed = CONFIG.BOSS.SPEED + (difficultyMultiplier - 1) * 0.2;
-        this.size = CONFIG.BOSS.SIZE;
+        this.attack = Math.floor((settings.bossAttack || CONFIG.BOSS.ATTACK) * (1 + (difficultyMultiplier - 1) * (settings.bossAttackGrowth || 0.08) * 10));
+        this.speed = (settings.bossSpeed || CONFIG.BOSS.SPEED) * (1 + (difficultyMultiplier - 1) * (settings.bossSpeedGrowth || 0.03) * 10);
+        this.size = settings.bossSize || CONFIG.BOSS.SIZE;
         this.damage = this.attack;
-        this.explosionDamage = CONFIG.BOSS.EXPLOSION_DAMAGE;
-        this.redpacketDropCount = CONFIG.BOSS.REDPACKET_DROP_COUNT;
+        this.explosionDamage = settings.bossExplosionDamage || CONFIG.BOSS.EXPLOSION_DAMAGE;
+        this.redpacketDropCount = settings.bossRedpacketDropCount || CONFIG.BOSS.REDPACKET_DROP_COUNT;
 
         // 受伤动画相关
         this.isHurt = false;
@@ -820,21 +962,75 @@ class Boss {
         if (this.isHurt) {
             const progress = this.hurtAnimationTime / this.hurtAnimationDuration;
 
-            // 受伤时晃动
-            shakeX = Math.sin(progress * Math.PI * 10) * this.size * 0.1;
-            shakeY = Math.cos(progress * Math.PI * 10) * this.size * 0.1;
+            // 受伤时剧烈晃动
+            shakeX = Math.sin(progress * Math.PI * 15) * this.size * 0.15;
+            shakeY = Math.cos(progress * Math.PI * 15) * this.size * 0.15;
         }
 
         // Boss呼吸动画
-        const breatheScale = 1 + Math.sin(Date.now() / 500) * 0.05;
+        const breatheScale = 1 + Math.sin(Date.now() / 400) * 0.08;
 
         ctx.save();
         ctx.translate(screenX + shakeX, screenY + shakeY);
         ctx.scale(scale * breatheScale, scale * breatheScale);
 
-        // 绘制Boss光环
-        ctx.shadowBlur = 30;
-        ctx.shadowColor = '#ff6600';
+        // 绘制Boss光环（多层）
+        const time = Date.now();
+        const auraPulse = 0.15 + Math.sin(time * 0.002) * 0.05;
+
+        // 第一层光环（最外层，红色描边）
+        ctx.strokeStyle = `rgba(255, 102, 0, ${auraPulse * 0.6})`;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(0, 0, this.size * 1.6, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // 第二层光环（橙色描边）
+        ctx.strokeStyle = `rgba(255, 165, 0, ${auraPulse * 0.5})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(0, 0, this.size * 1.3, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // 第三层光环（金色，内层）
+        ctx.strokeStyle = `rgba(255, 215, 0, ${0.6 + Math.sin(time * 0.003) * 0.2})`;
+        ctx.lineWidth = 3;
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = 'rgba(255, 215, 0, 0.8)';
+        ctx.beginPath();
+        ctx.arc(0, 0, this.size * 1.1, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // 受伤时的额外发光效果
+        if (this.isHurt) {
+            const alpha = 1 - (this.hurtAnimationTime / this.hurtAnimationDuration);
+            ctx.shadowBlur = 40;
+            ctx.shadowColor = `rgba(255, 255, 255, ${alpha})`;
+
+            // 受伤时的白色光环
+            ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.arc(0, 0, this.size * 1.4, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // 闪烁效果（改为描边，避免填充遮挡emoji）
+            ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.5})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, this.size * 1.2, 0, Math.PI * 2);
+            ctx.stroke();
+        } else {
+            // 正常状态下的发光
+            ctx.shadowBlur = 35;
+            ctx.shadowColor = 'rgba(255, 102, 0, 0.6)';
+        }
+
+        // 重置所有效果，确保emoji完全清晰
+        ctx.shadowBlur = 0;
+        ctx.shadowColor = 'transparent';
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
 
         // 绘制Boss（大红包）
         ctx.font = `${this.size * 1.5}px Arial`;
@@ -842,47 +1038,126 @@ class Boss {
         ctx.textBaseline = 'middle';
         ctx.fillText('🧧', 0, 0);
 
-        // 绘制Boss光环
-        ctx.strokeStyle = `rgba(255, 102, 0, 0.8)`;
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.arc(0, 0, this.size * 0.9, 0, Math.PI * 2);
-        ctx.stroke();
-
-        // 绘制Boss名称
-        ctx.font = 'bold 16px Arial';
-        ctx.fillStyle = '#ffffff';
-        ctx.shadowBlur = 5;
-        ctx.shadowColor = '#000000';
-        ctx.fillText('BOSS', 0, -this.size * 0.7);
-
-        ctx.shadowBlur = 0;
-
-        // Boss血条（更大更明显）
-        const healthPercent = this.hp / this.maxHp;
-        const barWidth = this.size * 2;
-        const barHeight = 10;
-        const barY = -this.size * 1.2;
-
-        // 血条背景
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-        ctx.fillRect(-barWidth / 2, barY, barWidth, barHeight);
-
-        // 血条填充
-        const barColor = healthPercent > 0.5 ? '#44ff44' : healthPercent > 0.25 ? '#ffaa00' : '#ff4444';
-        ctx.fillStyle = barColor;
-        ctx.fillRect(-barWidth / 2, barY, barWidth * healthPercent, barHeight);
-
-        // 血条边框
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(-barWidth / 2, barY, barWidth, barHeight);
-
-        // 血量文本
-        ctx.font = 'bold 12px Arial';
+        // 绘制Boss名称标签
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+        ctx.font = 'bold 18px Arial';
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
-        ctx.fillText(`${Math.ceil(this.hp)}/${this.maxHp}`, 0, barY - 5);
+        ctx.fillText('BOSS', 0, -this.size * 0.7);
+        
+        // 添加警告标志
+        ctx.font = '12px Arial';
+        ctx.fillStyle = '#ff4757';
+        ctx.fillText('⚠', 0, -this.size * 0.9);
+
+        ctx.restore();
+
+        // 绘制Boss血条（在restore之后）
+        ctx.save();
+        ctx.translate(screenX + shakeX, screenY + shakeY);
+
+        const healthPercent = this.hp / this.maxHp;
+        const barWidth = this.size * 2.2;
+        const barHeight = 12;
+        const barY = -this.size * 1.4;
+
+        // 血条背景（渐变）
+        const barBgGradient = ctx.createLinearGradient(-barWidth / 2, 0, barWidth / 2, 0);
+        barBgGradient.addColorStop(0, 'rgba(0, 0, 0, 0.9)');
+        barBgGradient.addColorStop(0.5, 'rgba(0, 0, 0, 0.7)');
+        barBgGradient.addColorStop(1, 'rgba(0, 0, 0, 0.9)');
+        ctx.fillStyle = barBgGradient;
+        ctx.beginPath();
+        ctx.roundRect(-barWidth / 2, barY, barWidth, barHeight, 6);
+        ctx.fill();
+
+        // 血条边框
+        ctx.strokeStyle = 'rgba(255, 215, 0, 0.6)';
+        ctx.lineWidth = 3;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = 'rgba(255, 215, 0, 0.4)';
+        ctx.stroke();
+
+        // 血条填充（渐变色）
+        let barColor = '#2ed573';
+        let barColorEnd = '#7bed9f';
+        if (healthPercent <= 0.25) {
+            barColor = '#ff4757';
+            barColorEnd = '#ff6b81';
+        } else if (healthPercent <= 0.5) {
+            barColor = '#ffa502';
+            barColorEnd = '#ffbe76';
+        }
+        
+        const fillGradient = ctx.createLinearGradient(-barWidth / 2, 0, barWidth / 2, 0);
+        fillGradient.addColorStop(0, barColor);
+        fillGradient.addColorStop(1, barColorEnd);
+        
+        ctx.fillStyle = fillGradient;
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = barColor;
+        ctx.beginPath();
+        ctx.roundRect(-barWidth / 2 + 3, barY + 3, (barWidth - 6) * healthPercent, barHeight - 6, 4);
+        ctx.fill();
+
+        // 血量文本
+        ctx.shadowBlur = 4;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+        ctx.font = 'bold 14px Arial';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.fillText(`${Math.ceil(this.hp)}/${this.maxHp}`, 0, barY - 8);
+
+        ctx.restore();
+    }
+
+    // 只绘制emoji，确保在所有特效层之上显示
+    drawEmojiOnly(ctx, cameraX, cameraY) {
+        const screenX = this.x - cameraX;
+        const screenY = this.y - cameraY;
+
+        // 受伤动画效果
+        let shakeX = 0;
+        let shakeY = 0;
+
+        if (this.isHurt) {
+            const progress = this.hurtAnimationTime / this.hurtAnimationDuration;
+            shakeX = Math.sin(progress * Math.PI * 15) * this.size * 0.15;
+            shakeY = Math.cos(progress * Math.PI * 15) * this.size * 0.15;
+        }
+
+        // Boss呼吸动画
+        const breatheScale = 1 + Math.sin(Date.now() / 400) * 0.08;
+
+        ctx.save();
+        ctx.translate(screenX + shakeX, screenY + shakeY);
+        ctx.scale(breatheScale, breatheScale);
+
+        // 重置所有效果，确保emoji完全清晰
+        ctx.shadowBlur = 0;
+        ctx.shadowColor = 'transparent';
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
+
+        // 绘制Boss（大红包）
+        ctx.font = `${this.size * 1.5}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🧧', 0, 0);
+
+        // 绘制Boss名称标签
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+        ctx.font = 'bold 18px Arial';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.fillText('BOSS', 0, -this.size * 0.7);
+
+        // 添加警告标志
+        ctx.font = '12px Arial';
+        ctx.fillStyle = '#ff4757';
+        ctx.fillText('⚠', 0, -this.size * 0.9);
 
         ctx.restore();
     }
@@ -894,7 +1169,11 @@ class RedPacket {
         this.x = x;
         this.y = y;
         this.size = CONFIG.REDPACKET.SIZE;
-        this.expValue = CONFIG.REDPACKET.EXP_VALUE;
+        
+        // 获取游戏设置
+        const settings = window.gameSettings || {};
+        this.expValue = settings.redpacketExpValue || CONFIG.REDPACKET.EXP_VALUE;
+        
         this.velocity = { x: 0, y: 0 };
         this.isBeingCollected = false;
         this.collectedByPlayer = false;
@@ -908,8 +1187,12 @@ class RedPacket {
         
         const distance = Utils.distance(this.x, this.y, player.x, player.y);
         
-        // 收集检测
-        if (distance < CONFIG.REDPACKET.COLLECT_RANGE) {
+        // 收集检测（根据玩家是否为移动端调整收集范围）
+        const collectRange = player.isMobile
+            ? CONFIG.REDPACKET.COLLECT_RANGE * CONFIG.MOBILE.COLLECT_RANGE_MULTIPLIER
+            : CONFIG.REDPACKET.COLLECT_RANGE;
+        
+        if (distance < collectRange) {
             this.isBeingCollected = true;
             this.collectedByPlayer = true;
             
@@ -936,36 +1219,63 @@ class RedPacket {
         
         ctx.save();
         ctx.translate(screenX, screenY);
-        
-        // 发光效果
+
+        // 外围光环（在emoji后面）
+        ctx.strokeStyle = `rgba(255, 215, 0, 0.5)`;
+        ctx.lineWidth = 2;
         ctx.shadowBlur = 15;
         ctx.shadowColor = '#FFD700';
-        
+        ctx.beginPath();
+        ctx.arc(0, 0, this.size * 0.8, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // 重置所有效果，确保emoji完全清晰
+        ctx.shadowBlur = 0;
+        ctx.shadowColor = 'transparent';
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
+
         // 绘制红包emoji（使用💰）
         ctx.font = `${this.size * 2}px Arial`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('💰', 0, 0);
-        
-        // 外围光环
-        ctx.strokeStyle = `rgba(255, 215, 0, 0.5)`;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(0, 0, this.size * 0.8, 0, Math.PI * 2);
-        ctx.stroke();
-        
+
+        ctx.restore();
+    }
+
+    // 只绘制emoji，确保在所有特效层之上显示
+    drawEmojiOnly(ctx, cameraX, cameraY) {
+        const screenX = this.x - cameraX;
+        const screenY = this.y - cameraY + Math.sin(this.bobAngle) * 5;
+
+        ctx.save();
+        ctx.translate(screenX, screenY);
+
+        // 重置所有效果，确保emoji完全清晰
+        ctx.shadowBlur = 0;
+        ctx.shadowColor = 'transparent';
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
+
+        // 绘制红包emoji
+        ctx.font = `${this.size * 2}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('💰', 0, 0);
+
         ctx.restore();
     }
 }
 
 // ==================== 攻击效果类 ====================
 class AttackEffect {
-    constructor(x, y, direction) {
+    constructor(x, y, direction, attackRange) {
         this.x = x;
         this.y = y;
         this.direction = direction;
         this.radius = 0;
-        this.maxRadius = CONFIG.PLAYER.ATTACK_RANGE;
+        this.maxRadius = attackRange;
         this.duration = 300;
         this.elapsed = 0;
         this.active = true;
@@ -1234,6 +1544,48 @@ class Game {
         this.joystickInput = { x: 0, y: 0 };
         this.isTouchDevice = 'ontouchstart' in window;
 
+        // 游戏设置
+        this.defaultSettings = {
+            // 视觉设置
+            showAttackRange: true,
+            showCollectRange: false,
+            // 怪物基础数值
+            monsterInitialHP: 30,
+            monsterInitialAttack: 10,
+            monsterInitialSpeed: 1.8,
+            monsterInitialSize: 25,
+            monsterMaxMonsters: 30,
+            monsterSpawnInterval: 1500,
+            // 怪物成长曲线
+            monsterHPGrowth: 0.1,
+            monsterAttackGrowth: 0.05,
+            monsterSpeedGrowth: 0.02,
+            // 怪物掉落经验
+            monsterExpValue: 10,
+            // Boss基础数值
+            bossInitialHP: 200,
+            bossAttack: 20,
+            bossSpeed: 2.2,
+            bossSize: 60,
+            bossSpawnInterval: 30000,
+            // Boss成长曲线
+            bossHPGrowth: 0.15,
+            bossAttackGrowth: 0.08,
+            bossSpeedGrowth: 0.03,
+            // Boss自爆伤害
+            bossExplosionDamage: 30,
+            // Boss掉落红包数量
+            bossRedpacketDropCount: 15,
+            // 红包掉落经验
+            redpacketExpValue: 10
+        };
+
+        // 从localStorage加载设置，如果没有则使用默认设置
+        this.settings = this.loadSettings();
+
+        // 将设置暴露到全局，供Player.draw方法访问
+        window.gameSettings = this.settings;
+
         // 初始状态下隐藏 HUD，显示开始界面
         document.getElementById('hud').classList.add('hidden');
         document.getElementById('startScreen').classList.remove('hidden');
@@ -1282,6 +1634,24 @@ class Game {
                 const upgradeType = option.dataset.upgrade;
                 this.handleUpgrade(upgradeType);
             });
+        });
+
+        // 设置按钮事件
+        document.getElementById('settingsButton').addEventListener('click', () => this.openSettings());
+
+        // 关闭设置按钮事件
+        document.getElementById('closeSettingsButton').addEventListener('click', () => this.closeSettings());
+
+        // 重置设置按钮事件
+        document.getElementById('resetSettingsButton').addEventListener('click', () => this.resetSettings());
+
+        // 设置选项事件
+        document.getElementById('showAttackRange').addEventListener('change', (e) => {
+            this.settings.showAttackRange = e.target.checked;
+        });
+
+        document.getElementById('showCollectRange').addEventListener('change', (e) => {
+            this.settings.showCollectRange = e.target.checked;
         });
 
         // 移动端攻击按钮事件
@@ -1344,8 +1714,8 @@ class Game {
         // 播放攻击音效
         this.soundEffect.playAttack();
 
-        // 创建攻击效果
-        this.attackEffects.push(new AttackEffect(this.player.x, this.player.y, this.player.direction));
+        // 创建攻击效果（使用玩家的实际攻击范围）
+        this.attackEffects.push(new AttackEffect(this.player.x, this.player.y, this.player.direction, this.player.attackRange));
 
         // 检测攻击范围内的怪物
         const attackRadius = this.player.attackRange;
@@ -1414,8 +1784,8 @@ class Game {
     }
     
     spawnMonster(currentTime) {
-        if (currentTime - this.lastSpawnTime > CONFIG.MONSTER.SPAWN_INTERVAL / this.difficultyMultiplier) {
-            if (this.monsters.length < CONFIG.MONSTER.MAX_MONSTERS * this.difficultyMultiplier) {
+        if (currentTime - this.lastSpawnTime > this.settings.monsterSpawnInterval / this.difficultyMultiplier) {
+            if (this.monsters.length < this.settings.monsterMaxMonsters * this.difficultyMultiplier) {
                 // 在玩家周围随机位置生成怪物
                 const angle = Math.random() * Math.PI * 2;
                 const distance = Utils.randomRange(200, 350);
@@ -1440,7 +1810,7 @@ class Game {
 
     spawnBoss(currentTime) {
         // 每30秒生成一个Boss
-        if (currentTime - this.lastBossSpawnTime > CONFIG.BOSS.SPAWN_INTERVAL) {
+        if (currentTime - this.lastBossSpawnTime > this.settings.bossSpawnInterval) {
             // 在玩家较远的位置生成Boss
             const angle = Math.random() * Math.PI * 2;
             const distance = Utils.randomRange(400, 600);
@@ -1645,6 +2015,156 @@ class Game {
         // 渲染菜单背景
         this.renderMenuBackground();
     }
+
+    loadSettings() {
+        try {
+            const savedSettings = localStorage.getItem('ponyRedpacketSettings');
+            if (savedSettings) {
+                const parsed = JSON.parse(savedSettings);
+                // 合并保存的设置和默认设置（确保新设置项有默认值）
+                return { ...this.defaultSettings, ...parsed };
+            }
+        } catch (e) {
+            console.log('加载设置失败，使用默认设置:', e);
+        }
+        return { ...this.defaultSettings };
+    }
+
+    saveSettings() {
+        try {
+            localStorage.setItem('ponyRedpacketSettings', JSON.stringify(this.settings));
+            // 更新全局设置，使新怪物立即使用新设置
+            window.gameSettings = this.settings;
+            console.log('设置已保存');
+        } catch (e) {
+            console.log('保存设置失败:', e);
+        }
+    }
+
+    resetSettings() {
+        this.settings = { ...this.defaultSettings };
+        this.saveSettings();
+        // 更新UI显示
+        this.syncSettingsToUI();
+        // 更新全局设置
+        window.gameSettings = this.settings;
+    }
+
+    syncSettingsToUI() {
+        // 同步视觉设置
+        document.getElementById('showAttackRange').checked = this.settings.showAttackRange;
+        document.getElementById('showCollectRange').checked = this.settings.showCollectRange;
+        
+        // 同步怪物基础数值
+        document.getElementById('monsterInitialHP').value = this.settings.monsterInitialHP;
+        document.getElementById('monsterInitialAttack').value = this.settings.monsterInitialAttack;
+        document.getElementById('monsterInitialSpeed').value = this.settings.monsterInitialSpeed;
+        document.getElementById('monsterInitialSize').value = this.settings.monsterInitialSize;
+        document.getElementById('monsterMaxMonsters').value = this.settings.monsterMaxMonsters;
+        document.getElementById('monsterSpawnInterval').value = this.settings.monsterSpawnInterval;
+        
+        // 同步怪物成长曲线
+        document.getElementById('monsterHPGrowth').value = this.settings.monsterHPGrowth;
+        document.getElementById('monsterAttackGrowth').value = this.settings.monsterAttackGrowth;
+        document.getElementById('monsterSpeedGrowth').value = this.settings.monsterSpeedGrowth;
+        
+        // 同步怪物掉落经验
+        document.getElementById('monsterExpValue').value = this.settings.monsterExpValue;
+        
+        // 同步Boss基础数值
+        document.getElementById('bossInitialHP').value = this.settings.bossInitialHP;
+        document.getElementById('bossAttack').value = this.settings.bossAttack;
+        document.getElementById('bossSpeed').value = this.settings.bossSpeed;
+        document.getElementById('bossSize').value = this.settings.bossSize;
+        document.getElementById('bossSpawnInterval').value = this.settings.bossSpawnInterval;
+        
+        // 同步Boss成长曲线
+        document.getElementById('bossHPGrowth').value = this.settings.bossHPGrowth;
+        document.getElementById('bossAttackGrowth').value = this.settings.bossAttackGrowth;
+        document.getElementById('bossSpeedGrowth').value = this.settings.bossSpeedGrowth;
+        
+        // 同步Boss自爆伤害
+        document.getElementById('bossExplosionDamage').value = this.settings.bossExplosionDamage;
+        
+        // 同步Boss掉落红包数量
+        document.getElementById('bossRedpacketDropCount').value = this.settings.bossRedpacketDropCount;
+        
+        // 同步红包掉落经验
+        document.getElementById('redpacketExpValue').value = this.settings.redpacketExpValue;
+    }
+
+    openSettings() {
+        if (this.state === GameState.PLAYING) {
+            this.state = GameState.PAUSED;
+        }
+        document.getElementById('settingsScreen').classList.remove('hidden');
+        
+        // 同步所有设置到UI
+        this.syncSettingsToUI();
+    }
+
+    closeSettings() {
+        // 从UI读取所有设置并保存
+        this.readSettingsFromUI();
+        this.saveSettings();
+
+        // 更新全局设置，使新怪物立即使用新设置
+        window.gameSettings = this.settings;
+
+        document.getElementById('settingsScreen').classList.add('hidden');
+        
+        // 如果游戏正在进行，恢复游戏
+        if (this.player && this.player.hp > 0) {
+            this.state = GameState.PLAYING;
+            // 重置lastTime以避免deltaTime过大
+            this.lastTime = performance.now();
+            // 重新启动游戏循环
+            this.gameLoop();
+        }
+    }
+
+    readSettingsFromUI() {
+        // 读取视觉设置
+        this.settings.showAttackRange = document.getElementById('showAttackRange').checked;
+        this.settings.showCollectRange = document.getElementById('showCollectRange').checked;
+        
+        // 读取怪物基础数值
+        this.settings.monsterInitialHP = parseInt(document.getElementById('monsterInitialHP').value) || 30;
+        this.settings.monsterInitialAttack = parseInt(document.getElementById('monsterInitialAttack').value) || 10;
+        this.settings.monsterInitialSpeed = parseFloat(document.getElementById('monsterInitialSpeed').value) || 1.8;
+        this.settings.monsterInitialSize = parseInt(document.getElementById('monsterInitialSize').value) || 25;
+        this.settings.monsterMaxMonsters = parseInt(document.getElementById('monsterMaxMonsters').value) || 30;
+        this.settings.monsterSpawnInterval = parseInt(document.getElementById('monsterSpawnInterval').value) || 1500;
+        
+        // 读取怪物成长曲线
+        this.settings.monsterHPGrowth = parseFloat(document.getElementById('monsterHPGrowth').value) || 0.1;
+        this.settings.monsterAttackGrowth = parseFloat(document.getElementById('monsterAttackGrowth').value) || 0.05;
+        this.settings.monsterSpeedGrowth = parseFloat(document.getElementById('monsterSpeedGrowth').value) || 0.02;
+        
+        // 读取怪物掉落经验
+        this.settings.monsterExpValue = parseInt(document.getElementById('monsterExpValue').value) || 10;
+        
+        // 读取Boss基础数值
+        this.settings.bossInitialHP = parseInt(document.getElementById('bossInitialHP').value) || 200;
+        this.settings.bossAttack = parseInt(document.getElementById('bossAttack').value) || 20;
+        this.settings.bossSpeed = parseFloat(document.getElementById('bossSpeed').value) || 2.2;
+        this.settings.bossSize = parseInt(document.getElementById('bossSize').value) || 60;
+        this.settings.bossSpawnInterval = parseInt(document.getElementById('bossSpawnInterval').value) || 30000;
+        
+        // 读取Boss成长曲线
+        this.settings.bossHPGrowth = parseFloat(document.getElementById('bossHPGrowth').value) || 0.15;
+        this.settings.bossAttackGrowth = parseFloat(document.getElementById('bossAttackGrowth').value) || 0.08;
+        this.settings.bossSpeedGrowth = parseFloat(document.getElementById('bossSpeedGrowth').value) || 0.03;
+        
+        // 读取Boss自爆伤害
+        this.settings.bossExplosionDamage = parseInt(document.getElementById('bossExplosionDamage').value) || 30;
+        
+        // 读取Boss掉落红包数量
+        this.settings.bossRedpacketDropCount = parseInt(document.getElementById('bossRedpacketDropCount').value) || 15;
+        
+        // 读取红包掉落经验
+        this.settings.redpacketExpValue = parseInt(document.getElementById('redpacketExpValue').value) || 10;
+    }
     
     gameOver() {
         this.state = GameState.GAME_OVER;
@@ -1701,7 +2221,7 @@ class Game {
         // 绘制玩家
         this.player.draw(ctx, cameraX, cameraY);
 
-        // 绘制攻击效果（在最顶层，最明显）
+        // 绘制攻击效果（半透明特效层）
         this.attackEffects.forEach(effect => effect.draw(ctx, cameraX, cameraY));
 
         // 绘制怪物自爆特效
@@ -1709,20 +2229,44 @@ class Game {
 
         // 绘制小马受伤特效
         this.playerHurtEffects.forEach(effect => effect.draw(ctx, cameraX, cameraY));
-        
+
+        // 重新绘制玩家的emoji（确保在特效层之上）
+        this.player.drawEmojiOnly(ctx, cameraX, cameraY);
+
+        // 重新绘制所有怪物的emoji（确保在特效层之上）
+        this.monsters.forEach(monster => monster.drawEmojiOnly(ctx, cameraX, cameraY));
+
+        // 重新绘制所有Boss的emoji（确保在特效层之上）
+        this.bosses.forEach(boss => boss.drawEmojiOnly(ctx, cameraX, cameraY));
+
+        // 重新绘制所有红包的emoji（确保在特效层之上）
+        this.redPackets.forEach(redPacket => redPacket.drawEmojiOnly(ctx, cameraX, cameraY));
+
         // 恢复上下文状态
         ctx.restore();
     }
     
     drawMap(ctx, cameraX, cameraY) {
-        // 绘制网格背景
-        ctx.strokeStyle = '#1a1a1a';
-        ctx.lineWidth = 1;
-        
+        // 绘制渐变背景
+        const gradient = ctx.createRadialGradient(
+            this.canvas.width / 2, this.canvas.height / 2, 0,
+            this.canvas.width / 2, this.canvas.height / 2, Math.max(this.canvas.width, this.canvas.height)
+        );
+        gradient.addColorStop(0, '#1a1a2e');
+        gradient.addColorStop(0.5, '#16213e');
+        gradient.addColorStop(1, '#0f0f1e');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // 绘制美化的网格背景
         const gridSize = 50;
         const startX = Math.floor(cameraX / gridSize) * gridSize;
         const startY = Math.floor(cameraY / gridSize) * gridSize;
         
+        ctx.strokeStyle = 'rgba(102, 126, 234, 0.15)';
+        ctx.lineWidth = 1;
+        
+        // 绘制垂直网格线
         for (let x = startX; x < cameraX + this.canvas.width + gridSize; x += gridSize) {
             ctx.beginPath();
             ctx.moveTo(x - cameraX, 0);
@@ -1730,30 +2274,80 @@ class Game {
             ctx.stroke();
         }
         
+        // 绘制水平网格线
         for (let y = startY; y < cameraY + this.canvas.height + gridSize; y += gridSize) {
             ctx.beginPath();
             ctx.moveTo(0, y - cameraY);
             ctx.lineTo(this.canvas.width, y - cameraY);
             ctx.stroke();
         }
+
+        // 绘制装饰性圆点（在网格交叉点）
+        ctx.fillStyle = 'rgba(102, 126, 234, 0.3)';
+        for (let x = startX; x < cameraX + this.canvas.width + gridSize; x += gridSize) {
+            for (let y = startY; y < cameraY + this.canvas.height + gridSize; y += gridSize) {
+                ctx.beginPath();
+                ctx.arc(x - cameraX, y - cameraY, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
         
-        // 绘制地图边界
-        ctx.strokeStyle = '#ff4444';
-        ctx.lineWidth = 3;
+        // 绘制地图边界（带发光效果）
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255, 71, 87, 0.8)';
+        ctx.lineWidth = 4;
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = 'rgba(255, 71, 87, 0.6)';
         ctx.strokeRect(-cameraX, -cameraY, CONFIG.MAP_WIDTH, CONFIG.MAP_HEIGHT);
         
-        // 绘制地图角落装饰
-        const cornerSize = 20;
-        ctx.fillStyle = '#ff4444';
+        // 绘制外发光边界
+        ctx.strokeStyle = 'rgba(255, 71, 87, 0.3)';
+        ctx.lineWidth = 8;
+        ctx.shadowBlur = 30;
+        ctx.strokeRect(-cameraX - 4, -cameraY - 4, CONFIG.MAP_WIDTH + 8, CONFIG.MAP_HEIGHT + 8);
+        
+        // 绘制地图角落装饰（渐变色）
+        const cornerSize = 30;
+        const cornerGradient = ctx.createLinearGradient(-cameraX, -cameraY, -cameraX + cornerSize, -cameraY + cornerSize);
+        cornerGradient.addColorStop(0, '#ff4757');
+        cornerGradient.addColorStop(1, '#ff6b81');
+        ctx.fillStyle = cornerGradient;
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = 'rgba(255, 71, 87, 0.5)';
 
         // 左上角
-        ctx.fillRect(-cameraX - cornerSize, -cameraY - cornerSize, cornerSize, cornerSize);
+        ctx.beginPath();
+        ctx.moveTo(-cameraX - cornerSize, -cameraY);
+        ctx.lineTo(-cameraX, -cameraY);
+        ctx.lineTo(-cameraX, -cameraY - cornerSize);
+        ctx.closePath();
+        ctx.fill();
+
         // 右上角
-        ctx.fillRect(CONFIG.MAP_WIDTH - cameraX, -cameraY - cornerSize, cornerSize, cornerSize);
+        ctx.beginPath();
+        ctx.moveTo(CONFIG.MAP_WIDTH - cameraX, -cameraY - cornerSize);
+        ctx.lineTo(CONFIG.MAP_WIDTH - cameraX, -cameraY);
+        ctx.lineTo(CONFIG.MAP_WIDTH - cameraX + cornerSize, -cameraY);
+        ctx.closePath();
+        ctx.fill();
+
         // 左下角
-        ctx.fillRect(-cameraX - cornerSize, CONFIG.MAP_HEIGHT - cameraY, cornerSize, cornerSize);
+        ctx.beginPath();
+        ctx.moveTo(-cameraX, CONFIG.MAP_HEIGHT - cameraY + cornerSize);
+        ctx.lineTo(-cameraX, CONFIG.MAP_HEIGHT - cameraY);
+        ctx.lineTo(-cameraX - cornerSize, CONFIG.MAP_HEIGHT - cameraY);
+        ctx.closePath();
+        ctx.fill();
+
         // 右下角
-        ctx.fillRect(CONFIG.MAP_WIDTH - cameraX, CONFIG.MAP_HEIGHT - cameraY, cornerSize, cornerSize);
+        ctx.beginPath();
+        ctx.moveTo(CONFIG.MAP_WIDTH - cameraX + cornerSize, CONFIG.MAP_HEIGHT - cameraY);
+        ctx.lineTo(CONFIG.MAP_WIDTH - cameraX, CONFIG.MAP_HEIGHT - cameraY);
+        ctx.lineTo(CONFIG.MAP_WIDTH - cameraX, CONFIG.MAP_HEIGHT - cameraY + cornerSize);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.restore();
     }
 
     renderMenuBackground() {
