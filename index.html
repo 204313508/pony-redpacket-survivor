@@ -11,7 +11,7 @@
         <canvas id="gameCanvas"></canvas>
         
         <!-- HUD -->
-        <div id="hud" class="hud">
+        <div id="hud" class="hud hidden">
             <div class="hud-section">
                 <div class="health-bar-container">
                     <span class="bar-label">HP</span>
@@ -60,7 +60,7 @@
         </div>
 
         <!-- 升级界面 -->
-        <div id="upgradeScreen" class="screen upgrade-screen">
+        <div id="upgradeScreen" class="screen upgrade-screen hidden">
             <div class="screen-content">
                 <h2 class="screen-title">⬆️ 升级啦！</h2>
                 <p class="level-info">当前等级: <span id="currentLevel">1</span></p>
@@ -90,7 +90,7 @@
         </div>
 
         <!-- 结算界面 -->
-        <div id="gameOverScreen" class="screen game-over-screen">
+        <div id="gameOverScreen" class="screen game-over-screen hidden">
             <div class="screen-content">
                 <h2 class="screen-title">💀 游戏结束 💀</h2>
                 <div class="stats-summary">

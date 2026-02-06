@@ -39,6 +39,19 @@ body {
     z-index: 10;
 }
 
+.hud.hidden {
+    display: none;
+}
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    pointer-events: none;
+    z-index: 10;
+}
+
 .hud-section {
     display: flex;
     flex-direction: column;
