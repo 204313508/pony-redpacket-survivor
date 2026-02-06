@@ -2150,6 +2150,7 @@ class Game {
             // 视觉设置
             showAttackRange: true,
             showCollectRange: false,
+            autoAttack: true, // 自动攻击
             // 怪物基础数值
             monsterInitialHP: 30,
             monsterInitialAttack: 10,
@@ -2160,7 +2161,7 @@ class Game {
             // 怪物成长曲线
             monsterHPGrowth: 0.1,
             monsterAttackGrowth: 0.05,
-            monsterSpeedGrowth: 0.02,
+            monsterSpeedGrowth: 0.01,
             // 怪物掉落经验
             monsterExpValue: 10,
             // Boss基础数值
@@ -2253,6 +2254,10 @@ class Game {
 
         document.getElementById('showCollectRange').addEventListener('change', (e) => {
             this.settings.showCollectRange = e.target.checked;
+        });
+
+        document.getElementById('autoAttack').addEventListener('change', (e) => {
+            this.settings.autoAttack = e.target.checked;
         });
 
         // 移动端攻击按钮事件
@@ -2487,6 +2492,38 @@ class Game {
 
         // 更新怪物
         this.monsters.forEach(monster => monster.update(this.player));
+
+        // 自动攻击逻辑
+        if (this.settings.autoAttack && this.player.canAttack()) {
+            // 检查攻击范围内是否有怪物或Boss
+            const attackRadius = this.player.attackRange;
+            let hasEnemyInRange = false;
+
+            // 检查怪物
+            for (const monster of this.monsters) {
+                const distance = Utils.distance(this.player.x, this.player.y, monster.x, monster.y);
+                if (distance <= attackRadius) {
+                    hasEnemyInRange = true;
+                    break;
+                }
+            }
+
+            // 检查Boss
+            if (!hasEnemyInRange) {
+                for (const boss of this.bosses) {
+                    const distance = Utils.distance(this.player.x, this.player.y, boss.x, boss.y);
+                    if (distance <= attackRadius) {
+                        hasEnemyInRange = true;
+                        break;
+                    }
+                }
+            }
+
+            // 如果有敌人在范围内，自动攻击
+            if (hasEnemyInRange) {
+                this.executeAttack();
+            }
+        }
 
         // 生成Boss
         this.spawnBoss(currentTime);
@@ -2760,6 +2797,7 @@ class Game {
         // 同步视觉设置
         document.getElementById('showAttackRange').checked = this.settings.showAttackRange;
         document.getElementById('showCollectRange').checked = this.settings.showCollectRange;
+        document.getElementById('autoAttack').checked = this.settings.autoAttack;
         
         // 同步怪物基础数值
         document.getElementById('monsterInitialHP').value = this.settings.monsterInitialHP;
@@ -2833,6 +2871,7 @@ class Game {
         // 读取视觉设置
         this.settings.showAttackRange = document.getElementById('showAttackRange').checked;
         this.settings.showCollectRange = document.getElementById('showCollectRange').checked;
+        this.settings.autoAttack = document.getElementById('autoAttack').checked;
         
         // 读取怪物基础数值
         this.settings.monsterInitialHP = parseInt(document.getElementById('monsterInitialHP').value) || 30;
@@ -2845,7 +2884,7 @@ class Game {
         // 读取怪物成长曲线
         this.settings.monsterHPGrowth = parseFloat(document.getElementById('monsterHPGrowth').value) || 0.1;
         this.settings.monsterAttackGrowth = parseFloat(document.getElementById('monsterAttackGrowth').value) || 0.05;
-        this.settings.monsterSpeedGrowth = parseFloat(document.getElementById('monsterSpeedGrowth').value) || 0.02;
+        this.settings.monsterSpeedGrowth = parseFloat(document.getElementById('monsterSpeedGrowth').value) || 0.01;
         
         // 读取怪物掉落经验
         this.settings.monsterExpValue = parseInt(document.getElementById('monsterExpValue').value) || 10;

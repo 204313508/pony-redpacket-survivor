@@ -70,6 +70,7 @@
                     <p>左侧虚拟摇杆 - 移动小马</p>
                     <p>右侧攻击按钮 - 攻击</p>
                     <p><span class="emoji">🧧</span> <strong>红包</strong> - 靠近自动收集升级</p>
+                    <p><span class="emoji">⚔️</span> <strong>自动攻击</strong> - 有敌人在范围内自动攻击（可在设置中开关）</p>
                 </div>
                 <button id="startButton" class="game-button">开始游戏</button>
             </div>
@@ -150,6 +151,12 @@
                                 <input type="checkbox" id="showCollectRange" class="setting-toggle">
                             </label>
                         </div>
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                <span class="setting-text">自动攻击</span>
+                                <input type="checkbox" id="autoAttack" class="setting-toggle" checked>
+                            </label>
+                        </div>
                     </div>
 
                     <!-- 怪物基础数值 -->
@@ -211,7 +218,7 @@
                         <div class="setting-item">
                             <label class="setting-label">
                                 <span class="setting-text">速度成长</span>
-                                <input type="number" id="monsterSpeedGrowth" class="setting-input" value="0.02" min="0" max="1" step="0.01">
+                                <input type="number" id="monsterSpeedGrowth" class="setting-input" value="0.01" min="0" max="1" step="0.01">
                             </label>
                         </div>
                         <div class="setting-item">

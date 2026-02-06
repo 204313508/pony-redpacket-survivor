@@ -29,6 +29,7 @@
 - 👹 **Boss挑战** - 每30秒出现强大的Boss，需要多次击败
 - 💥 **自爆系统** - 怪物和Boss自爆造成伤害，考验走位
 - 🌦️ **动态天气系统** - 每30秒切换天气，影响游戏策略
+- ⚔️ **自动攻击系统** - 智能自动攻击范围内敌人，解放双手
 - 📈 **RPG成长系统** - 收集红包升级，提升四大属性
 - 🎨 **精美的视觉效果** - 使用Emoji角色，炫酷的攻击特效
 - 🚀 **流畅的游戏体验** - 纯HTML/CSS/JS实现，无需安装
@@ -47,6 +48,12 @@
 - **左侧虚拟摇杆** - 移动小马
 - **右侧攻击按钮** - 范围攻击
 - **收集红包** - 靠近红包自动收集
+
+#### 自动攻击系统
+- **默认开启**：游戏默认开启自动攻击功能
+- **攻击逻辑**：当有怪物或Boss出现在攻击范围内时，会自动触发攻击
+- **攻击限制**：自动攻击遵循正常的攻击间隔（400ms），受攻击冷却影响
+- **开关设置**：可在游戏设置中随时开启或关闭自动攻击
 
 #### 升级系统
 收集足够的红包（经验）后会触发升级，可以从四个属性中选择一项提升：
@@ -260,6 +267,7 @@ pony-redpacket-survivor/
 - 👹 **Boss Challenges** - Powerful Bosses appear every 30 seconds, requiring multiple defeats
 - 💥 **Explosion System** - Monsters and Bosses explode on impact, dealing damage
 - 🌦️ **Dynamic Weather System** - Weather changes every 30 seconds, affecting gameplay strategy
+- ⚔️ **Auto-Attack System** - Smartly attacks enemies in range, hands-free gameplay
 - 📈 **RPG Progression** - Collect red packets to level up and upgrade stats
 - 🎨 **Beautiful Visuals** - Emoji-based characters, cool attack effects
 - 🚀 **Smooth Experience** - Pure HTML/CSS/JS, no installation needed
@@ -278,6 +286,12 @@ pony-redpacket-survivor/
 - **Left Virtual Joystick** - Move pony
 - **Right Attack Button** - Area attack
 - **Collect Red Packets** - Get close to collect automatically
+
+#### Auto-Attack System
+- **Default Enabled**: Auto-attack is enabled by default
+- **Attack Logic**: Automatically attacks when monsters or Bosses are within attack range
+- **Attack Limitation**: Auto-attack respects normal attack cooldown (400ms)
+- **Toggle Setting**: Can be enabled or disabled in game settings at any time
 
 #### Upgrade System
 Collect enough red packets (EXP) to level up, choose from four stats:
