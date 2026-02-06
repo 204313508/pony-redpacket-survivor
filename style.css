@@ -313,7 +313,7 @@ body::before {
 
 /* ==================== 开始界面 ==================== */
 .game-title {
-    font-size: 56px;
+    font-size: 48px;
     font-weight: 900;
     margin-bottom: 15px;
     display: flex;
@@ -323,10 +323,11 @@ body::before {
     filter: drop-shadow(0 4px 20px rgba(255, 215, 0, 0.3));
     letter-spacing: 2px;
     animation: titlePulse 2s ease-in-out infinite;
+    flex-wrap: nowrap;
 }
 
 .title-emoji {
-    font-size: 64px;
+    font-size: 56px;
     line-height: 1;
     filter: none;
 }
@@ -807,15 +808,15 @@ body::before {
 
 @media (max-width: 480px) {
     .game-title {
-        font-size: 28px;
-        gap: 6px;
-        flex-direction: column;
+        font-size: 22px;
+        gap: 4px;
+        flex-wrap: nowrap;
     }
-    
+
     .title-emoji {
-        font-size: 32px;
+        font-size: 28px;
     }
-    
+
     .game-subtitle {
         font-size: 14px;
     }

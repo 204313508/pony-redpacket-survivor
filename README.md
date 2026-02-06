@@ -159,7 +159,7 @@ pony-redpacket-survivor/
 
 #### 游戏开始界面
 <div align="center">
-  <img src="0.png" alt="游戏开始界面" width="80%">
+  <img src="gamestart.png" alt="游戏开始界面" width="80%">
 </div>
 
 #### 游戏战斗画面
@@ -169,12 +169,30 @@ pony-redpacket-survivor/
 </div>
 
 <div align="center">
-  <img src="4.jpg" alt="Boss战斗" width="45%">
+  <img src="boss.png" alt="Boss战斗" width="45%">
+</div>
+
+#### 升级界面
+<div align="center">
+  <img src="upgrade.png" alt="升级界面" width="45%">
+</div>
+
+#### 设置界面
+<div align="center">
+  <img src="settings.png" alt="设置界面" width="45%">
 </div>
 
 #### 游戏结束界面
 <div align="center">
-  <img src="2.png" alt="游戏结束界面" width="45%">
+  <img src="gameover.png" alt="游戏结束界面" width="45%">
+</div>
+
+#### 移动端界面
+<div align="center">
+  <img src="mobile-start-screen.jpg" alt="移动端开始界面" width="30%">
+  <img src="mobile-gameplay.jpg" alt="移动端游戏进行中" width="30%">
+  <img src="mobile-upgrade-screen.jpg" alt="移动端升级界面" width="30%">
+  <img src="mobile-gameover-screen.jpg" alt="移动端游戏结束界面" width="30%">
 </div>
 
 ### 📊 游戏参数
@@ -397,7 +415,7 @@ pony-redpacket-survivor/
 
 #### Game Start Screen
 <div align="center">
-  <img src="0.png" alt="Game Start Screen" width="80%">
+  <img src="gamestart.png" alt="Game Start Screen" width="80%">
 </div>
 
 #### Gameplay
@@ -407,12 +425,30 @@ pony-redpacket-survivor/
 </div>
 
 <div align="center">
-  <img src="4.jpg" alt="Boss Combat" width="45%">
+  <img src="boss.png" alt="Boss Combat" width="45%">
+</div>
+
+#### Upgrade Screen
+<div align="center">
+  <img src="upgrade.png" alt="Upgrade Screen" width="45%">
+</div>
+
+#### Settings Screen
+<div align="center">
+  <img src="settings.png" alt="Settings Screen" width="45%">
 </div>
 
 #### Game Over Screen
 <div align="center">
-  <img src="2.png" alt="Game Over Screen" width="45%">
+  <img src="gameover.png" alt="Game Over Screen" width="45%">
+</div>
+
+#### Mobile Screens
+<div align="center">
+  <img src="mobile-start-screen.jpg" alt="Mobile Start Screen" width="30%">
+  <img src="mobile-gameplay.jpg" alt="Mobile Gameplay" width="30%">
+  <img src="mobile-upgrade-screen.jpg" alt="Mobile Upgrade Screen" width="30%">
+  <img src="mobile-gameover-screen.jpg" alt="Mobile Game Over Screen" width="30%">
 </div>
 
 ### 📊 Game Parameters

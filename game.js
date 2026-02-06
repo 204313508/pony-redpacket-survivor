@@ -9,7 +9,8 @@ const CONFIG = {
         SPEED_MULTIPLIER: 0.45, // 移动端速度系数（降低以便更精确控制）
         ATTACK_RANGE_MULTIPLIER: 1.1, // 移动端攻击范围系数
         COLLECT_RANGE_MULTIPLIER: 1.3, // 移动端收集范围系数（确保收集范围比攻击范围大）
-        CAMERA_ZOOM: 0.7, // 移动端摄像机缩放（小于1表示缩小视野，让玩家看到更大区域）
+        CAMERA_ZOOM: 0.85, // 移动端摄像机缩放（小于1表示缩小视野，让玩家看到更大区域）
+        ELEMENT_SCALE_MULTIPLIER: 1.15, // 移动端元素显示大小倍数（让元素更容易看清）
         REDPACKET_COLLECT_SPEED_MULTIPLIER: 0.6 // 移动端红包收集速度系数
     },
 
@@ -673,9 +674,13 @@ class Player {
             hurtScale = 1 + Math.sin(progress * Math.PI * 2) * 0.15;
         }
 
+        // 计算移动端元素缩放
+        const elementScale = this.isMobile ? CONFIG.MOBILE.ELEMENT_SCALE_MULTIPLIER : 1;
+        const combinedScale = this.direction * attackScale * hurtScale * elementScale;
+
         ctx.save();
         ctx.translate(screenX + hurtShakeX, screenY + shakeY + hurtShakeY);
-        ctx.scale(this.direction * attackScale * hurtScale, attackScale * hurtScale);
+        ctx.scale(combinedScale, attackScale * hurtScale * elementScale);
 
         // 重置所有效果，确保emoji完全清晰
         ctx.shadowBlur = 0;
@@ -695,9 +700,10 @@ class Player {
 
 // ==================== 怪物类 ====================
 class Monster {
-    constructor(x, y, difficultyMultiplier) {
+    constructor(x, y, difficultyMultiplier, isMobile = false) {
         this.x = x;
         this.y = y;
+        this.isMobile = isMobile;
         
         // 获取游戏设置
         const settings = window.gameSettings || {};
@@ -707,7 +713,14 @@ class Monster {
         this.hp = Math.floor(this.baseHp * (1 + (difficultyMultiplier - 1) * (settings.monsterHPGrowth || 0.1) * 10));
         this.maxHp = this.hp;
         this.attack = Math.floor((settings.monsterInitialAttack || CONFIG.MONSTER.INITIAL_ATTACK) * (1 + (difficultyMultiplier - 1) * (settings.monsterAttackGrowth || 0.05) * 10));
-        this.speed = (settings.monsterInitialSpeed || CONFIG.MONSTER.INITIAL_SPEED) * (1 + (difficultyMultiplier - 1) * (settings.monsterSpeedGrowth || 0.02) * 10);
+        
+        // 移动端适配速度
+        let baseSpeed = settings.monsterInitialSpeed || CONFIG.MONSTER.INITIAL_SPEED;
+        if (isMobile) {
+            baseSpeed = baseSpeed * CONFIG.MOBILE.SPEED_MULTIPLIER;
+        }
+        this.speed = baseSpeed * (1 + (difficultyMultiplier - 1) * (settings.monsterSpeedGrowth || 0.02) * 10);
+        
         this.size = (settings.monsterInitialSize || CONFIG.MONSTER.INITIAL_SIZE) + (difficultyMultiplier - 1) * 2;
         this.damage = this.attack;
         this.expValue = Math.floor((settings.monsterExpValue || CONFIG.REDPACKET.EXP_VALUE) * difficultyMultiplier);
@@ -868,8 +881,12 @@ class Monster {
             shakeY = Math.cos(progress * Math.PI * 12) * this.size * 0.2;
         }
 
+        // 计算移动端元素缩放
+        const elementScale = this.isMobile ? CONFIG.MOBILE.ELEMENT_SCALE_MULTIPLIER : 1;
+
         ctx.save();
         ctx.translate(screenX + shakeX, screenY + shakeY);
+        ctx.scale(elementScale, elementScale);
 
         // 重置所有效果，确保emoji完全清晰
         ctx.shadowBlur = 0;
@@ -889,9 +906,10 @@ class Monster {
 
 // ==================== Boss类 ====================
 class Boss {
-    constructor(x, y, difficultyMultiplier) {
+    constructor(x, y, difficultyMultiplier, isMobile = false) {
         this.x = x;
         this.y = y;
+        this.isMobile = isMobile;
         
         // 获取游戏设置
         const settings = window.gameSettings || {};
@@ -900,7 +918,14 @@ class Boss {
         this.hp = Math.floor((settings.bossInitialHP || CONFIG.BOSS.INITIAL_HP) * (1 + (difficultyMultiplier - 1) * (settings.bossHPGrowth || 0.15) * 10));
         this.maxHp = this.hp;
         this.attack = Math.floor((settings.bossAttack || CONFIG.BOSS.ATTACK) * (1 + (difficultyMultiplier - 1) * (settings.bossAttackGrowth || 0.08) * 10));
-        this.speed = (settings.bossSpeed || CONFIG.BOSS.SPEED) * (1 + (difficultyMultiplier - 1) * (settings.bossSpeedGrowth || 0.03) * 10);
+        
+        // 移动端适配速度
+        let baseSpeed = settings.bossSpeed || CONFIG.BOSS.SPEED;
+        if (isMobile) {
+            baseSpeed = baseSpeed * CONFIG.MOBILE.SPEED_MULTIPLIER;
+        }
+        this.speed = baseSpeed * (1 + (difficultyMultiplier - 1) * (settings.bossSpeedGrowth || 0.03) * 10);
+        
         this.size = settings.bossSize || CONFIG.BOSS.SIZE;
         this.damage = this.attack;
         this.explosionDamage = settings.bossExplosionDamage || CONFIG.BOSS.EXPLOSION_DAMAGE;
@@ -1158,10 +1183,14 @@ class Boss {
 
         // Boss呼吸动画
         const breatheScale = 1 + Math.sin(Date.now() / 400) * 0.08;
+        
+        // 计算移动端元素缩放
+        const elementScale = this.isMobile ? CONFIG.MOBILE.ELEMENT_SCALE_MULTIPLIER : 1;
+        const combinedScale = breatheScale * elementScale;
 
         ctx.save();
         ctx.translate(screenX + shakeX, screenY + shakeY);
-        ctx.scale(breatheScale, breatheScale);
+        ctx.scale(combinedScale, combinedScale);
 
         // 重置所有效果，确保emoji完全清晰
         ctx.shadowBlur = 0;
@@ -1278,8 +1307,12 @@ class RedPacket {
         const screenX = this.x - cameraX;
         const screenY = this.y - cameraY + Math.sin(this.bobAngle) * 5;
 
+        // 计算移动端元素缩放
+        const elementScale = this.isMobile ? CONFIG.MOBILE.ELEMENT_SCALE_MULTIPLIER : 1;
+
         ctx.save();
         ctx.translate(screenX, screenY);
+        ctx.scale(elementScale, elementScale);
 
         // 重置所有效果，确保emoji完全清晰
         ctx.shadowBlur = 0;
@@ -1299,9 +1332,10 @@ class RedPacket {
 
 // ==================== 回复包类 ====================
 class HealthPotion {
-    constructor(x, y, playerMaxHp) {
+    constructor(x, y, playerMaxHp, isMobile = false) {
         this.x = x;
         this.y = y;
+        this.isMobile = isMobile;
         this.size = 18;
         this.playerMaxHp = playerMaxHp;
         const baseAmount = CONFIG.WEATHER.RAINY_HEALTHPOTION_AMOUNT;
@@ -1385,8 +1419,12 @@ class HealthPotion {
         const elapsed = Date.now() - this.createTime;
         const progress = elapsed / this.lifetime;
 
+        // 计算移动端元素缩放
+        const elementScale = this.isMobile ? CONFIG.MOBILE.ELEMENT_SCALE_MULTIPLIER : 1;
+
         ctx.save();
         ctx.translate(screenX, screenY);
+        ctx.scale(elementScale, elementScale);
 
         // 剩余时间淡出效果
         const alpha = progress > 0.7 ? 1 - (progress - 0.7) / 0.3 : 1;
@@ -1812,7 +1850,7 @@ class WeatherSystem {
         if (this.currentWeather === WeatherType.RAINY) {
             // 雨天：每隔5秒生成回复包
             if (currentTime - this.lastRainyPotionTime >= CONFIG.WEATHER.RAINY_HEALTHPOTION_INTERVAL) {
-                healthPotions.push(this.spawnHealthPotion(mapWidth, mapHeight, player.maxHp));
+                healthPotions.push(this.spawnHealthPotion(mapWidth, mapHeight, player.maxHp, player.isMobile));
                 this.lastRainyPotionTime = currentTime;
             }
         } else if (this.currentWeather === WeatherType.STORMY) {
@@ -1884,11 +1922,11 @@ class WeatherSystem {
         return 0;
     }
 
-    spawnHealthPotion(mapWidth, mapHeight, playerMaxHp) {
+    spawnHealthPotion(mapWidth, mapHeight, playerMaxHp, isMobile) {
         // 在地图内随机位置生成回复包
         const x = Utils.randomRange(50, mapWidth - 50);
         const y = Utils.randomRange(50, mapHeight - 50);
-        return new HealthPotion(x, y, playerMaxHp);
+        return new HealthPotion(x, y, playerMaxHp, isMobile);
     }
 
     spawnLightning(mapWidth, mapHeight, playerMaxHp) {
@@ -2407,7 +2445,7 @@ class Game {
                 const clampedX = Utils.clamp(x, 50, CONFIG.MAP_WIDTH - 50);
                 const clampedY = Utils.clamp(y, 50, CONFIG.MAP_HEIGHT - 50);
 
-                this.monsters.push(new Monster(clampedX, clampedY, this.difficultyMultiplier));
+                this.monsters.push(new Monster(clampedX, clampedY, this.difficultyMultiplier, this.player.isMobile));
             }
 
             this.lastSpawnTime = currentTime;
@@ -2432,7 +2470,7 @@ class Game {
             const clampedX = Utils.clamp(x, 50, CONFIG.MAP_WIDTH - 50);
             const clampedY = Utils.clamp(y, 50, CONFIG.MAP_HEIGHT - 50);
 
-            this.bosses.push(new Boss(clampedX, clampedY, this.difficultyMultiplier));
+            this.bosses.push(new Boss(clampedX, clampedY, this.difficultyMultiplier, this.player.isMobile));
             this.lastBossSpawnTime = currentTime;
         }
     }
@@ -2945,7 +2983,7 @@ class Game {
         // 移动端让玩家稍微偏上，可以看到更多下方区域
         let playerOffsetY = 0;
         if (this.isTouchDevice) {
-            playerOffsetY = this.canvas.height * 0.1; // 移动端玩家偏上10%
+            playerOffsetY = this.canvas.height * 0.15; // 移动端玩家偏上15%
         }
         
         const cameraX = this.player.x - this.canvas.width / 2;
