@@ -4,6 +4,13 @@ const CONFIG = {
     MAP_WIDTH: 1600,
     MAP_HEIGHT: 1000,
     
+    // 移动端适配配置
+    MOBILE: {
+        SPEED_MULTIPLIER: 0.65, // 移动端速度系数
+        ATTACK_RANGE_MULTIPLIER: 1.1, // 移动端攻击范围系数
+        CAMERA_ZOOM: 0.7 // 移动端摄像机缩放（小于1表示缩小视野，让玩家看到更大区域）
+    },
+    
     // 玩家初始属性
     PLAYER: {
         INITIAL_HP: 100,
@@ -103,7 +110,8 @@ class VirtualJoystick {
         this.stickPosition = { x: 0, y: 0 };
         this.input = { x: 0, y: 0 };
         
-        this.maxDistance = 35; // 摇杆最大移动距离
+        this.maxDistance = 40; // 摇杆最大移动距离
+        this.deadZone = 0.1; // 死区，避免轻微抖动
         
         this.setupEventListeners();
     }
@@ -166,10 +174,25 @@ class VirtualJoystick {
             y: normalized.y * clampedDistance
         };
         
-        // 更新输入值（归一化到 -1 到 1 之间）
+        // 计算输入值（归一化到 -1 到 1 之间）
+        let inputX = normalized.x * (clampedDistance / this.maxDistance);
+        let inputY = normalized.y * (clampedDistance / this.maxDistance);
+        
+        // 应用死区，避免轻微抖动
+        const inputMagnitude = Math.sqrt(inputX * inputX + inputY * inputY);
+        if (inputMagnitude < this.deadZone) {
+            inputX = 0;
+            inputY = 0;
+        } else {
+            // 调整输出，使死区之外的输入更平滑
+            const adjustedMagnitude = (inputMagnitude - this.deadZone) / (1 - this.deadZone);
+            inputX = (inputX / inputMagnitude) * adjustedMagnitude;
+            inputY = (inputY / inputMagnitude) * adjustedMagnitude;
+        }
+        
         this.input = {
-            x: normalized.x * (clampedDistance / this.maxDistance),
-            y: normalized.y * (clampedDistance / this.maxDistance)
+            x: inputX,
+            y: inputY
         };
         
         // 更新摇杆视觉位置
@@ -256,19 +279,33 @@ class SoundEffect {
 
 // ==================== 玩家类 ====================
 class Player {
-    constructor(x, y) {
+    constructor(x, y, isMobile = false) {
         this.x = x;
         this.y = y;
         this.hp = CONFIG.PLAYER.INITIAL_HP;
         this.maxHp = CONFIG.PLAYER.INITIAL_HP;
         this.attackPower = CONFIG.PLAYER.INITIAL_ATTACK;
         this.defense = CONFIG.PLAYER.INITIAL_DEFENSE;
-        this.speed = CONFIG.PLAYER.INITIAL_SPEED;
+        this.isMobile = isMobile;
+        
+        // 移动端使用较低的速度
+        this.baseSpeed = CONFIG.PLAYER.INITIAL_SPEED;
+        if (this.isMobile) {
+            this.baseSpeed = CONFIG.PLAYER.INITIAL_SPEED * CONFIG.MOBILE.SPEED_MULTIPLIER;
+        }
+        this.speed = this.baseSpeed;
+        
         this.level = CONFIG.PLAYER.INITIAL_LEVEL;
         this.exp = CONFIG.PLAYER.INITIAL_EXP;
         this.expToLevel = CONFIG.PLAYER.INITIAL_EXP_TO_LEVEL;
         this.size = CONFIG.PLAYER.SIZE;
+        
+        // 移动端使用稍大的攻击范围
         this.attackRange = CONFIG.PLAYER.ATTACK_RANGE;
+        if (this.isMobile) {
+            this.attackRange = CONFIG.PLAYER.ATTACK_RANGE * CONFIG.MOBILE.ATTACK_RANGE_MULTIPLIER;
+        }
+        
         this.attackCooldown = 0;
         this.lastAttackTime = 0;
         this.direction = 1; // 1为右，-1为左
@@ -402,7 +439,11 @@ class Player {
                 this.defense += CONFIG.UPGRADE.DEFENSE_BONUS;
                 break;
             case 'speed':
-                this.speed += CONFIG.UPGRADE.SPEED_BONUS;
+                // 升级速度时应用移动端系数
+                const speedBonus = this.isMobile 
+                    ? CONFIG.UPGRADE.SPEED_BONUS * CONFIG.MOBILE.SPEED_MULTIPLIER 
+                    : CONFIG.UPGRADE.SPEED_BONUS;
+                this.speed += speedBonus;
                 break;
         }
     }
@@ -1247,7 +1288,7 @@ class Game {
     }
     
     startGame() {
-        this.player = new Player(CONFIG.MAP_WIDTH / 2, CONFIG.MAP_HEIGHT / 2);
+        this.player = new Player(CONFIG.MAP_WIDTH / 2, CONFIG.MAP_HEIGHT / 2, this.isTouchDevice);
         this.monsters = [];
         this.bosses = [];
         this.redPackets = [];
@@ -1615,9 +1656,28 @@ class Game {
         ctx.fillStyle = '#0a0a0a';
         ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         
+        // 计算缩放因子（移动端缩小视野）
+        const zoom = this.isTouchDevice ? CONFIG.MOBILE.CAMERA_ZOOM : 1;
+        
+        // 保存上下文状态
+        ctx.save();
+        
+        // 应用缩放（以画布中心为基准）
+        if (zoom !== 1) {
+            ctx.translate(this.canvas.width / 2, this.canvas.height / 2);
+            ctx.scale(zoom, zoom);
+            ctx.translate(-this.canvas.width / 2, -this.canvas.height / 2);
+        }
+        
         // 计算摄像机位置（跟随玩家）
+        // 移动端让玩家稍微偏上，可以看到更多下方区域
+        let playerOffsetY = 0;
+        if (this.isTouchDevice) {
+            playerOffsetY = this.canvas.height * 0.1; // 移动端玩家偏上10%
+        }
+        
         const cameraX = this.player.x - this.canvas.width / 2;
-        const cameraY = this.player.y - this.canvas.height / 2;
+        const cameraY = this.player.y - this.canvas.height / 2 + playerOffsetY;
         
         // 绘制地图背景
         this.drawMap(ctx, cameraX, cameraY);
@@ -1642,6 +1702,9 @@ class Game {
 
         // 绘制小马受伤特效
         this.playerHurtEffects.forEach(effect => effect.draw(ctx, cameraX, cameraY));
+        
+        // 恢复上下文状态
+        ctx.restore();
     }
     
     drawMap(ctx, cameraX, cameraY) {
