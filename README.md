@@ -120,28 +120,22 @@ pony-redpacket-survivor/
 
 #### 游戏开始界面
 <div align="center">
-  <img src="game-start.jpg" alt="游戏开始界面" width="80%">
+  <img src="0.png" alt="游戏开始界面" width="80%">
 </div>
 
 #### 游戏战斗画面
 <div align="center">
-  <img src="1.png" alt="游戏截图1" width="45%">
-  <img src="2.png" alt="游戏截图2" width="45%">
+  <img src="1.png" alt="游戏战斗1" width="45%">
+  <img src="3.png" alt="游戏战斗2" width="45%">
 </div>
 
 <div align="center">
-  <img src="3.png" alt="游戏截图3" width="45%">
+  <img src="4.jpg" alt="Boss战斗" width="45%">
 </div>
 
-#### Boss系统
+#### 游戏结束界面
 <div align="center">
-  <img src="boss-spawn-test.jpg" alt="Boss生成" width="45%">
-  <img src="boss-visible.jpg" alt="Boss战斗" width="45%">
-</div>
-
-<div align="center">
-  <img src="boss-after-collision.jpg" alt="Boss自爆后" width="45%">
-  <img src="boss-death-result.jpg" alt="Boss死亡结果" width="45%">
+  <img src="2.png" alt="游戏结束界面" width="45%">
 </div>
 
 ### 📊 游戏参数
@@ -311,28 +305,22 @@ pony-redpacket-survivor/
 
 #### Game Start Screen
 <div align="center">
-  <img src="game-start.jpg" alt="Game Start Screen" width="80%">
+  <img src="0.png" alt="Game Start Screen" width="80%">
 </div>
 
 #### Gameplay
 <div align="center">
-  <img src="1.png" alt="Game Screenshot 1" width="45%">
-  <img src="2.png" alt="Game Screenshot 2" width="45%">
+  <img src="1.png" alt="Game Combat 1" width="45%">
+  <img src="3.png" alt="Game Combat 2" width="45%">
 </div>
 
 <div align="center">
-  <img src="3.png" alt="Game Screenshot 3" width="45%">
+  <img src="4.jpg" alt="Boss Combat" width="45%">
 </div>
 
-#### Boss System
+#### Game Over Screen
 <div align="center">
-  <img src="boss-spawn-test.jpg" alt="Boss Spawn" width="45%">
-  <img src="boss-visible.jpg" alt="Boss Combat" width="45%">
-</div>
-
-<div align="center">
-  <img src="boss-after-collision.jpg" alt="Boss After Explosion" width="45%">
-  <img src="boss-death-result.jpg" alt="Boss Death Result" width="45%">
+  <img src="2.png" alt="Game Over Screen" width="45%">
 </div>
 
 ### 📊 Game Parameters
