@@ -244,6 +244,84 @@ const Utils = {
     }
 };
 
+// ==================== 对象池系统 ====================
+/**
+ * 通用对象池类
+ * 用于复用游戏对象，减少垃圾回收压力
+ */
+class ObjectPool {
+    /**
+     * 创建对象池
+     * @param {Function} createFn - 创建新对象的函数
+     * @param {Function} resetFn - 重置对象状态的函数
+     * @param {number} maxSize - 对象池最大容量
+     */
+    constructor(createFn, resetFn, maxSize = 20) {
+        this.createFn = createFn;
+        this.resetFn = resetFn;
+        this.maxSize = maxSize;
+        this.pool = [];
+        this.activeCount = 0;
+    }
+
+    /**
+     * 从对象池获取对象
+     * @param {...any} args - 传递给 resetFn 的参数
+     * @returns {Object} 复用的对象
+     */
+    acquire(...args) {
+        let obj;
+
+        if (this.pool.length > 0) {
+            // 从池中取出对象
+            obj = this.pool.pop();
+            // 重置对象状态
+            this.resetFn(obj, ...args);
+        } else {
+            // 池中没有可用对象，创建新对象
+            obj = this.createFn(...args);
+        }
+
+        this.activeCount++;
+        return obj;
+    }
+
+    /**
+     * 将对象归还到对象池
+     * @param {Object} obj - 要归还的对象
+     */
+    release(obj) {
+        if (!obj) return;
+
+        // 如果池未满，则回收对象
+        if (this.pool.length < this.maxSize) {
+            this.pool.push(obj);
+        }
+
+        this.activeCount--;
+    }
+
+    /**
+     * 获取对象池统计信息
+     * @returns {Object} 统计信息
+     */
+    getStats() {
+        return {
+            poolSize: this.pool.length,
+            activeCount: this.activeCount,
+            maxSize: this.maxSize
+        };
+    }
+
+    /**
+     * 清空对象池
+     */
+    clear() {
+        this.pool = [];
+        this.activeCount = 0;
+    }
+}
+
 // ==================== 虚拟摇杆类 ====================
 class VirtualJoystick {
     constructor(container) {
@@ -584,6 +662,10 @@ class Player {
         this.hurtAnimationTime = 0;
         this.hurtAnimationDuration = 400;
 
+        // 暴击系统
+        this.critChance = 0.05; // 默认5%暴击率
+        this.critDamageMultiplier = 2.0; // 暴击伤害倍数
+
         // 技能系统
         this.playerSkills = {
             // 已学技能 {skillId: level}
@@ -686,7 +768,30 @@ class Player {
         }
         return false;
     }
-    
+
+    /**
+     * 计算伤害并返回伤害信息
+     * @param {boolean} isSkill 是否为技能伤害
+     * @returns {Object} { damage: number, isCrit: boolean }
+     */
+    calculateDamage(isSkill = false) {
+        const baseDamage = this.attackPower;
+
+        // 检查是否暴击（技能伤害不能暴击）
+        let isCrit = false;
+        if (!isSkill && Math.random() < this.critChance) {
+            isCrit = true;
+        }
+
+        // 计算最终伤害
+        const finalDamage = isCrit ? Math.floor(baseDamage * this.critDamageMultiplier) : baseDamage;
+
+        return {
+            damage: finalDamage,
+            isCrit: isCrit
+        };
+    }
+
     takeDamage(damage) {
         const actualDamage = Math.max(1, damage - this.defense);
         this.hp -= actualDamage;
@@ -836,9 +941,11 @@ class Player {
                 this.playerSkills.effects.stoneSkin.endTime = Date.now() + stats.duration;
                 break;
             case 'heal':
+                const oldHp = this.hp;
                 const healAmount = this.maxHp * stats.healPercent;
                 this.hp = Math.min(this.maxHp, this.hp + healAmount);
-                break;
+                const actualHeal = this.hp - oldHp;
+                return actualHeal; // 返回实际回复量
             case 'bloodthirst':
                 this.playerSkills.effects.bloodthirst.active = true;
                 this.playerSkills.effects.bloodthirst.endTime = Date.now() + stats.duration;
@@ -1860,6 +1967,18 @@ class AttackEffect {
         this.elapsed = 0;
         this.active = true;
     }
+
+    // 对象池使用：重置对象状态
+    reset(x, y, direction, attackRange) {
+        this.x = x;
+        this.y = y;
+        this.direction = direction;
+        this.radius = 0;
+        this.maxRadius = attackRange;
+        this.duration = 300;
+        this.elapsed = 0;
+        this.active = true;
+    }
     
     update(deltaTime) {
         this.elapsed += deltaTime;
@@ -1956,6 +2075,32 @@ class MonsterExplosionEffect {
         }
     }
 
+    // 对象池使用：重置对象状态
+    reset(x, y, size) {
+        this.x = x;
+        this.y = y;
+        this.size = size;
+        this.elapsed = 0;
+        this.active = true;
+
+        // 重新创建爆炸粒子
+        const particleCount = 20;
+        this.particles = [];
+        for (let i = 0; i < particleCount; i++) {
+            const angle = (Math.PI * 2 / particleCount) * i;
+            const speed = Utils.randomRange(3, 8);
+            this.particles.push({
+                x: x,
+                y: y,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                size: Utils.randomRange(3, 8),
+                life: 1,
+                color: Math.random() > 0.5 ? '#ff4444' : '#ffaa00'
+            });
+        }
+    }
+
     update(deltaTime) {
         this.elapsed += deltaTime;
 
@@ -2034,6 +2179,14 @@ class PlayerHurtEffect {
         this.shakeIntensity = 15;
     }
 
+    // 对象池使用：重置对象状态
+    reset(x, y) {
+        this.x = x;
+        this.y = y;
+        this.elapsed = 0;
+        this.active = true;
+    }
+
     update(deltaTime) {
         this.elapsed += deltaTime;
         if (this.elapsed >= this.duration) {
@@ -2103,6 +2256,20 @@ class LightningEffect {
         this.hasStruck = false;
         this.active = true;
         this.struckUnits = []; // 记录已击中的单位
+    }
+
+    // 对象池使用：重置对象状态
+    reset(x, y, playerMaxHp) {
+        this.x = x;
+        this.y = y;
+        this.warningElapsed = 0;
+        this.strikeElapsed = 0;
+        const baseDamage = CONFIG.WEATHER.STORMY_LIGHTNING_DAMAGE;
+        const percentDamage = playerMaxHp * CONFIG.WEATHER.STORMY_LIGHTNING_DAMAGE_PERCENT;
+        this.damage = Math.max(baseDamage, percentDamage);
+        this.hasStruck = false;
+        this.active = true;
+        this.struckUnits = []; // 清空已击中单位列表
     }
 
     update(deltaTime) {
@@ -2230,6 +2397,157 @@ class LightningEffect {
     }
 }
 
+// ==================== 伤害数字类 ====================
+class DamageNumber {
+    constructor(x, y, value, type = 'normal') {
+        this.x = x;
+        this.y = y;
+        this.value = value;
+        this.type = type; // 'normal', 'crit', 'skill', 'heal'
+        this.duration = 1000; // 显示持续时间（毫秒）
+        this.elapsed = 0;
+        this.active = true;
+        this.floatDistance = 80; // 向上飘动的距离
+        this.initialScale = 1;
+        this.shakeAmount = 0;
+        
+        // 根据类型设置颜色和效果
+        switch (type) {
+            case 'crit':
+                this.color = '#FFD700'; // 金色
+                this.initialScale = 1.5;
+                this.shakeAmount = 5;
+                this.duration = 1200;
+                break;
+            case 'skill':
+                this.color = '#9B59B6'; // 紫色
+                this.initialScale = 1.3;
+                this.duration = 1100;
+                break;
+            case 'heal':
+                this.color = '#2ED573'; // 绿色
+                this.initialScale = 1.2;
+                this.duration = 1000;
+                break;
+            case 'damage':
+                this.color = '#FF4757'; // 红色
+                this.initialScale = 1.2;
+                this.duration = 1000;
+                break;
+            default:
+                this.color = '#FFFFFF'; // 白色
+                this.initialScale = 1;
+        }
+
+        this.fontSize = 24 * this.initialScale;
+    }
+
+    reset(x, y, value, type = 'normal') {
+        this.x = x;
+        this.y = y;
+        this.value = value;
+        this.type = type;
+        this.elapsed = 0;
+        this.active = true;
+
+        // 根据类型重新设置属性
+        switch (type) {
+            case 'crit':
+                this.color = '#FFD700';
+                this.initialScale = 1.5;
+                this.shakeAmount = 5;
+                this.duration = 1200;
+                break;
+            case 'skill':
+                this.color = '#9B59B6';
+                this.initialScale = 1.3;
+                this.duration = 1100;
+                break;
+            case 'heal':
+                this.color = '#2ED573';
+                this.initialScale = 1.2;
+                this.duration = 1000;
+                break;
+            case 'damage':
+                this.color = '#FF4757';
+                this.initialScale = 1.2;
+                this.duration = 1000;
+                break;
+            default:
+                this.color = '#FFFFFF';
+                this.initialScale = 1;
+                this.shakeAmount = 0;
+        }
+
+        this.fontSize = 24 * this.initialScale;
+    }
+    
+    update(deltaTime) {
+        this.elapsed += deltaTime;
+        if (this.elapsed >= this.duration) {
+            this.active = false;
+        }
+    }
+    
+    draw(ctx, cameraX, cameraY) {
+        if (!this.active) return;
+        
+        const progress = this.elapsed / this.duration;
+        const screenX = this.x - cameraX;
+        const screenY = this.y - cameraY - (progress * this.floatDistance);
+        
+        // 计算透明度（逐渐消失）
+        const alpha = 1 - Math.pow(progress, 2);
+        
+        // 计算缩放（先放大后恢复）
+        let scale = this.initialScale;
+        if (progress < 0.2) {
+            scale = this.initialScale * (1 + Math.sin(progress * Math.PI * 5) * 0.2);
+        } else {
+            scale = this.initialScale * (1 - (progress - 0.2) * 0.5);
+        }
+        
+        // 暴击时的晃动效果
+        let shakeX = 0;
+        let shakeY = 0;
+        if (this.type === 'crit' && progress < 0.3) {
+            shakeX = (Math.random() - 0.5) * this.shakeAmount;
+            shakeY = (Math.random() - 0.5) * this.shakeAmount;
+        }
+        
+        ctx.save();
+        ctx.translate(screenX + shakeX, screenY + shakeY);
+        
+        // 设置字体和样式
+        ctx.font = `bold ${this.fontSize * scale}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // 绘制阴影/发光效果
+        ctx.shadowBlur = this.type === 'crit' ? 20 : 10;
+        ctx.shadowColor = this.color;
+        
+        // 绘制文字描边
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+        ctx.lineWidth = 3;
+        ctx.strokeText(this.value, 0, 0);
+        
+        // 绘制文字填充
+        ctx.fillStyle = this.color;
+        ctx.globalAlpha = alpha;
+        ctx.fillText(this.value, 0, 0);
+        
+        // 暴击时额外绘制闪光效果
+        if (this.type === 'crit' && progress < 0.5) {
+            ctx.globalAlpha = alpha * (1 - progress * 2);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillText(this.value, 0, 0);
+        }
+        
+        ctx.restore();
+    }
+}
+
 // ==================== 天气系统类 ====================
 class WeatherSystem {
     constructor(soundEffect = null) {
@@ -2244,7 +2562,7 @@ class WeatherSystem {
         this.soundEffect = soundEffect;
     }
 
-    update(currentTime, player, mapWidth, mapHeight) {
+    update(currentTime, player, mapWidth, mapHeight, lightningEffectPool) {
         // 检查是否需要切换天气
         if (currentTime - this.lastWeatherChangeTime >= CONFIG.WEATHER.CHANGE_INTERVAL) {
             this.changeWeather();
@@ -2264,7 +2582,7 @@ class WeatherSystem {
         } else if (this.currentWeather === WeatherType.STORMY) {
             // 雷天：每隔3秒生成雷击
             if (currentTime - this.lastStormyLightningTime >= CONFIG.WEATHER.STORMY_LIGHTNING_INTERVAL) {
-                lightningEffects.push(this.spawnLightning(mapWidth, mapHeight, player.maxHp));
+                lightningEffects.push(this.spawnLightning(mapWidth, mapHeight, player.maxHp, lightningEffectPool));
                 this.lastStormyLightningTime = currentTime;
             }
         }
@@ -2364,11 +2682,12 @@ class WeatherSystem {
         return new HealthPotion(x, y, playerMaxHp, isMobile);
     }
 
-    spawnLightning(mapWidth, mapHeight, playerMaxHp) {
+    spawnLightning(mapWidth, mapHeight, playerMaxHp, lightningPool) {
         // 在地图内随机位置生成雷击
         const x = Utils.randomRange(100, mapWidth - 100);
         const y = Utils.randomRange(100, mapHeight - 100);
-        return new LightningEffect(x, y, playerMaxHp);
+        // 使用对象池创建雷击特效
+        return lightningPool.acquire(x, y, playerMaxHp);
     }
 
     drawBackgroundEffect(ctx, canvasWidth, canvasHeight, cameraX, cameraY, player) {
@@ -2698,6 +3017,7 @@ class Game {
         this.playerHurtEffects = [];
         this.healthPotions = [];
         this.lightningEffects = [];
+        this.damageNumbers = [];
 
         // 技能系统
         this.skillEffects = [];
@@ -2737,6 +3057,42 @@ class Game {
         // 设置天气系统的音效
         this.weatherSystem.setSoundEffect(this.soundEffect);
 
+        // ==================== 特效对象池系统 ====================
+        // 攻击特效对象池
+        this.attackEffectPool = new ObjectPool(
+            (x, y, direction, attackRange) => new AttackEffect(x, y, direction, attackRange),
+            (effect, x, y, direction, attackRange) => effect.reset(x, y, direction, attackRange),
+            10 // 最大容量10个
+        );
+
+        // 怪物爆炸特效对象池
+        this.monsterExplosionEffectPool = new ObjectPool(
+            (x, y, size) => new MonsterExplosionEffect(x, y, size),
+            (effect, x, y, size) => effect.reset(x, y, size),
+            10 // 最大容量10个
+        );
+
+        // 玩家受伤特效对象池
+        this.playerHurtEffectPool = new ObjectPool(
+            (x, y) => new PlayerHurtEffect(x, y),
+            (effect, x, y) => effect.reset(x, y),
+            5 // 最大容量5个
+        );
+
+        // 雷击特效对象池
+        this.lightningEffectPool = new ObjectPool(
+            (x, y, playerMaxHp) => new LightningEffect(x, y, playerMaxHp),
+            (effect, x, y, playerMaxHp) => effect.reset(x, y, playerMaxHp),
+            5 // 最大容量5个
+        );
+
+        // 伤害数字对象池
+        this.damageNumberPool = new ObjectPool(
+            (x, y, value, type) => new DamageNumber(x, y, value, type),
+            (number, x, y, value, type) => number.reset(x, y, value, type),
+            20 // 最大容量20个
+        );
+
         // 移动端虚拟摇杆
         this.joystick = null;
         this.joystickInput = { x: 0, y: 0 };
@@ -2749,6 +3105,7 @@ class Game {
             showCollectRange: false,
             autoAttack: true, // 自动攻击
             showSkillCooldown: true, // 显示技能冷却时间数字
+            showDamageNumbers: true, // 显示伤害数字
             renderQuality: 'auto', // 渲染质量：'auto', 'high', 'medium', 'low'
             // 红包设置
             redpacketExpValue: 10, // 红包掉落经验
@@ -2921,6 +3278,7 @@ class Game {
         this.playerHurtEffects = [];
         this.healthPotions = [];
         this.lightningEffects = [];
+        this.damageNumbers = [];
 
         // 清空技能栏UI
         this.clearSkillBarUI();
@@ -2981,30 +3339,43 @@ class Game {
         this.soundEffect.playAttack();
 
         // 创建攻击效果（使用玩家的实际攻击范围）
-        this.attackEffects.push(new AttackEffect(this.player.x, this.player.y, this.player.direction, this.player.attackRange));
+        this.attackEffects.push(this.attackEffectPool.acquire(this.player.x, this.player.y, this.player.direction, this.player.attackRange));
 
-        // 检测攻击范围内的怪物
-        const attackRadius = this.player.attackRange;
-
-        for (let i = this.monsters.length - 1; i >= 0; i--) {
-            const monster = this.monsters[i];
-            const distance = Utils.distance(this.player.x, this.player.y, monster.x, monster.y);
-
-            if (distance <= attackRadius) {
-                const result = monster.takeDamage(this.player.attackPower);
-
-                // 嗜血术吸血效果
-                if (this.player.playerSkills.effects.bloodthirst.active && result.damage > 0) {
-                    const skillConfig = CONFIG.SKILL.POOL.bloodthirst;
-                    const lifestealPercent = skillConfig.baseLifestealBonus;
-                    const healAmount = result.damage * lifestealPercent;
-                    this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmount);
-                }
-
-                if (result.killed) {
-                    // 播放怪物死亡音效
-                    this.soundEffect.playMonsterDeath();
-
+                        // 检测攻击范围内的怪物
+                const attackRadius = this.player.attackRange;
+        
+                for (let i = this.monsters.length - 1; i >= 0; i--) {
+                    const monster = this.monsters[i];
+                    const distance = Utils.distance(this.player.x, this.player.y, monster.x, monster.y);
+        
+                    if (distance <= attackRadius) {
+                        // 计算伤害和暴击
+                        const damageInfo = this.player.calculateDamage(false);
+                        const result = monster.takeDamage(damageInfo.damage);
+        
+                        // 显示伤害数字
+                        const damageType = damageInfo.isCrit ? 'crit' : 'normal';
+                        this.damageNumbers.push(this.damageNumberPool.acquire(monster.x, monster.y - monster.size, result.damage, damageType));
+        
+                        // 嗜血术吸血效果
+                        if (this.player.playerSkills.effects.bloodthirst.active && result.damage > 0) {
+                            const skillConfig = CONFIG.SKILL.POOL.bloodthirst;
+                            const lifestealPercent = skillConfig.baseLifestealBonus;
+                            const healAmount = result.damage * lifestealPercent;
+        
+                            // 只在实际回复血量时显示
+                            const oldHp = this.player.hp;
+                            this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmount);
+                            const actualHeal = this.player.hp - oldHp;
+        
+                            if (actualHeal > 0) {
+                                this.damageNumbers.push(this.damageNumberPool.acquire(this.player.x, this.player.y - this.player.size, Math.floor(actualHeal), 'heal'));
+                            }
+                        }
+        
+                        if (result.killed) {
+                            // 播放怪物死亡音效
+                            this.soundEffect.playMonsterDeath();
                     // 怪物死亡，掉落红包
                     this.monsters.splice(i, 1);
                     this.redPackets.push(new RedPacket(monster.x, monster.y, this.isTouchDevice));
@@ -3020,14 +3391,28 @@ class Game {
             const distance = Utils.distance(this.player.x, this.player.y, boss.x, boss.y);
 
             if (distance <= attackRadius) {
-                const result = boss.takeDamage(this.player.attackPower);
+                // 计算伤害和暴击
+                const damageInfo = this.player.calculateDamage(false);
+                const result = boss.takeDamage(damageInfo.damage);
+
+                // 显示伤害数字
+                const damageType = damageInfo.isCrit ? 'crit' : 'normal';
+                this.damageNumbers.push(this.damageNumberPool.acquire(boss.x, boss.y - boss.size, result.damage, damageType));
 
                 // 嗜血术吸血效果
                 if (this.player.playerSkills.effects.bloodthirst.active && result.damage > 0) {
                     const skillConfig = CONFIG.SKILL.POOL.bloodthirst;
                     const lifestealPercent = skillConfig.baseLifestealBonus;
                     const healAmount = result.damage * lifestealPercent;
+
+                    // 只在实际回复血量时显示
+                    const oldHp = this.player.hp;
                     this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmount);
+                    const actualHeal = this.player.hp - oldHp;
+
+                    if (actualHeal > 0) {
+                        this.damageNumbers.push(this.damageNumberPool.acquire(this.player.x, this.player.y - this.player.size, Math.floor(actualHeal), 'heal'));
+                    }
                 }
 
                 if (result.killed) {
@@ -3187,7 +3572,7 @@ class Game {
         this.updateDifficulty();
 
         // 更新天气系统
-        const weatherResult = this.weatherSystem.update(currentTime, this.player, CONFIG.MAP_WIDTH, CONFIG.MAP_HEIGHT);
+        const weatherResult = this.weatherSystem.update(currentTime, this.player, CONFIG.MAP_WIDTH, CONFIG.MAP_HEIGHT, this.lightningEffectPool);
         if (weatherResult.healthPotions.length > 0) {
             this.healthPotions.push(...weatherResult.healthPotions);
         }
@@ -3305,13 +3690,16 @@ class Game {
                     this.soundEffect.playMonsterDeath();
 
                     // 创建Boss自爆特效
-                    this.monsterExplosionEffects.push(new MonsterExplosionEffect(boss.x, boss.y, boss.size));
+                    this.monsterExplosionEffects.push(this.monsterExplosionEffectPool.acquire(boss.x, boss.y, boss.size));
 
                     // 创建小马受伤特效
-                    this.playerHurtEffects.push(new PlayerHurtEffect(this.player.x, this.player.y));
+                    this.playerHurtEffects.push(this.playerHurtEffectPool.acquire(this.player.x, this.player.y));
 
                     // 玩家受到伤害
-                    this.player.takeDamage(result.damage);
+                    const actualDamage = this.player.takeDamage(result.damage);
+
+                    // 显示玩家受到的伤害数字（红色）
+                    this.damageNumbers.push(this.damageNumberPool.acquire(this.player.x, this.player.y - this.player.size, actualDamage, 'damage'));
 
                     // 如果Boss死亡，掉落红包
                     if (result.dead) {
@@ -3350,14 +3738,17 @@ class Game {
             if (distance < this.player.size + monster.size) {
                 const damage = this.player.takeDamage(monster.damage);
 
+                // 显示玩家受到的伤害数字（红色）
+                this.damageNumbers.push(this.damageNumberPool.acquire(this.player.x, this.player.y - this.player.size, damage, 'damage'));
+
                 // 播放怪物自爆音效
                 this.soundEffect.playMonsterDeath();
 
                 // 创建怪物自爆特效
-                this.monsterExplosionEffects.push(new MonsterExplosionEffect(monster.x, monster.y, monster.size));
+                this.monsterExplosionEffects.push(this.monsterExplosionEffectPool.acquire(monster.x, monster.y, monster.size));
 
                 // 创建小马受伤特效
-                this.playerHurtEffects.push(new PlayerHurtEffect(this.player.x, this.player.y));
+                this.playerHurtEffects.push(this.playerHurtEffectPool.acquire(this.player.x, this.player.y));
 
                 this.monsters.splice(i, 1);
 
@@ -3400,7 +3791,15 @@ class Game {
             if (result.expired) {
                 this.healthPotions.splice(i, 1);
             } else if (result.collected) {
+                const oldHp = this.player.hp;
                 this.player.hp = Math.min(this.player.maxHp, this.player.hp + potion.healAmount);
+                const actualHeal = this.player.hp - oldHp;
+
+                // 只在实际回复血量时显示治疗数字（绿色）
+                if (actualHeal > 0) {
+                    this.damageNumbers.push(this.damageNumberPool.acquire(this.player.x, this.player.y - this.player.size, Math.floor(actualHeal), 'heal'));
+                }
+
                 this.healthPotions.splice(i, 1);
                 this.soundEffect.playCollect();
             }
@@ -3413,8 +3812,11 @@ class Game {
 
             // 检查雷击是否击中玩家
             if (lightning.hasStruck && lightning.checkHit(this.player)) {
-                this.player.takeDamage(lightning.damage);
-                this.playerHurtEffects.push(new PlayerHurtEffect(this.player.x, this.player.y));
+                const actualDamage = this.player.takeDamage(lightning.damage);
+                this.playerHurtEffects.push(this.playerHurtEffectPool.acquire(this.player.x, this.player.y));
+
+                // 显示玩家受到的伤害数字（红色）
+                this.damageNumbers.push(this.damageNumberPool.acquire(this.player.x, this.player.y - this.player.size, actualDamage, 'damage'));
 
                 if (this.player.hp <= 0) {
                     this.gameOver();
@@ -3428,12 +3830,23 @@ class Game {
                 if (lightning.checkHit(monster)) {
                     const result = monster.takeDamage(lightning.damage);
 
+                    // 显示技能伤害数字（紫色）
+                    this.damageNumbers.push(this.damageNumberPool.acquire(monster.x, monster.y - monster.size, result.damage, 'skill'));
+
                     // 嗜血术吸血效果
                     if (this.player.playerSkills.effects.bloodthirst.active && result.damage > 0) {
                         const skillConfig = CONFIG.SKILL.POOL.bloodthirst;
                         const lifestealPercent = skillConfig.baseLifestealBonus;
                         const healAmount = result.damage * lifestealPercent;
+
+                        // 只在实际回复血量时显示
+                        const oldHp = this.player.hp;
                         this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmount);
+                        const actualHeal = this.player.hp - oldHp;
+
+                        if (actualHeal > 0) {
+                            this.damageNumbers.push(this.damageNumberPool.acquire(this.player.x, this.player.y - this.player.size, Math.floor(actualHeal), 'heal'));
+                        }
                     }
 
                     if (result.killed) {
@@ -3452,12 +3865,23 @@ class Game {
                 if (lightning.checkHit(boss)) {
                     const result = boss.takeDamage(lightning.damage);
 
+                    // 显示技能伤害数字（紫色）
+                    this.damageNumbers.push(this.damageNumberPool.acquire(boss.x, boss.y - boss.size, result.damage, 'skill'));
+
                     // 嗜血术吸血效果
                     if (this.player.playerSkills.effects.bloodthirst.active && result.damage > 0) {
                         const skillConfig = CONFIG.SKILL.POOL.bloodthirst;
                         const lifestealPercent = skillConfig.baseLifestealBonus;
                         const healAmount = result.damage * lifestealPercent;
+
+                        // 只在实际回复血量时显示
+                        const oldHp = this.player.hp;
                         this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmount);
+                        const actualHeal = this.player.hp - oldHp;
+
+                        if (actualHeal > 0) {
+                            this.damageNumbers.push(this.damageNumberPool.acquire(this.player.x, this.player.y - this.player.size, Math.floor(actualHeal), 'heal'));
+                        }
                     }
 
                     if (result.killed) {
@@ -3477,6 +3901,7 @@ class Game {
             }
 
             if (!lightning.active) {
+                this.lightningEffectPool.release(this.lightningEffects[i]);
                 this.lightningEffects.splice(i, 1);
             }
         }
@@ -3487,6 +3912,7 @@ class Game {
             effect.update(deltaTime);
 
             if (!effect.active) {
+                this.attackEffectPool.release(effect);
                 this.attackEffects.splice(i, 1);
             }
         }
@@ -3497,6 +3923,7 @@ class Game {
             effect.update(deltaTime);
 
             if (!effect.active) {
+                this.monsterExplosionEffectPool.release(effect);
                 this.monsterExplosionEffects.splice(i, 1);
             }
         }
@@ -3507,7 +3934,19 @@ class Game {
             effect.update(deltaTime);
 
             if (!effect.active) {
+                this.playerHurtEffectPool.release(effect);
                 this.playerHurtEffects.splice(i, 1);
+            }
+        }
+
+        // 更新伤害数字
+        for (let i = this.damageNumbers.length - 1; i >= 0; i--) {
+            const number = this.damageNumbers[i];
+            number.update(deltaTime);
+
+            if (!number.active) {
+                this.damageNumberPool.release(number);
+                this.damageNumbers.splice(i, 1);
             }
         }
 
@@ -3712,21 +4151,21 @@ class Game {
         if (!this.player.canUseSkill(skillId)) return;
 
         // 使用技能
-        this.player.useSkill(skillId);
+        const healAmount = this.player.useSkill(skillId);
 
         // 获取技能属性
         const stats = this.player.getSkillStats(skillId);
         if (!stats) return;
 
         // 应用技能效果
-        this.applySkillEffect(skillId, stats);
+        this.applySkillEffect(skillId, stats, healAmount);
 
         // 播放技能音效
         this.soundEffect.playSkillEffect(skillId);
     }
 
     // 应用技能效果
-    applySkillEffect(skillId, stats) {
+    applySkillEffect(skillId, stats, healAmount = 0) {
         const skillConfig = CONFIG.SKILL.POOL[skillId];
 
         switch (skillId) {
@@ -3739,6 +4178,11 @@ class Game {
 
             case 'heal':
                 // 立即回血效果已经在Player.useSkill中处理
+                // 只在实际回复血量时显示治疗数字（绿色）
+                if (healAmount > 0) {
+                    this.damageNumbers.push(this.damageNumberPool.acquire(this.player.x, this.player.y - this.player.size, Math.floor(healAmount), 'heal'));
+                }
+
                 // 创建特效
                 this.skillEffects.push({
                     type: 'heal',
@@ -3793,12 +4237,23 @@ class Game {
             const monster = this.monsters[i];
             const result = monster.takeDamage(finalDamage);
 
+            // 显示技能伤害数字（紫色）
+            this.damageNumbers.push(this.damageNumberPool.acquire(monster.x, monster.y - monster.size, result.damage, 'skill'));
+
             // 嗜血术吸血效果
             if (this.player.playerSkills.effects.bloodthirst.active && result.damage > 0) {
                 const skillConfig = CONFIG.SKILL.POOL.bloodthirst;
                 const lifestealPercent = skillConfig.baseLifestealBonus;
                 const healAmount = result.damage * lifestealPercent;
+
+                // 只在实际回复血量时显示
+                const oldHp = this.player.hp;
                 this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmount);
+                const actualHeal = this.player.hp - oldHp;
+
+                if (actualHeal > 0) {
+                    this.damageNumbers.push(this.damageNumberPool.acquire(this.player.x, this.player.y - this.player.size, Math.floor(actualHeal), 'heal'));
+                }
             }
 
             if (result.killed) {
@@ -3815,12 +4270,23 @@ class Game {
             const boss = this.bosses[i];
             const result = boss.takeDamage(finalDamage);
 
+            // 显示技能伤害数字（紫色）
+            this.damageNumbers.push(this.damageNumberPool.acquire(boss.x, boss.y - boss.size, result.damage, 'skill'));
+
             // 嗜血术吸血效果
             if (this.player.playerSkills.effects.bloodthirst.active && result.damage > 0) {
                 const skillConfig = CONFIG.SKILL.POOL.bloodthirst;
                 const lifestealPercent = skillConfig.baseLifestealBonus;
                 const healAmount = result.damage * lifestealPercent;
+
+                // 只在实际回复血量时显示
+                const oldHp = this.player.hp;
                 this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmount);
+                const actualHeal = this.player.hp - oldHp;
+
+                if (actualHeal > 0) {
+                    this.damageNumbers.push(this.damageNumberPool.acquire(this.player.x, this.player.y - this.player.size, Math.floor(actualHeal), 'heal'));
+                }
             }
 
             if (result.killed) {
@@ -3859,7 +4325,27 @@ class Game {
                 // 每秒回复生命值
                 const healPerSecond = this.player.maxHp * field.healPercentPerSecond;
                 const healAmount = healPerSecond * (deltaTime / 1000);
+
+                // 累计回复量
+                if (!field.accumulatedHeal) {
+                    field.accumulatedHeal = 0;
+                }
+
+                const oldHp = this.player.hp;
                 this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmount);
+                field.accumulatedHeal += (this.player.hp - oldHp);
+
+                // 显示治疗数字（每秒显示一次累计值）
+                if (!field.lastHealDisplayTime) {
+                    field.lastHealDisplayTime = 0;
+                }
+                if (Date.now() - field.lastHealDisplayTime >= 1000) {
+                    if (field.accumulatedHeal > 0) {
+                        this.damageNumbers.push(this.damageNumberPool.acquire(this.player.x, this.player.y - this.player.size, Math.floor(field.accumulatedHeal), 'heal'));
+                    }
+                    field.accumulatedHeal = 0;  // 清零累计值
+                    field.lastHealDisplayTime = Date.now();
+                }
             }
 
             // 检查回血阵是否过期
@@ -3932,6 +4418,7 @@ class Game {
         document.getElementById('showCollectRange').checked = this.settings.showCollectRange;
         document.getElementById('autoAttack').checked = this.settings.autoAttack;
         document.getElementById('showSkillCooldown').checked = this.settings.showSkillCooldown;
+        document.getElementById('showDamageNumbers').checked = this.settings.showDamageNumbers;
         document.getElementById('renderQuality').value = this.settings.renderQuality;
 
         // 同步红包设置
@@ -4010,6 +4497,7 @@ class Game {
         this.settings.showCollectRange = document.getElementById('showCollectRange').checked;
         this.settings.autoAttack = document.getElementById('autoAttack').checked;
         this.settings.showSkillCooldown = document.getElementById('showSkillCooldown').checked;
+        this.settings.showDamageNumbers = document.getElementById('showDamageNumbers').checked;
         this.settings.renderQuality = document.getElementById('renderQuality').value || 'auto';
 
         // 读取红包设置
@@ -4173,6 +4661,31 @@ class Game {
                     this.drawHealField(ctx, cameraX, cameraY, field);
                 }
             });
+        }
+
+        // 绘制伤害数字 - 中等质量及以上时显示完整效果，低质量时简化
+        if (this.settings.showDamageNumbers) {
+            if (quality >= 2) {
+                this.damageNumbers.forEach(number => number.draw(ctx, cameraX, cameraY));
+            } else if (quality === 1) {
+                // 低质量模式：只显示文字，不显示特效
+                this.damageNumbers.forEach(number => {
+                    if (number.active) {
+                        const screenX = number.x - cameraX;
+                        const screenY = number.y - cameraY - (number.elapsed / number.duration * number.floatDistance);
+                        const alpha = 1 - Math.pow(number.elapsed / number.duration, 2);
+
+                        ctx.save();
+                        ctx.fillStyle = number.color;
+                        ctx.globalAlpha = alpha;
+                        ctx.font = 'bold 16px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(number.value, screenX, screenY);
+                        ctx.restore();
+                    }
+                });
+            }
         }
 
         // 恢复上下文状态
