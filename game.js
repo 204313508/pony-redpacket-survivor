@@ -43,7 +43,134 @@ const CONFIG = {
         INITIAL_SPEED: 1.8,
         INITIAL_SIZE: 25,
         SPAWN_INTERVAL: 1500,
-        MAX_MONSTERS: 30
+        MAX_MONSTERS: 30,
+        // 怪物类型配置
+        TYPES: {
+            normal: {
+                id: 'normal',
+                name: '普通怪',
+                emoji: '🧧',
+                badge: null, // 无额外标识
+                color: '#ff6b6b',
+                hpMultiplier: 1.0,
+                speedMultiplier: 1.0,
+                attackMultiplier: 1.0,
+                sizeMultiplier: 1.0,
+                expMultiplier: 1.0,
+                isElite: false
+            },
+            fast: {
+                id: 'fast',
+                name: '快速怪',
+                emoji: '🧧',
+                badge: '💨', // 右上角显示风图标
+                color: '#00d2d3',
+                hpMultiplier: 0.5,
+                speedMultiplier: 2.2,
+                attackMultiplier: 0.2,
+                sizeMultiplier: 0.8,
+                expMultiplier: 0.8,
+                isElite: false
+            },
+            tank: {
+                id: 'tank',
+                name: '坦克怪',
+                emoji: '🧧',
+                badge: '🛡️', // 右上角显示盾牌图标
+                color: '#feca57',
+                hpMultiplier: 2.5,
+                speedMultiplier: 0.5,
+                attackMultiplier: 0.5,
+                sizeMultiplier: 1.5,
+                expMultiplier: 2.0,
+                isElite: false
+            },
+            suicide: {
+                id: 'suicide',
+                name: '自爆怪',
+                emoji: '🧧',
+                badge: '💣', // 右上角显示炸弹图标
+                color: '#ff9f43',
+                hpMultiplier: 0.8,
+                speedMultiplier: 1.5,
+                attackMultiplier: 1.5,
+                sizeMultiplier: 1.0,
+                expMultiplier: 1.2,
+                isElite: false,
+                // 自爆相关参数
+                explodeRange: 120,
+                explodeWarningDuration: 500, // 预警时间 0.5 秒
+                explodeDamageMultiplier: 1.5 // 自爆伤害倍数（剩余生命值的倍数）
+            },
+            healer: {
+                id: 'healer',
+                name: '回复怪',
+                emoji: '🧧',
+                badge: '💚', // 右上角显示心形图标
+                color: '#26de81',
+                hpMultiplier: 1.5,
+                speedMultiplier: 1.0,
+                attackMultiplier: 0.5,
+                sizeMultiplier: 1.1,
+                expMultiplier: 1.5,
+                isElite: true, // 精英怪，显示名称
+                redpacketDropCount: 6, // 精英怪掉落红包数量
+                // 回血技能参数
+                healInterval: 5000, // 每5秒释放一次回血
+                healRange: 200, // 回血范围
+                healAmountPercent: 0.2, // 每次回复其他怪物20%最大生命值
+                healRangeWarningDuration: 500 // 回血预警时间
+            },
+            shielder: {
+                id: 'shielder',
+                name: '大盾怪',
+                emoji: '🧧',
+                badge: '🔰', // 右上角显示护盾图标
+                color: '#4b7bec',
+                hpMultiplier: 2.0,
+                speedMultiplier: 0.8,
+                attackMultiplier: 0.7,
+                sizeMultiplier: 1.3,
+                expMultiplier: 1.8,
+                isElite: true, // 精英怪，显示名称
+                redpacketDropCount: 5, // 精英怪掉落红包数量
+                // 免伤技能参数
+                shieldInterval: 6000, // 每6秒释放一次免伤
+                shieldRange: 180, // 免伤范围
+                shieldDuration: 2000, // 免伤持续2秒
+                shieldReduction: 0.5 // 免伤50%
+            },
+            ranged: {
+                id: 'ranged',
+                name: '远程怪',
+                emoji: '🧧',
+                badge: '🎯', // 右上角显示靶心图标
+                color: '#fd9644',
+                hpMultiplier: 0.6,
+                speedMultiplier: 0, // 不移动
+                attackMultiplier: 1.2,
+                sizeMultiplier: 0.9,
+                expMultiplier: 1.0,
+                isElite: true, // 精英怪，显示名称
+                redpacketDropCount: 4, // 精英怪掉落红包数量
+                // 远程攻击参数
+                attackRange: 200, // 攻击范围
+                attackInterval: 2000, // 攻击间隔2秒
+                projectileSpeed: 4, // 弹道速度
+                projectileDamage: 15, // 弹道伤害
+                projectileSize: 8 // 弹道大小
+            }
+        },
+        // 怪物类型生成权重
+        TYPE_WEIGHTS: {
+            normal: 35,  // 35%
+            fast: 15,    // 15%
+            tank: 10,    // 10%
+            suicide: 10, // 10%
+            healer: 15,  // 15%
+            shielder: 10, // 10%
+            ranged: 5    // 5%
+        }
     },
 
     // Boss配置
@@ -151,9 +278,8 @@ const CONFIG = {
                 type: 'damage',
                 baseCooldown: 60000, // 60秒
                 baseDamagePercent: 0.5, // 50%最大生命值
-                baseMaxDamageMultiplier: 2.5, // 最大不超过2.5倍攻击力
                 levelEffects: {
-                    maxDamageMultiplier: 0.1 // 每级增加0.1倍攻击力阈值
+                    damagePercent: 0.01 // 每级增加1%伤害
                 },
                 description: '对全屏敌人造成伤害'
             },
@@ -1345,35 +1471,83 @@ class Player {
 
 // ==================== 怪物类 ====================
 class Monster {
-    constructor(x, y, difficultyMultiplier, isMobile = false) {
+    constructor(x, y, difficultyMultiplier, isMobile = false, monsterType = 'normal') {
         this.x = x;
         this.y = y;
         this.isMobile = isMobile;
         
+        // 获取怪物类型配置
+        const typeConfig = CONFIG.MONSTER.TYPES[monsterType] || CONFIG.MONSTER.TYPES.normal;
+        this.type = monsterType;
+        this.typeConfig = typeConfig;
+        
         // 获取游戏设置
         const settings = window.gameSettings || {};
         
-        // 使用设置中的数值
-        this.baseHp = settings.monsterInitialHP || CONFIG.MONSTER.INITIAL_HP;
+        // 根据类型设置属性
+        this.baseHp = (settings.monsterInitialHP || CONFIG.MONSTER.INITIAL_HP) * typeConfig.hpMultiplier;
         this.hp = Math.floor(this.baseHp * (1 + (difficultyMultiplier - 1) * (settings.monsterHPGrowth || 0.1) * 10));
         this.maxHp = this.hp;
-        this.attack = Math.floor((settings.monsterInitialAttack || CONFIG.MONSTER.INITIAL_ATTACK) * (1 + (difficultyMultiplier - 1) * (settings.monsterAttackGrowth || 0.05) * 10));
+        this.attack = Math.floor((settings.monsterInitialAttack || CONFIG.MONSTER.INITIAL_ATTACK) * typeConfig.attackMultiplier * (1 + (difficultyMultiplier - 1) * (settings.monsterAttackGrowth || 0.05) * 10));
         
         // 移动端适配速度
-        let baseSpeed = settings.monsterInitialSpeed || CONFIG.MONSTER.INITIAL_SPEED;
+        let baseSpeed = (settings.monsterInitialSpeed || CONFIG.MONSTER.INITIAL_SPEED) * typeConfig.speedMultiplier;
         if (isMobile) {
             baseSpeed = baseSpeed * CONFIG.MOBILE.SPEED_MULTIPLIER;
         }
         this.speed = baseSpeed * (1 + (difficultyMultiplier - 1) * (settings.monsterSpeedGrowth || 0.02) * 10);
         
-        this.size = (settings.monsterInitialSize || CONFIG.MONSTER.INITIAL_SIZE) + (difficultyMultiplier - 1) * 2;
+        this.size = ((settings.monsterInitialSize || CONFIG.MONSTER.INITIAL_SIZE) + (difficultyMultiplier - 1) * 2) * typeConfig.sizeMultiplier;
         this.damage = this.attack;
-        this.expValue = Math.floor((settings.monsterExpValue || CONFIG.REDPACKET.EXP_VALUE) * difficultyMultiplier);
+        this.expValue = Math.floor((settings.monsterExpValue || CONFIG.REDPACKET.EXP_VALUE) * difficultyMultiplier * typeConfig.expMultiplier);
+        
+        // 精英怪属性
+        this.isElite = typeConfig.isElite || false;
+        this.name = typeConfig.name || '怪物';
+        this.redpacketDropCount = typeConfig.redpacketDropCount || 1;
         
         // 受伤动画相关
         this.isHurt = false;
         this.hurtAnimationTime = 0;
         this.hurtAnimationDuration = 300;
+        
+        // 自爆怪专用属性
+        this.isSuiciding = false; // 是否正在自爆预警
+        this.suicideStartTime = 0;
+        this.suicideWarningDuration = typeConfig.explodeWarningDuration || 500;
+        this.explodeRange = typeConfig.explodeRange || 120;
+        this.explodeDamageMultiplier = typeConfig.explodeDamageMultiplier || 1.5;
+        
+        // 回复怪专用属性
+        this.lastHealTime = Date.now();
+        this.healInterval = typeConfig.healInterval || 5000;
+        this.healRange = typeConfig.healRange || 200;
+        this.healAmountPercent = typeConfig.healAmountPercent || 0.2;
+        this.isHealing = false;
+        this.healStartTime = 0;
+        this.healRangeWarningDuration = typeConfig.healRangeWarningDuration || 500;
+        
+        // 大盾怪专用属性
+        this.lastShieldTime = Date.now();
+        this.shieldInterval = typeConfig.shieldInterval || 6000;
+        this.shieldRange = typeConfig.shieldRange || 180;
+        this.shieldDuration = typeConfig.shieldDuration || 2000;
+        this.shieldReduction = typeConfig.shieldReduction || 0.5;
+        this.isShielding = false;
+        this.shieldStartTime = 0;
+        this.shieldEndTime = 0;
+        
+        // 远程怪专用属性
+        this.attackRange = typeConfig.attackRange || 200;
+        this.lastAttackTime = 0;
+        this.attackInterval = typeConfig.attackInterval || 2000;
+        this.projectileSpeed = typeConfig.projectileSpeed || 4;
+        this.projectileDamage = typeConfig.projectileDamage || 15;
+        this.projectileSize = typeConfig.projectileSize || 8;
+        
+        // 免伤状态（被大盾怪加盾）
+        this.hasShield = false;
+        this.shieldEndTime = 0;
     }
     
     update(player) {
@@ -1381,18 +1555,124 @@ class Monster {
         const dx = player.x - this.x;
         const dy = player.y - this.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
+        const currentTime = Date.now();
         
+        // 自爆怪特殊行为
+        if (this.type === 'suicide') {
+            // 如果已经在自爆预警中，不移动
+            if (this.isSuiciding) {
+                return {
+                    exploded: currentTime - this.suicideStartTime >= this.suicideWarningDuration,
+                    damage: Math.floor(this.hp * this.explodeDamageMultiplier),
+                    range: this.explodeRange,
+                    x: this.x,
+                    y: this.y
+                };
+            }
+            
+            // 距离玩家足够近时开始自爆预警
+            if (distance <= this.explodeRange * 0.6) {
+                this.isSuiciding = true;
+                this.suicideStartTime = currentTime;
+                return null;
+            }
+        }
+        
+        // 回复怪特殊行为
+        if (this.type === 'healer') {
+            // 检查是否需要释放回血技能
+            if (currentTime - this.lastHealTime >= this.healInterval) {
+                this.isHealing = true;
+                this.healStartTime = currentTime;
+                this.lastHealTime = currentTime;
+                
+                return {
+                    heal: true,
+                    healRange: this.healRange,
+                    healAmountPercent: this.healAmountPercent,
+                    x: this.x,
+                    y: this.y
+                };
+            }
+            
+            // 如果正在回血预警，不移动
+            if (this.isHealing && currentTime - this.healStartTime < this.healRangeWarningDuration) {
+                return null;
+            }
+            
+            // 回血预警结束
+            if (this.isHealing && currentTime - this.healStartTime >= this.healRangeWarningDuration) {
+                this.isHealing = false;
+            }
+        }
+        
+        // 大盾怪特殊行为
+        if (this.type === 'shielder') {
+            // 检查是否需要释放免伤技能
+            if (currentTime - this.lastShieldTime >= this.shieldInterval) {
+                this.isShielding = true;
+                this.shieldStartTime = currentTime;
+                this.lastShieldTime = currentTime;
+                
+                return {
+                    shield: true,
+                    shieldRange: this.shieldRange,
+                    shieldDuration: this.shieldDuration,
+                    shieldReduction: this.shieldReduction,
+                    x: this.x,
+                    y: this.y
+                };
+            }
+            
+            // 检查自己的免伤状态
+            if (this.isShielding && currentTime >= this.shieldStartTime + this.shieldDuration) {
+                this.isShielding = false;
+            }
+        }
+        
+        // 远程怪特殊行为
+        if (this.type === 'ranged') {
+            // 远程怪不移动
+            // 检查是否需要发射弹道
+            if (distance <= this.attackRange && currentTime - this.lastAttackTime >= this.attackInterval) {
+                this.lastAttackTime = currentTime;
+                
+                // 计算弹道方向
+                const normalized = Utils.normalize(dx, dy);
+                
+                return {
+                    shoot: true,
+                    projectileX: this.x,
+                    projectileY: this.y,
+                    projectileSpeed: this.projectileSpeed,
+                    projectileDamage: this.projectileDamage,
+                    projectileSize: this.projectileSize,
+                    directionX: normalized.x,
+                    directionY: normalized.y
+                };
+            }
+            return null;
+        }
+        
+        // 正常追踪AI（远程怪不移动）
         if (distance > 0) {
             const normalized = Utils.normalize(dx, dy);
             this.x += normalized.x * this.speed;
             this.y += normalized.y * this.speed;
         }
+        
+        return null;
     }
     
     takeDamage(damage) {
-        // 计算实际造成的伤害（不超过当前生命值）
-        const actualDamage = Math.min(damage, this.hp);
-        this.hp -= damage;
+        // 计算实际造成的伤害（考虑免伤）
+        let actualDamage = damage;
+        if (this.hasShield && Date.now() < this.shieldEndTime) {
+            actualDamage = Math.floor(damage * (1 - this.shieldReduction));
+        }
+        
+        actualDamage = Math.min(actualDamage, this.hp);
+        this.hp -= actualDamage;
 
         // 触发受伤动画
         if (this.hp > 0) {
@@ -1437,9 +1717,10 @@ class Monster {
         ctx.translate(screenX + shakeX, screenY + shakeY);
         ctx.scale(elementScale, elementScale);
 
-        // 怪物周围的光环（使用stroke而不是fill，避免遮挡emoji）
+        // 根据怪物类型设置光环颜色
+        const typeColor = this.typeConfig.color || '#ff6b6b';
         const auraAlpha = 0.3 + Math.sin(Date.now() * 0.003) * 0.1;
-        ctx.strokeStyle = `rgba(245, 87, 108, ${auraAlpha * 0.5})`;
+        ctx.strokeStyle = `rgba(${this.hexToRgb(typeColor)}, ${auraAlpha * 0.5})`;
         ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.arc(0, 0, this.size * 1.3, 0, Math.PI * 2);
@@ -1459,7 +1740,7 @@ class Monster {
             ctx.stroke();
 
             // 第二层光环
-            ctx.strokeStyle = `rgba(245, 87, 108, ${alpha * 0.7})`;
+            ctx.strokeStyle = `rgba(${this.hexToRgb(typeColor)}, ${alpha * 0.7})`;
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.arc(0, 0, this.size * 1.2, 0, Math.PI * 2);
@@ -1472,13 +1753,152 @@ class Monster {
         ctx.globalAlpha = 1;
         ctx.globalCompositeOperation = 'source-over';
 
-        // 绘制红包emoji
+        // 始终绘制红包作为基础图标
         ctx.font = `${this.size * 1.8}px Arial`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('🧧', 0, 0);
 
+        // 如果有特殊类型标识，在右上角叠加显示
+        if (this.typeConfig.badge) {
+            ctx.font = `${this.size * 0.7}px Arial`;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            ctx.fillText(this.typeConfig.badge, this.size * 0.5, -this.size * 0.7);
+        }
+
         ctx.restore();
+
+        // 自爆怪预警效果
+        if (this.type === 'suicide' && this.isSuiciding) {
+            const elapsed = Date.now() - this.suicideStartTime;
+            const progress = elapsed / this.suicideWarningDuration;
+            
+            if (progress < 1) {
+                ctx.save();
+                ctx.translate(screenX, screenY);
+                
+                // 预警圈（类似雷击预警）
+                const warningRadius = this.explodeRange * progress;
+                
+                // 外围范围圈
+                ctx.strokeStyle = `rgba(255, 0, 0, ${0.8 + Math.sin(Date.now() * 0.02) * 0.2})`;
+                ctx.lineWidth = 3;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = 'rgba(255, 0, 0, 0.8)';
+                ctx.beginPath();
+                ctx.arc(0, 0, this.explodeRange, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // 逐渐变大的实心内圈
+                ctx.fillStyle = `rgba(255, 100, 0, ${0.3 * progress})`;
+                ctx.beginPath();
+                ctx.arc(0, 0, warningRadius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 内圈边缘
+                ctx.strokeStyle = `rgba(255, 200, 0, ${0.6 + Math.sin(Date.now() * 0.03) * 0.2})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(0, 0, warningRadius, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // 中心警告符号
+                ctx.fillStyle = `rgba(255, 0, 0, ${0.8 + Math.sin(Date.now() * 0.01) * 0.2})`;
+                ctx.font = '24px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('💥', 0, 0);
+                
+                ctx.restore();
+            }
+        }
+
+        // 回复怪预警效果
+        if (this.type === 'healer' && this.isHealing) {
+            const elapsed = Date.now() - this.healStartTime;
+            const progress = elapsed / this.healRangeWarningDuration;
+            
+            if (progress < 1) {
+                ctx.save();
+                ctx.translate(screenX, screenY);
+                
+                // 回血范围圈（绿色）
+                ctx.strokeStyle = `rgba(46, 213, 115, ${0.8 + Math.sin(Date.now() * 0.02) * 0.2})`;
+                ctx.lineWidth = 3;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = 'rgba(46, 213, 115, 0.8)';
+                ctx.beginPath();
+                ctx.arc(0, 0, this.healRange, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // 逐渐变大的实心内圈
+                ctx.fillStyle = `rgba(46, 213, 115, ${0.3 * progress})`;
+                ctx.beginPath();
+                ctx.arc(0, 0, this.healRange * progress, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 中心治疗符号
+                ctx.fillStyle = `rgba(46, 213, 115, ${0.8 + Math.sin(Date.now() * 0.01) * 0.2})`;
+                ctx.font = '24px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('💚', 0, 0);
+                
+                ctx.restore();
+            }
+        }
+
+        // 大盾怪预警效果
+        if (this.type === 'shielder' && this.isShielding) {
+            const elapsed = Date.now() - this.shieldStartTime;
+            const shieldProgress = elapsed / this.shieldDuration;
+            
+            ctx.save();
+            ctx.translate(screenX, screenY);
+            
+            // 免伤范围圈（蓝色）
+            const alpha = Math.max(0, 1 - shieldProgress);
+            ctx.strokeStyle = `rgba(75, 123, 236, ${alpha * 0.8})`;
+            ctx.lineWidth = 3;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = 'rgba(75, 123, 236, 0.8)';
+            ctx.beginPath();
+            ctx.arc(0, 0, this.shieldRange, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // 逐渐消失的填充
+            ctx.fillStyle = `rgba(75, 123, 236, ${alpha * 0.2})`;
+            ctx.beginPath();
+            ctx.arc(0, 0, this.shieldRange, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 中心盾牌符号
+            ctx.fillStyle = `rgba(75, 123, 236, ${alpha})`;
+            ctx.font = '24px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🔰', 0, 0);
+            
+            ctx.restore();
+        }
+
+        // 免伤状态效果（怪物身上的盾牌）
+        if (this.hasShield && Date.now() < this.shieldEndTime) {
+            ctx.save();
+            ctx.translate(screenX, screenY);
+            
+            // 盾牌光环
+            ctx.strokeStyle = 'rgba(75, 123, 236, 0.8)';
+            ctx.lineWidth = 4;
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = 'rgba(75, 123, 236, 0.8)';
+            ctx.beginPath();
+            ctx.arc(0, 0, this.size * 1.2, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            ctx.restore();
+        }
 
         // 绘制血条（在restore之后，确保血条不受translate影响）
         ctx.save();
@@ -1504,7 +1924,7 @@ class Monster {
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        // 血条填充（渐变色）
+        // 血条填充（渐变色，根据怪物类型使用不同的颜色）
         const barColor = healthPercent > 0.5 ? '#2ed573' : healthPercent > 0.25 ? '#ffa502' : '#ff4757';
         const fillGradient = ctx.createLinearGradient(-barWidth / 2, 0, barWidth / 2, 0);
         fillGradient.addColorStop(0, barColor);
@@ -1517,6 +1937,108 @@ class Monster {
         ctx.roundRect(-barWidth / 2 + 2, barY + 2, (barWidth - 4) * healthPercent, barHeight - 4, 2);
         ctx.fill();
 
+        // 精英怪名称显示（类似boss）
+        if (this.isElite) {
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+            ctx.font = 'bold 14px Arial';
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.fillText(this.name, 0, barY - 8);
+        }
+
+        ctx.restore();
+    }
+
+    // 辅助方法：将十六进制颜色转换为RGB
+    hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? 
+            `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : 
+            '255, 107, 107';
+    }
+}
+
+// ==================== 弹道类 ====================
+class Projectile {
+    constructor(x, y, speed, damage, size, directionX, directionY) {
+        this.x = x;
+        this.y = y;
+        this.speed = speed;
+        this.damage = damage;
+        this.size = size;
+        this.directionX = directionX;
+        this.directionY = directionY;
+        this.active = true;
+        this.trail = []; // 弹道轨迹
+    }
+    
+    update(deltaTime) {
+        // 记录轨迹
+        this.trail.push({ x: this.x, y: this.y });
+        if (this.trail.length > 10) {
+            this.trail.shift();
+        }
+        
+        // 移动弹道
+        this.x += this.directionX * this.speed;
+        this.y += this.directionY * this.speed;
+        
+        // 检查是否超出地图范围
+        if (this.x < 0 || this.x > CONFIG.MAP_WIDTH || this.y < 0 || this.y > CONFIG.MAP_HEIGHT) {
+            this.active = false;
+        }
+    }
+    
+    checkHit(player) {
+        if (!this.active) return false;
+        
+        const distance = Utils.distance(this.x, this.y, player.x, player.y);
+        if (distance <= this.size + player.size) {
+            this.active = false;
+            return true;
+        }
+        return false;
+    }
+    
+    draw(ctx, cameraX, cameraY) {
+        if (!this.active) return;
+        
+        const screenX = this.x - cameraX;
+        const screenY = this.y - cameraY;
+        
+        ctx.save();
+        
+        // 绘制弹道轨迹
+        if (this.trail.length > 1) {
+            ctx.beginPath();
+            ctx.moveTo(screenX, screenY);
+            for (let i = this.trail.length - 1; i >= 0; i--) {
+                const point = this.trail[i];
+                const pointScreenX = point.x - cameraX;
+                const pointScreenY = point.y - cameraY;
+                ctx.lineTo(pointScreenX, pointScreenY);
+            }
+            ctx.strokeStyle = 'rgba(253, 150, 68, 0.3)';
+            ctx.lineWidth = this.size * 0.8;
+            ctx.stroke();
+        }
+        
+        // 绘制弹道主体
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = 'rgba(253, 150, 68, 0.8)';
+        ctx.fillStyle = '#fd9644';
+        ctx.beginPath();
+        ctx.arc(screenX, screenY, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // 弹道核心
+        ctx.shadowBlur = 5;
+        ctx.fillStyle = '#fffa65';
+        ctx.beginPath();
+        ctx.arc(screenX, screenY, this.size * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+        
         ctx.restore();
     }
 }
@@ -3027,6 +3549,7 @@ class Game {
         this.healthPotions = [];
         this.lightningEffects = [];
         this.damageNumbers = [];
+        this.projectiles = []; // 弹道数组
 
         // 技能系统
         this.skillEffects = [];
@@ -3393,6 +3916,7 @@ class Game {
         this.healthPotions = [];
         this.lightningEffects = [];
         this.damageNumbers = [];
+        this.projectiles = []; // 初始化弹道数组
 
         // 清空技能栏UI
         this.clearSkillBarUI();
@@ -3492,9 +4016,19 @@ class Game {
                             this.soundEffect.playMonsterDeath();
                     // 怪物死亡，掉落红包
                     this.monsters.splice(i, 1);
-                    this.redPackets.push(new RedPacket(monster.x, monster.y, this.isTouchDevice));
+                    
+                    // 精英怪掉落多个红包
+                    const dropCount = monster.isElite ? monster.redpacketDropCount : 1;
+                    for (let k = 0; k < dropCount; k++) {
+                        const angle = Math.random() * Math.PI * 2;
+                        const dropDistance = Utils.randomRange(30, 80);
+                        const dropX = monster.x + Math.cos(angle) * dropDistance;
+                        const dropY = monster.y + Math.sin(angle) * dropDistance;
+                        this.redPackets.push(new RedPacket(dropX, dropY, this.isTouchDevice));
+                    }
+                    
                     this.totalKills++;
-                    this.score += 100;
+                    this.score += monster.isElite ? 300 : 100;
                 }
             }
         }
@@ -3580,11 +4114,30 @@ class Game {
                 const clampedX = Utils.clamp(x, 50, CONFIG.MAP_WIDTH - 50);
                 const clampedY = Utils.clamp(y, 50, CONFIG.MAP_HEIGHT - 50);
 
-                this.monsters.push(new Monster(clampedX, clampedY, this.difficultyMultiplier, this.player.isMobile));
+                // 根据权重随机选择怪物类型
+                const monsterType = this.getRandomMonsterType();
+                
+                this.monsters.push(new Monster(clampedX, clampedY, this.difficultyMultiplier, this.player.isMobile, monsterType));
             }
 
             this.lastSpawnTime = currentTime;
         }
+    }
+
+    // 根据权重随机选择怪物类型
+    getRandomMonsterType() {
+        const weights = CONFIG.MONSTER.TYPE_WEIGHTS;
+        const totalWeight = Object.values(weights).reduce((sum, weight) => sum + weight, 0);
+        let random = Math.random() * totalWeight;
+        
+        for (const [type, weight] of Object.entries(weights)) {
+            random -= weight;
+            if (random <= 0) {
+                return type;
+            }
+        }
+        
+        return 'normal'; // 默认返回普通怪
     }
     
     updateDifficulty() {
@@ -3753,7 +4306,167 @@ class Game {
         this.updateSkillEffects(deltaTime);
 
         // 更新怪物
-        this.monsters.forEach(monster => monster.update(this.player));
+        for (let i = this.monsters.length - 1; i >= 0; i--) {
+            const monster = this.monsters[i];
+            const result = monster.update(this.player);
+
+            // 处理自爆怪的自爆
+            if (result && result.exploded) {
+                // 播放自爆音效
+                this.soundEffect.playMonsterDeath();
+
+                // 创建自爆特效
+                this.monsterExplosionEffects.push(this.monsterExplosionEffectPool.acquire(monster.x, monster.y, monster.size * 2));
+
+                // 对范围内的所有单位造成伤害（包括玩家、其他怪物和Boss）
+                
+                // 1. 对玩家造成伤害
+                const playerDistance = Utils.distance(monster.x, monster.y, this.player.x, this.player.y);
+                if (playerDistance <= result.range) {
+                    const actualDamage = this.player.takeDamage(result.damage);
+                    this.playerHurtEffects.push(this.playerHurtEffectPool.acquire(this.player.x, this.player.y));
+
+                    // 显示玩家受到的伤害数字（红色）
+                    this.damageNumbers.push(this.damageNumberPool.acquire(this.player.x, this.player.y - this.player.size, actualDamage, 'damage'));
+
+                    if (this.player.hp <= 0) {
+                        this.gameOver();
+                        return;
+                    }
+                }
+
+                // 2. 对其他怪物造成伤害（不分敌我）
+                for (let j = this.monsters.length - 1; j >= 0; j--) {
+                    if (i === j) continue; // 跳过自爆的怪物自己
+                    const otherMonster = this.monsters[j];
+                    const otherDistance = Utils.distance(monster.x, monster.y, otherMonster.x, otherMonster.y);
+                    if (otherDistance <= result.range) {
+                        const damageResult = otherMonster.takeDamage(result.damage);
+
+                        // 显示伤害数字（紫色，表示友军伤害）
+                        this.damageNumbers.push(this.damageNumberPool.acquire(otherMonster.x, otherMonster.y - otherMonster.size, damageResult.damage, 'skill'));
+
+                        if (damageResult.killed) {
+                            this.monsters.splice(j, 1);
+                            this.redPackets.push(new RedPacket(otherMonster.x, otherMonster.y, this.isTouchDevice));
+                            this.totalKills++;
+                            this.score += 100;
+                            // 修正索引，因为删除了一个元素
+                            if (j < i) i--;
+                        }
+                    }
+                }
+
+                // 3. 对Boss造成伤害
+                for (let j = this.bosses.length - 1; j >= 0; j--) {
+                    const boss = this.bosses[j];
+                    const bossDistance = Utils.distance(monster.x, monster.y, boss.x, boss.y);
+                    if (bossDistance <= result.range) {
+                        const damageResult = boss.takeDamage(result.damage);
+
+                        // 显示伤害数字（紫色，表示友军伤害）
+                        this.damageNumbers.push(this.damageNumberPool.acquire(boss.x, boss.y - boss.size, damageResult.damage, 'skill'));
+
+                        if (damageResult.killed) {
+                            // Boss掉落红包
+                            for (let k = 0; k < boss.redpacketDropCount; k++) {
+                                const angle = Math.random() * Math.PI * 2;
+                                const dropDistance = Utils.randomRange(30, 80);
+                                const dropX = boss.x + Math.cos(angle) * dropDistance;
+                                const dropY = boss.y + Math.sin(angle) * dropDistance;
+                                this.redPackets.push(new RedPacket(dropX, dropY, this.isTouchDevice));
+                            }
+                            this.bosses.splice(j, 1);
+                            this.totalKills++;
+                            this.score += 500;
+                        }
+                    }
+                }
+
+                // 移除自爆的怪物
+                this.monsters.splice(i, 1);
+            }
+
+            // 处理回复怪的回血
+            if (result && result.heal) {
+                // 播放治疗音效
+                this.soundEffect.playCollect();
+
+                // 对范围内的其他怪物回血（不包括自己）
+                for (let j = this.monsters.length - 1; j >= 0; j--) {
+                    if (i === j) continue; // 跳过自己
+                    const otherMonster = this.monsters[j];
+                    const otherDistance = Utils.distance(monster.x, monster.y, otherMonster.x, otherMonster.y);
+                    if (otherDistance <= result.healRange) {
+                        const healAmount = Math.floor(otherMonster.maxHp * result.healAmountPercent);
+                        const oldHp = otherMonster.hp;
+                        otherMonster.hp = Math.min(otherMonster.maxHp, otherMonster.hp + healAmount);
+                        const actualHeal = otherMonster.hp - oldHp;
+
+                        // 显示治疗数字（绿色）
+                        if (actualHeal > 0) {
+                            this.damageNumbers.push(this.damageNumberPool.acquire(otherMonster.x, otherMonster.y - otherMonster.size, actualHeal, 'heal'));
+                        }
+                    }
+                }
+
+                // 对Boss回血
+                for (let j = this.bosses.length - 1; j >= 0; j--) {
+                    const boss = this.bosses[j];
+                    const bossDistance = Utils.distance(monster.x, monster.y, boss.x, boss.y);
+                    if (bossDistance <= result.healRange) {
+                        const healAmount = Math.floor(boss.maxHp * result.healAmountPercent);
+                        const oldHp = boss.hp;
+                        boss.hp = Math.min(boss.maxHp, boss.hp + healAmount);
+                        const actualHeal = boss.hp - oldHp;
+
+                        // 显示治疗数字（绿色）
+                        if (actualHeal > 0) {
+                            this.damageNumbers.push(this.damageNumberPool.acquire(boss.x, boss.y - boss.size, actualHeal, 'heal'));
+                        }
+                    }
+                }
+            }
+
+            // 处理大盾怪的免伤
+            if (result && result.shield) {
+                // 对范围内的怪物（包括自己）添加免伤
+                for (let j = this.monsters.length - 1; j >= 0; j--) {
+                    const otherMonster = this.monsters[j];
+                    const otherDistance = Utils.distance(monster.x, monster.y, otherMonster.x, otherMonster.y);
+                    if (otherDistance <= result.shieldRange) {
+                        otherMonster.hasShield = true;
+                        otherMonster.shieldEndTime = Date.now() + result.shieldDuration;
+                        otherMonster.shieldReduction = result.shieldReduction;
+                    }
+                }
+
+                // 对Boss添加免伤
+                for (let j = this.bosses.length - 1; j >= 0; j--) {
+                    const boss = this.bosses[j];
+                    const bossDistance = Utils.distance(monster.x, monster.y, boss.x, boss.y);
+                    if (bossDistance <= result.shieldRange) {
+                        boss.hasShield = true;
+                        boss.shieldEndTime = Date.now() + result.shieldDuration;
+                        boss.shieldReduction = result.shieldReduction;
+                    }
+                }
+            }
+
+            // 处理远程怪的弹道攻击
+            if (result && result.shoot) {
+                const projectile = new Projectile(
+                    result.projectileX,
+                    result.projectileY,
+                    result.projectileSpeed,
+                    result.projectileDamage,
+                    result.projectileSize,
+                    result.directionX,
+                    result.directionY
+                );
+                this.projectiles.push(projectile);
+            }
+        }
 
         // 自动攻击逻辑
         if (this.settings.autoAttack && this.player.canAttack()) {
@@ -3922,6 +4635,31 @@ class Game {
             }
         }
 
+        // 更新弹道
+        for (let i = this.projectiles.length - 1; i >= 0; i--) {
+            const projectile = this.projectiles[i];
+            projectile.update(deltaTime);
+
+            // 检查弹道是否击中玩家
+            if (projectile.checkHit(this.player)) {
+                const actualDamage = this.player.takeDamage(projectile.damage);
+                this.playerHurtEffects.push(this.playerHurtEffectPool.acquire(this.player.x, this.player.y));
+
+                // 显示玩家受到的伤害数字（红色）
+                this.damageNumbers.push(this.damageNumberPool.acquire(this.player.x, this.player.y - this.player.size, actualDamage, 'damage'));
+
+                if (this.player.hp <= 0) {
+                    this.gameOver();
+                    return;
+                }
+            }
+
+            // 移除不活跃的弹道
+            if (!projectile.active) {
+                this.projectiles.splice(i, 1);
+            }
+        }
+
         // 更新雷击效果
         for (let i = this.lightningEffects.length - 1; i >= 0; i--) {
             const lightning = this.lightningEffects[i];
@@ -3967,10 +4705,21 @@ class Game {
                     }
 
                     if (result.killed) {
+                        const monster = this.monsters[j];
                         this.monsters.splice(j, 1);
-                        this.redPackets.push(new RedPacket(monster.x, monster.y, this.isTouchDevice));
+                        
+                        // 精英怪掉落多个红包
+                        const dropCount = monster.isElite ? monster.redpacketDropCount : 1;
+                        for (let k = 0; k < dropCount; k++) {
+                            const angle = Math.random() * Math.PI * 2;
+                            const dropDistance = Utils.randomRange(30, 80);
+                            const dropX = monster.x + Math.cos(angle) * dropDistance;
+                            const dropY = monster.y + Math.sin(angle) * dropDistance;
+                            this.redPackets.push(new RedPacket(dropX, dropY, this.isTouchDevice));
+                        }
+                        
                         this.totalKills++;
-                        this.score += 100;
+                        this.score += monster.isElite ? 300 : 100;
                         this.soundEffect.playMonsterDeath();
                     }
                 }
@@ -4345,9 +5094,7 @@ class Game {
 
     // 应用天罚效果
     applySkyPunishment(stats) {
-        const damagePerTarget = this.player.maxHp * stats.damagePercent;
-        const maxDamage = this.player.attackPower * stats.maxDamageMultiplier;
-        const finalDamage = Math.min(damagePerTarget, maxDamage);
+        const finalDamage = this.player.maxHp * stats.damagePercent;
 
         // 对所有怪物造成伤害
         for (let i = this.monsters.length - 1; i >= 0; i--) {
@@ -4374,10 +5121,21 @@ class Game {
             }
 
             if (result.killed) {
+                const monster = this.monsters[i];
                 this.monsters.splice(i, 1);
-                this.redPackets.push(new RedPacket(monster.x, monster.y, this.isTouchDevice));
+                
+                // 精英怪掉落多个红包
+                const dropCount = monster.isElite ? monster.redpacketDropCount : 1;
+                for (let k = 0; k < dropCount; k++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const dropDistance = Utils.randomRange(30, 80);
+                    const dropX = monster.x + Math.cos(angle) * dropDistance;
+                    const dropY = monster.y + Math.sin(angle) * dropDistance;
+                    this.redPackets.push(new RedPacket(dropX, dropY, this.isTouchDevice));
+                }
+                
                 this.totalKills++;
-                this.score += 100;
+                this.score += monster.isElite ? 300 : 100;
                 this.soundEffect.playMonsterDeath();
             }
         }
@@ -5161,6 +5919,9 @@ class Game {
 
         // 绘制雷击预警和特效
         this.lightningEffects.forEach(lightning => lightning.draw(ctx, cameraX, cameraY));
+
+        // 绘制弹道
+        this.projectiles.forEach(projectile => projectile.draw(ctx, cameraX, cameraY));
 
         // 绘制怪物
         this.monsters.forEach(monster => monster.draw(ctx, cameraX, cameraY));
