@@ -619,7 +619,7 @@ class SoundEffect {
 
 // ==================== 玩家类 ====================
 class Player {
-    constructor(x, y, isMobile = false) {
+    constructor(x, y, isMobile = false, gameSettings = null) {
         this.x = x;
         this.y = y;
         this.hp = CONFIG.PLAYER.INITIAL_HP;
@@ -628,6 +628,7 @@ class Player {
         this.baseAttackPower = CONFIG.PLAYER.INITIAL_ATTACK;
         this.defense = CONFIG.PLAYER.INITIAL_DEFENSE;
         this.isMobile = isMobile;
+        this.gameSettings = gameSettings || { keyBindings: {} };
         
         // 移动端使用较低的速度
         this.baseSpeed = CONFIG.PLAYER.INITIAL_SPEED;
@@ -690,14 +691,22 @@ class Player {
         let dx = 0;
         let dy = 0;
         
-        // 键盘输入
-        if (keys['ArrowUp'] || keys['KeyW']) dy -= 1;
-        if (keys['ArrowDown'] || keys['KeyS']) dy += 1;
-        if (keys['ArrowLeft'] || keys['KeyA']) {
+        // 获取自定义按键绑定
+        const keyBindings = this.gameSettings?.keyBindings || {};
+        
+        // 键盘输入（使用自定义按键绑定）
+        const moveUpKey = keyBindings.moveUp || 'KeyW';
+        const moveDownKey = keyBindings.moveDown || 'KeyS';
+        const moveLeftKey = keyBindings.moveLeft || 'KeyA';
+        const moveRightKey = keyBindings.moveRight || 'KeyD';
+        
+        if (keys['ArrowUp'] || keys[moveUpKey]) dy -= 1;
+        if (keys['ArrowDown'] || keys[moveDownKey]) dy += 1;
+        if (keys['ArrowLeft'] || keys[moveLeftKey]) {
             dx -= 1;
             this.direction = -1;
         }
-        if (keys['ArrowRight'] || keys['KeyD']) {
+        if (keys['ArrowRight'] || keys[moveRightKey]) {
             dx += 1;
             this.direction = 1;
         }
@@ -3106,7 +3115,31 @@ class Game {
             autoAttack: true, // 自动攻击
             showSkillCooldown: true, // 显示技能冷却时间数字
             showDamageNumbers: true, // 显示伤害数字
-            renderQuality: 'auto', // 渲染质量：'auto', 'high', 'medium', 'low'
+            // 渲染质量预设
+            renderQualityPreset: 'auto', // 'auto', 'high', 'medium', 'low', 'custom'
+            // 详细渲染质量设置
+            qualitySettings: {
+                effectQuality: 'high', // 'high', 'medium', 'low'
+                shadowQuality: 'high', // 'high', 'medium', 'low', 'off'
+                damageNumberQuality: 'high', // 'high', 'medium', 'low'
+                animationQuality: 'high', // 'high', 'medium', 'low'
+                particleQuality: 'high' // 'high', 'medium', 'low', 'off'
+            },
+            // 按键绑定
+            keyBindings: {
+                moveUp: 'KeyW',
+                moveDown: 'KeyS',
+                moveLeft: 'KeyA',
+                moveRight: 'KeyD',
+                skill1: 'Digit1',
+                skill2: 'Digit2',
+                skill3: 'Digit3'
+            },
+            // 移动端按钮位置
+            mobileButtonPositions: {
+                joystick: 'left',
+                attackButton: 'right'
+            },
             // 红包设置
             redpacketExpValue: 10, // 红包掉落经验
             // 怪物基础数值
@@ -3140,6 +3173,9 @@ class Game {
 
         // 从localStorage加载设置，如果没有则使用默认设置
         this.settings = this.loadSettings();
+        
+        // 保存用户最后一次的自定义质量设置
+        this.customQualitySettings = { ...this.defaultSettings.qualitySettings };
 
         // 将设置暴露到全局，供Player.draw方法访问
         window.gameSettings = this.settings;
@@ -3163,6 +3199,39 @@ class Game {
         // 键盘事件
         window.addEventListener('keydown', (e) => {
             this.keys[e.code] = true;
+
+            // 如果正在设置界面中监听按键，不处理其他按键
+            if (this.isListeningForKeybind) {
+                return;
+            }
+
+            // ESC键切换暂停状态
+            if (e.code === 'Escape') {
+                this.togglePause();
+                e.preventDefault();
+                return;
+            }
+
+            // 技能快捷键
+            const keyBindings = this.settings?.keyBindings || {};
+            if (this.state === GameState.PLAYING && this.player) {
+                if (e.code === keyBindings.skill1) {
+                    this.handleSkillSlotClick(0);
+                    e.preventDefault();
+                    return;
+                }
+                if (e.code === keyBindings.skill2) {
+                    this.handleSkillSlotClick(1);
+                    e.preventDefault();
+                    return;
+                }
+                if (e.code === keyBindings.skill3) {
+                    this.handleSkillSlotClick(2);
+                    e.preventDefault();
+                    return;
+                }
+            }
+
             e.preventDefault();
         });
         
@@ -3203,6 +3272,16 @@ class Game {
         // 重置设置按钮事件
         document.getElementById('resetSettingsButton').addEventListener('click', () => this.resetSettings());
 
+        // 标签页切换事件
+        document.querySelectorAll('.settings-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => this.handleTabSwitch(e));
+        });
+
+        // 按键绑定按钮事件
+        document.querySelectorAll('.keybind-button').forEach(button => {
+            button.addEventListener('click', (e) => this.handleKeybindClick(e));
+        });
+
         // 设置选项事件
         document.getElementById('showAttackRange').addEventListener('change', (e) => {
             this.settings.showAttackRange = e.target.checked;
@@ -3214,6 +3293,11 @@ class Game {
 
         document.getElementById('autoAttack').addEventListener('change', (e) => {
             this.settings.autoAttack = e.target.checked;
+        });
+
+        // 渲染质量预设变化事件
+        document.getElementById('renderQualityPreset').addEventListener('change', (e) => {
+            this.handleRenderQualityPresetChange(e.target.value);
         });
 
         // 移动端攻击按钮事件
@@ -3245,6 +3329,36 @@ class Game {
                 }
             });
         });
+
+        // ==================== 暂停系统事件监听器 ====================
+
+        // 暂停按钮事件
+        document.getElementById('pauseButton').addEventListener('click', () => {
+            this.togglePause();
+        });
+
+        // 暂停界面 - 继续游戏按钮
+        document.getElementById('resumeButton').addEventListener('click', () => {
+            this.resumeGame();
+        });
+
+        // 暂停界面 - 查看设置按钮
+        document.getElementById('pauseSettingsButton').addEventListener('click', () => {
+            this.openPauseSettings();
+        });
+
+        // 暂停界面 - 返回首页按钮
+        document.getElementById('returnToMenuButton').addEventListener('click', () => {
+            this.returnToMenu();
+        });
+
+        // 移动端可见性变化事件（切换应用时自动暂停）
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && this.state === GameState.PLAYING) {
+                // 应用切换到后台，自动暂停
+                this.pauseGame();
+            }
+        });
     }
 
     // 处理技能槽点击
@@ -3269,7 +3383,7 @@ class Game {
         this.gameLoopRunning = false;
         this.gameLoopRequestId = null;
 
-        this.player = new Player(CONFIG.MAP_WIDTH / 2, CONFIG.MAP_HEIGHT / 2, this.isTouchDevice);
+        this.player = new Player(CONFIG.MAP_WIDTH / 2, CONFIG.MAP_HEIGHT / 2, this.isTouchDevice, this.settings);
         this.monsters = [];
         this.bosses = [];
         this.redPackets = [];
@@ -3556,6 +3670,9 @@ class Game {
             this.gameLoopRequestId = null;
             return;
         }
+
+        // 标记游戏循环正在运行
+        this.gameLoopRunning = true;
 
         const currentTime = performance.now();
         const deltaTime = currentTime - this.lastTime;
@@ -4404,12 +4521,291 @@ class Game {
     }
 
     resetSettings() {
-        this.settings = { ...this.defaultSettings };
+        // 使用深拷贝来确保所有嵌套对象都被正确重置
+        this.settings = JSON.parse(JSON.stringify(this.defaultSettings));
         this.saveSettings();
         // 更新UI显示
         this.syncSettingsToUI();
         // 更新全局设置
         window.gameSettings = this.settings;
+        // 更新Player的gameSettings引用
+        if (this.player) {
+            this.player.gameSettings = this.settings;
+        }
+    }
+
+    // 处理标签页切换
+    handleTabSwitch(e) {
+        const clickedTab = e.currentTarget;
+        const tabId = clickedTab.dataset.tab;
+
+        // 移除所有标签页的active类
+        document.querySelectorAll('.settings-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+
+        // 隐藏所有标签页内容
+        document.querySelectorAll('.settings-tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+
+        // 激活当前点击的标签页
+        clickedTab.classList.add('active');
+
+        // 显示对应的标签页内容
+        const tabContent = document.getElementById(`tab-${tabId}`);
+        if (tabContent) {
+            tabContent.classList.add('active');
+        }
+    }
+
+    // 处理按键绑定点击
+    handleKeybindClick(e) {
+        const button = e.currentTarget;
+        const keyId = button.dataset.key;
+
+        // 如果已经在监听按键，取消监听
+        if (this.isListeningForKeybind) {
+            this.stopKeybindListening();
+            return;
+        }
+
+        // 开始监听按键
+        this.startKeybindListening(button, keyId);
+    }
+
+    // 开始监听按键
+    startKeybindListening(button, keyId) {
+        this.isListeningForKeybind = true;
+        this.currentKeybindButton = button;
+        this.currentKeyId = keyId;
+
+        // 添加listening类
+        button.classList.add('listening');
+        button.textContent = '按键...';
+
+        // 添加按键监听器
+        this.keybindHandler = (e) => this.handleKeyPress(e);
+        window.addEventListener('keydown', this.keybindHandler);
+    }
+
+    // 停止监听按键
+    stopKeybindListening() {
+        if (!this.isListeningForKeybind) return;
+
+        this.isListeningForKeybind = false;
+
+        // 移除listening类
+        if (this.currentKeybindButton) {
+            this.currentKeybindButton.classList.remove('listening');
+            this.currentKeybindButton.textContent = this.getKeyDisplayName(this.settings.keyBindings[this.currentKeyId]);
+        }
+
+        // 移除按键监听器
+        if (this.keybindHandler) {
+            window.removeEventListener('keydown', this.keybindHandler);
+            this.keybindHandler = null;
+        }
+
+        this.currentKeybindButton = null;
+        this.currentKeyId = null;
+    }
+
+    // 处理按键
+    handleKeyPress(e) {
+        e.preventDefault();
+
+        // 获取按键代码
+        let keyCode = e.code;
+
+        // 检查是否是有效按键
+        if (this.isValidKey(keyCode)) {
+            // 检查是否与其他按键冲突
+            const existingKeyId = this.findKeyByCode(keyCode);
+            if (existingKeyId && existingKeyId !== this.currentKeyId) {
+                // 按键冲突，不允许绑定
+                alert('该按键已被使用！');
+                this.stopKeybindListening();
+                return;
+            }
+
+            // 保存按键绑定
+            this.settings.keyBindings[this.currentKeyId] = keyCode;
+            this.saveSettings();
+
+            // 更新Player的gameSettings引用，确保按键绑定立即生效
+            if (this.player) {
+                this.player.gameSettings = this.settings;
+            }
+
+            // 更新按钮显示
+            this.currentKeybindButton.textContent = this.getKeyDisplayName(keyCode);
+            this.stopKeybindListening();
+        } else {
+            // 无效按键
+            alert('请使用有效的按键！');
+        }
+    }
+
+    // 检查按键是否有效
+    isValidKey(code) {
+        // 排除一些特殊按键
+        const invalidKeys = [
+            'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12',
+            'Escape', 'PrintScreen', 'ScrollLock', 'Pause',
+            'ContextMenu', 'NumLock', 'CapsLock'
+        ];
+
+        if (invalidKeys.includes(code)) return false;
+
+        // 只允许字母、数字和方向键
+        return /^(Key|Digit|Arrow|Space)/.test(code);
+    }
+
+    // 根据按键代码查找对应的按键ID
+    findKeyByCode(code) {
+        for (const [keyId, keyCode] of Object.entries(this.settings.keyBindings)) {
+            if (keyCode === code) return keyId;
+        }
+        return null;
+    }
+
+    // 获取按键显示名称
+    getKeyDisplayName(code) {
+        if (code === 'mouse') return '鼠标左键';
+
+        const keyNames = {
+            'KeyW': 'W', 'KeyA': 'A', 'KeyS': 'S', 'KeyD': 'D',
+            'KeyQ': 'Q', 'KeyE': 'E', 'KeyR': 'R', 'KeyF': 'F',
+            'ArrowUp': '↑', 'ArrowDown': '↓', 'ArrowLeft': '←', 'ArrowRight': '→',
+            'Space': '空格',
+            'Digit1': '1', 'Digit2': '2', 'Digit3': '3', 'Digit4': '4', 'Digit5': '5',
+            'Digit6': '6', 'Digit7': '7', 'Digit8': '8', 'Digit9': '9', 'Digit0': '0'
+        };
+
+        return keyNames[code] || code;
+    }
+
+    // 同步按键绑定到UI
+    syncKeybindsToUI() {
+        const bindings = this.settings.keyBindings || {};
+        for (const [keyId, keyCode] of Object.entries(bindings)) {
+            const button = document.getElementById(`keybind-${keyId}`);
+            if (button) {
+                button.textContent = this.getKeyDisplayName(keyCode);
+            }
+        }
+    }
+
+    // 同步移动端按钮位置到UI
+    syncMobileButtonsToUI() {
+        const positions = this.settings.mobileButtonPositions || {};
+        const joystickSelect = document.getElementById('joystickPosition');
+        const attackButtonSelect = document.getElementById('attackButtonPosition');
+
+        if (joystickSelect) {
+            joystickSelect.value = positions.joystick || 'left';
+        }
+        if (attackButtonSelect) {
+            attackButtonSelect.value = positions.attackButton || 'right';
+        }
+    }
+
+    // 渲染质量预设定义
+    getQualityPresets() {
+        return {
+            auto: {
+                effectQuality: 'high',
+                shadowQuality: 'medium',
+                damageNumberQuality: 'high',
+                animationQuality: 'high',
+                particleQuality: 'medium'
+            },
+            high: {
+                effectQuality: 'high',
+                shadowQuality: 'high',
+                damageNumberQuality: 'high',
+                animationQuality: 'high',
+                particleQuality: 'high'
+            },
+            medium: {
+                effectQuality: 'medium',
+                shadowQuality: 'medium',
+                damageNumberQuality: 'medium',
+                animationQuality: 'medium',
+                particleQuality: 'medium'
+            },
+            low: {
+                effectQuality: 'low',
+                shadowQuality: 'low',
+                damageNumberQuality: 'low',
+                animationQuality: 'low',
+                particleQuality: 'low'
+            }
+        };
+    }
+
+    // 处理渲染质量预设变化
+    handleRenderQualityPresetChange(preset) {
+        // 如果当前是自定义模式且切换到其他预设，先从UI读取当前值再保存
+        if (this.settings.renderQualityPreset === 'custom' && preset !== 'custom') {
+            // 先从UI读取当前值更新到 settings
+            this.settings.qualitySettings = {
+                effectQuality: document.getElementById('effectQuality').value || 'high',
+                shadowQuality: document.getElementById('shadowQuality').value || 'high',
+                damageNumberQuality: document.getElementById('damageNumberQuality').value || 'high',
+                animationQuality: document.getElementById('animationQuality').value || 'high',
+                particleQuality: document.getElementById('particleQuality').value || 'high'
+            };
+            // 再保存自定义设置
+            this.customQualitySettings = { ...this.settings.qualitySettings };
+        }
+
+        this.settings.renderQualityPreset = preset;
+
+        if (preset === 'custom') {
+            // 启用所有详细设置
+            this.enableQualitySettings(true);
+            
+            // 恢复之前保存的自定义设置
+            this.settings.qualitySettings = { ...this.customQualitySettings };
+        } else {
+            // 禁用所有详细设置
+            this.enableQualitySettings(false);
+
+            // 根据预设更新详细设置
+            const presets = this.getQualityPresets();
+            if (presets[preset]) {
+                this.settings.qualitySettings = { ...presets[preset] };
+            }
+        }
+        
+        // 同步UI
+        this.syncQualitySettingsToUI();
+    }
+
+    // 启用/禁用详细质量设置
+    enableQualitySettings(enable) {
+        const qualitySettings = document.querySelectorAll('.quality-setting');
+        qualitySettings.forEach(setting => {
+            if (enable) {
+                setting.disabled = false;
+                setting.classList.remove('disabled');
+            } else {
+                setting.disabled = true;
+                setting.classList.add('disabled');
+            }
+        });
+    }
+
+    // 同步质量设置到UI
+    syncQualitySettingsToUI() {
+        const qualitySettings = this.settings.qualitySettings || {};
+        document.getElementById('effectQuality').value = qualitySettings.effectQuality || 'high';
+        document.getElementById('shadowQuality').value = qualitySettings.shadowQuality || 'high';
+        document.getElementById('damageNumberQuality').value = qualitySettings.damageNumberQuality || 'high';
+        document.getElementById('animationQuality').value = qualitySettings.animationQuality || 'high';
+        document.getElementById('particleQuality').value = qualitySettings.particleQuality || 'high';
     }
 
     syncSettingsToUI() {
@@ -4419,7 +4815,26 @@ class Game {
         document.getElementById('autoAttack').checked = this.settings.autoAttack;
         document.getElementById('showSkillCooldown').checked = this.settings.showSkillCooldown;
         document.getElementById('showDamageNumbers').checked = this.settings.showDamageNumbers;
-        document.getElementById('renderQuality').value = this.settings.renderQuality;
+
+        // 同步渲染质量预设
+        document.getElementById('renderQualityPreset').value = this.settings.renderQualityPreset || 'auto';
+
+        // 根据预设启用/禁用详细设置
+        const isCustom = this.settings.renderQualityPreset === 'custom';
+        this.enableQualitySettings(isCustom);
+
+        // 同步质量设置
+        // 如果是自定义模式，使用保存的自定义设置
+        if (isCustom) {
+            this.settings.qualitySettings = { ...this.customQualitySettings };
+        }
+        this.syncQualitySettingsToUI();
+
+        // 同步按键绑定
+        this.syncKeybindsToUI();
+
+        // 同步移动端按钮位置
+        this.syncMobileButtonsToUI();
 
         // 同步红包设置
         document.getElementById('redpacketExpValue').value = this.settings.redpacketExpValue;
@@ -4477,15 +4892,25 @@ class Game {
         // 更新全局设置，使新怪物立即使用新设置
         window.gameSettings = this.settings;
 
+        // 更新Player的gameSettings引用，确保按键绑定立即生效
+        if (this.player) {
+            this.player.gameSettings = this.settings;
+        }
+
         document.getElementById('settingsScreen').classList.add('hidden');
-        
+
+        // 检查是否是从暂停界面打开的设置
+        // 如果玩家活着且游戏处于暂停状态，返回暂停界面
+        if (this.player && this.player.hp > 0 && this.state === GameState.PAUSED) {
+            this.showPauseScreen();
+        }
         // 如果游戏正在进行，恢复游戏
-        if (this.player && this.player.hp > 0) {
+        else if (this.player && this.player.hp > 0) {
             this.state = GameState.PLAYING;
-            
+
             // 重置时间以避免deltaTime过大
             this.lastTime = performance.now();
-            
+
             // 启动游戏循环
             this.gameLoop();
         }
@@ -4498,7 +4923,32 @@ class Game {
         this.settings.autoAttack = document.getElementById('autoAttack').checked;
         this.settings.showSkillCooldown = document.getElementById('showSkillCooldown').checked;
         this.settings.showDamageNumbers = document.getElementById('showDamageNumbers').checked;
-        this.settings.renderQuality = document.getElementById('renderQuality').value || 'auto';
+
+        // 读取渲染质量预设
+        this.settings.renderQualityPreset = document.getElementById('renderQualityPreset').value || 'auto';
+
+        // 如果是自定义，读取详细设置
+        if (this.settings.renderQualityPreset === 'custom') {
+            this.settings.qualitySettings = {
+                effectQuality: document.getElementById('effectQuality').value || 'high',
+                shadowQuality: document.getElementById('shadowQuality').value || 'high',
+                damageNumberQuality: document.getElementById('damageNumberQuality').value || 'high',
+                animationQuality: document.getElementById('animationQuality').value || 'high',
+                particleQuality: document.getElementById('particleQuality').value || 'high'
+            };
+            // 同时更新自定义设置保存
+            this.customQualitySettings = { ...this.settings.qualitySettings };
+        }
+
+        // 读取移动端按钮位置
+        const joystickPosition = document.getElementById('joystickPosition');
+        const attackButtonPosition = document.getElementById('attackButtonPosition');
+        if (joystickPosition) {
+            this.settings.mobileButtonPositions.joystick = joystickPosition.value || 'left';
+        }
+        if (attackButtonPosition) {
+            this.settings.mobileButtonPositions.attackButton = attackButtonPosition.value || 'right';
+        }
 
         // 读取红包设置
         this.settings.redpacketExpValue = parseInt(document.getElementById('redpacketExpValue').value) || 10;
@@ -4536,6 +4986,97 @@ class Game {
 
         // 读取Boss掉落红包数量
         this.settings.bossRedpacketDropCount = parseInt(document.getElementById('bossRedpacketDropCount').value) || 15;
+    }
+
+    // ==================== 暂停系统方法 ====================
+
+    /**
+     * 切换暂停状态
+     */
+    togglePause() {
+        if (this.state === GameState.PLAYING) {
+            this.pauseGame();
+        } else if (this.state === GameState.PAUSED) {
+            this.resumeGame();
+        }
+    }
+
+    /**
+     * 暂停游戏
+     */
+    pauseGame() {
+        if (this.state !== GameState.PLAYING) return;
+
+        // 设置游戏状态为暂停
+        this.state = GameState.PAUSED;
+
+        // 停止游戏循环
+        if (this.gameLoopRequestId) {
+            cancelAnimationFrame(this.gameLoopRequestId);
+            this.gameLoopRequestId = null;
+        }
+        this.gameLoopRunning = false;
+
+        // 停止天气音效
+        this.soundEffect.stopWeatherSound();
+
+        // 显示暂停界面
+        this.showPauseScreen();
+    }
+
+    /**
+     * 继续游戏
+     */
+    resumeGame() {
+        if (this.state !== GameState.PAUSED) return;
+
+        // 隐藏暂停界面
+        document.getElementById('pauseScreen').classList.add('hidden');
+
+        // 恢复游戏状态
+        this.state = GameState.PLAYING;
+
+        // 重置时间以避免deltaTime过大
+        this.lastTime = performance.now();
+
+        // 启动游戏循环
+        this.gameLoop();
+    }
+
+    /**
+     * 显示暂停界面
+     */
+    showPauseScreen() {
+        // 更新暂停界面的统计数据
+        document.getElementById('pauseRedpackets').textContent = this.totalRedPackets;
+        document.getElementById('pauseKills').textContent = this.totalKills;
+        document.getElementById('pauseScore').textContent = this.score;
+        document.getElementById('pauseLevel').textContent = this.player ? this.player.level : 1;
+
+        // 显示暂停界面
+        document.getElementById('pauseScreen').classList.remove('hidden');
+    }
+
+    /**
+     * 从暂停界面打开设置
+     */
+    openPauseSettings() {
+        // 隐藏暂停界面
+        document.getElementById('pauseScreen').classList.add('hidden');
+
+        // 显示设置界面
+        this.openSettings();
+    }
+
+    /**
+     * 从暂停界面返回首页
+     */
+    returnToMenu() {
+        // 隐藏暂停界面
+        document.getElementById('pauseScreen').classList.add('hidden');
+
+        // 显示开始界面
+        this.showStartScreen();
     }
     
     gameOver() {

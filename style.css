@@ -948,11 +948,195 @@ body::before {
     transform: rotate(90deg) scale(1.05);
 }
 
+/* ==================== 暂停按钮 ==================== */
+.button-group {
+    display: flex;
+    gap: 10px;
+}
+
+.pause-button {
+    background: linear-gradient(135deg, rgba(46, 213, 115, 0.8) 0%, rgba(123, 237, 159, 0.8) 100%);
+    border: 2px solid rgba(46, 213, 115, 0.6);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(46, 213, 115, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    pointer-events: auto;
+}
+
+.pause-button:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(46, 213, 115, 0.5);
+    border-color: rgba(46, 213, 115, 0.8);
+}
+
+.pause-button:active {
+    transform: scale(1.05);
+}
+
 /* ==================== 设置界面 ==================== */
 .settings-screen .screen-content {
     max-width: 700px;
     max-height: 90vh;
     overflow-y: auto;
+}
+
+/* 标签页导航 */
+.settings-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 25px;
+    border-bottom: 2px solid rgba(102, 126, 234, 0.3);
+    padding-bottom: 15px;
+}
+
+.settings-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: rgba(102, 126, 234, 0.1);
+    border: 2px solid rgba(102, 126, 234, 0.3);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.settings-tab:hover {
+    background: rgba(102, 126, 234, 0.2);
+    border-color: rgba(102, 126, 234, 0.5);
+    color: var(--text-primary);
+    transform: translateY(-2px);
+}
+
+.settings-tab.active {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.3) 0%, rgba(118, 75, 162, 0.3) 100%);
+    border-color: rgba(102, 126, 234, 0.8);
+    color: var(--text-primary);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.settings-tab .tab-icon {
+    font-size: 18px;
+}
+
+.settings-tab .tab-text {
+    letter-spacing: 0.5px;
+}
+
+/* 标签页内容 */
+.settings-tab-content {
+    display: none;
+    max-height: 55vh;
+    overflow-y: auto;
+    padding-right: 10px;
+    animation: fadeInTab 0.3s ease;
+}
+
+.settings-tab-content.active {
+    display: block;
+}
+
+@keyframes fadeInTab {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.settings-tab-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.settings-tab-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+}
+
+.settings-tab-content::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 3px;
+}
+
+/* 按键绑定按钮样式 */
+.keybind-item .keybind-button {
+    width: 120px;
+    padding: 8px 16px;
+    background: rgba(102, 126, 234, 0.2);
+    border: 2px solid rgba(102, 126, 234, 0.5);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.keybind-item .keybind-button:hover {
+    background: rgba(102, 126, 234, 0.3);
+    border-color: rgba(102, 126, 234, 0.8);
+    transform: scale(1.05);
+}
+
+.keybind-item .keybind-button:active {
+    transform: scale(0.98);
+}
+
+.keybind-item .keybind-button.listening {
+    background: linear-gradient(135deg, rgba(240, 147, 251, 0.3) 0%, rgba(245, 87, 108, 0.3) 100%);
+    border-color: rgba(245, 87, 108, 0.8);
+    animation: pulseKeybind 1s ease infinite;
+}
+
+@keyframes pulseKeybind {
+    0%, 100% {
+        box-shadow: 0 0 10px rgba(245, 87, 108, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(245, 87, 108, 0.6);
+    }
+}
+
+/* 移动端专属设置 */
+.mobile-only {
+    display: none;
+}
+
+@media (pointer: coarse) {
+    .mobile-only {
+        display: block;
+    }
+}
+
+/* 质量设置禁用状态 */
+.quality-setting:disabled,
+.quality-setting.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: rgba(0, 0, 0, 0.3);
+    border-color: rgba(102, 126, 234, 0.2);
+}
+
+.quality-setting.disabled option {
+    color: var(--text-secondary);
 }
 
 .settings-container {
@@ -1107,9 +1291,129 @@ body::before {
     box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
 }
 
+/* ==================== 暂停界面 ==================== */
+.pause-screen .screen-title {
+    background: linear-gradient(135deg, #2ed573 0%, #7bed9f 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 4px 15px rgba(46, 213, 115, 0.3));
+}
+
+.pause-status {
+    background: rgba(102, 126, 234, 0.1);
+    border: 1px solid rgba(102, 126, 234, 0.3);
+    padding: 25px;
+    border-radius: 20px;
+    margin-bottom: 35px;
+    backdrop-filter: blur(10px);
+}
+
+.pause-stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    margin: 8px 0;
+    background: rgba(20, 18, 45, 0.8);
+    border-radius: 15px;
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    transition: all 0.3s ease;
+}
+
+.pause-stat-item:hover {
+    transform: translateX(10px);
+    border-color: rgba(46, 213, 115, 0.5);
+    box-shadow: 0 4px 15px rgba(46, 213, 115, 0.2);
+}
+
+.pause-stat-icon {
+    font-size: 28px;
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.3));
+}
+
+.pause-stat-label {
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.pause-stat-value {
+    color: var(--accent-gold);
+    font-size: 24px;
+    font-weight: 800;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    letter-spacing: 2px;
+}
+
+.pause-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    gap: 15px;
+    width: 100%;
+}
+
+.pause-buttons .game-button {
+    width: 100%;
+}
+
+.pause-buttons .game-button.primary {
+    background: linear-gradient(135deg, #2ed573 0%, #7bed9f 100%);
+    box-shadow: 0 8px 30px rgba(46, 213, 115, 0.4), 0 0 0 rgba(46, 213, 115, 0);
+}
+
+.pause-buttons .game-button.primary:hover {
+    transform: translateY(-5px) scale(1.05);
+    box-shadow: 0 12px 40px rgba(46, 213, 115, 0.6), 0 0 30px rgba(46, 213, 115, 0.3);
+}
+
+.pause-buttons .game-button.primary:hover::before {
+    left: 100%;
+}
+
+.pause-buttons .game-button.primary:active {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 6px 20px rgba(46, 213, 115, 0.5);
+}
+
+@media (max-width: 768px) {
+    .pause-buttons .game-button {
+        padding: 12px 30px;
+        font-size: 16px;
+    }
+
+    .pause-status {
+        padding: 20px;
+    }
+
+    .pause-stat-item {
+        padding: 12px 15px;
+    }
+
+    .pause-stat-icon {
+        font-size: 24px;
+    }
+
+    .pause-stat-label {
+        font-size: 14px;
+    }
+
+    .pause-stat-value {
+        font-size: 20px;
+    }
+}
+
 /* ==================== 响应式优化 ==================== */
 @media (max-width: 768px) {
     .settings-button {
+        width: 45px;
+        height: 45px;
+        font-size: 20px;
+    }
+
+    .pause-button {
         width: 45px;
         height: 45px;
         font-size: 20px;
