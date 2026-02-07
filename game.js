@@ -22,7 +22,7 @@ const CONFIG = {
         INITIAL_SPEED: 4,
         INITIAL_LEVEL: 1,
         INITIAL_EXP: 0,
-        INITIAL_EXP_TO_LEVEL: 100,
+        INITIAL_EXP_TO_LEVEL: 60,
         SIZE: 30,
         ATTACK_RANGE: 160,
         ATTACK_COOLDOWN: 400
@@ -33,7 +33,7 @@ const CONFIG = {
         SIZE: 15,
         COLLECT_RANGE: 125,
         COLLECT_SPEED: 10,
-        EXP_VALUE: 10
+        EXP_VALUE: 15
     },
     
     // 怪物配置
@@ -186,11 +186,11 @@ const CONFIG = {
 
     // 升级奖励
     UPGRADE: {
-        HP_BONUS: 20,
-        ATTACK_BONUS: 5,
-        DEFENSE_BONUS: 3,
-        SPEED_BONUS: 0.5,
-        EXP_MULTIPLIER: 1.3
+        HP_BONUS: 30,
+        ATTACK_BONUS: 8,
+        DEFENSE_BONUS: 5,
+        SPEED_BONUS: 0.8,
+        EXP_MULTIPLIER: 1.2
     },
 
     // 天气系统配置
@@ -324,6 +324,145 @@ const CONFIG = {
                 description: '向当前朝向闪现，期间无敌'
             }
         }
+    }
+};
+
+// ==================== 怪物图鉴数据 ====================
+const BESTIARY = {
+    monsters: {
+        normal: {
+            id: 'normal',
+            name: '普通怪',
+            emoji: '🧧',
+            badge: null,
+            color: '#ff6b6b',
+            isElite: false,
+            description: '最常见的怪物，会追踪玩家并进行攻击。',
+            stats: {
+                hp: { label: '生命值', value: '普通', class: 'stat-medium' },
+                speed: { label: '移动速度', value: '普通', class: 'stat-medium' },
+                attack: { label: '攻击力', value: '普通', class: 'stat-medium' },
+                behavior: { label: '行为', value: '追踪玩家', class: 'stat-medium' }
+            },
+            tags: ['基础怪物']
+        },
+        fast: {
+            id: 'fast',
+            name: '快速怪',
+            emoji: '🧧',
+            badge: '💨',
+            color: '#00d2d3',
+            isElite: false,
+            description: '移动速度极快但生命值很低的怪物，攻击力较弱。',
+            stats: {
+                hp: { label: '生命值', value: '极低', class: 'stat-low' },
+                speed: { label: '移动速度', value: '极快', class: 'stat-high' },
+                attack: { label: '攻击力', value: '较弱', class: 'stat-low' },
+                behavior: { label: '行为', value: '快速追踪', class: 'stat-high' }
+            },
+            tags: ['速度型', '脆弱']
+        },
+        tank: {
+            id: 'tank',
+            name: '坦克怪',
+            emoji: '🧧',
+            badge: '🛡️',
+            color: '#feca57',
+            isElite: false,
+            description: '拥有极高生命值但移动缓慢的怪物，攻击力较强。',
+            stats: {
+                hp: { label: '生命值', value: '极高', class: 'stat-high' },
+                speed: { label: '移动速度', value: '很慢', class: 'stat-low' },
+                attack: { label: '攻击力', value: '较强', class: 'stat-high' },
+                behavior: { label: '行为', value: '缓慢追踪', class: 'stat-low' }
+            },
+            tags: ['防御型', '高血量']
+        },
+        suicide: {
+            id: 'suicide',
+            name: '自爆怪',
+            emoji: '🧧',
+            badge: '💣',
+            color: '#ff9f43',
+            isElite: false,
+            description: '靠近玩家后会停止并准备自爆，对范围内所有单位造成巨额伤害。',
+            stats: {
+                hp: { label: '生命值', value: '中等', class: 'stat-medium' },
+                speed: { label: '移动速度', value: '较快', class: 'stat-high' },
+                attack: { label: '攻击力', value: '极高', class: 'stat-high' },
+                behavior: { label: '行为', value: '自爆攻击', class: 'stat-high' }
+            },
+            tags: ['自爆型', '范围伤害'],
+            ability: '靠近玩家后停止0.5秒自爆，造成范围伤害'
+        },
+        healer: {
+            id: 'healer',
+            name: '回复怪',
+            emoji: '🧧',
+            badge: '💚',
+            color: '#26de81',
+            isElite: true,
+            description: '精英怪物，周期性为周围其他怪物回复生命值。',
+            stats: {
+                hp: { label: '生命值', value: '较高', class: 'stat-high' },
+                speed: { label: '移动速度', value: '普通', class: 'stat-medium' },
+                attack: { label: '攻击力', value: '较弱', class: 'stat-low' },
+                behavior: { label: '行为', value: '治疗支援', class: 'stat-high' }
+            },
+            tags: ['精英怪', '支援型', '治疗'],
+            ability: '每5秒为范围内其他怪物回复20%最大生命值'
+        },
+        shielder: {
+            id: 'shielder',
+            name: '大盾怪',
+            emoji: '🧧',
+            badge: '🔰',
+            color: '#4b7bec',
+            isElite: true,
+            description: '精英怪物，周期性为周围怪物添加免伤护盾。',
+            stats: {
+                hp: { label: '生命值', value: '很高', class: 'stat-high' },
+                speed: { label: '移动速度', value: '较慢', class: 'stat-low' },
+                attack: { label: '攻击力', value: '较弱', class: 'stat-low' },
+                behavior: { label: '行为', value: '防御支援', class: 'stat-high' }
+            },
+            tags: ['精英怪', '防御型', '支援'],
+            ability: '每6秒为范围内怪物添加50%免伤，持续2秒'
+        },
+        ranged: {
+            id: 'ranged',
+            name: '远程怪',
+            emoji: '🧧',
+            badge: '🎯',
+            color: '#fd9644',
+            isElite: true,
+            description: '精英怪物，不会移动，可以发射远程弹道攻击玩家。',
+            stats: {
+                hp: { label: '生命值', value: '较低', class: 'stat-low' },
+                speed: { label: '移动速度', value: '不移动', class: 'stat-low' },
+                attack: { label: '攻击力', value: '中等', class: 'stat-medium' },
+                behavior: { label: '行为', value: '远程攻击', class: 'stat-high' }
+            },
+            tags: ['精英怪', '远程型', '弹道'],
+            ability: '发射直线弹道攻击，玩家可以通过走位躲避'
+        }
+    },
+    boss: {
+        id: 'boss',
+        name: 'Boss',
+        emoji: '🧧',
+        badge: '👑',
+        color: '#ff4757',
+        isElite: true,
+        description: '强大的Boss怪物，拥有极高的生命值和攻击力，可以自爆造成范围伤害。',
+        stats: {
+            hp: { label: '生命值', value: '极高', class: 'stat-high' },
+            speed: { label: '移动速度', value: '较快', class: 'stat-high' },
+            attack: { label: '攻击力', value: '极强', class: 'stat-high' },
+            behavior: { label: '行为', value: '追踪+自爆', class: 'stat-high' }
+        },
+        tags: ['Boss', '高血量', '自爆'],
+        ability: '可以自爆对周围单位造成伤害，掉落大量红包'
     }
 };
 
@@ -1485,26 +1624,32 @@ class Monster {
         const settings = window.gameSettings || {};
         
         // 根据类型设置属性
-        this.baseHp = (settings.monsterInitialHP || CONFIG.MONSTER.INITIAL_HP) * typeConfig.hpMultiplier;
+        // 精英怪使用设置的倍率
+        const hpMultiplier = typeConfig.isElite ? (settings.eliteHpMultiplier || typeConfig.hpMultiplier) : typeConfig.hpMultiplier;
+        const attackMultiplier = typeConfig.isElite ? (settings.eliteAttackMultiplier || typeConfig.attackMultiplier) : typeConfig.attackMultiplier;
+        const speedMultiplier = typeConfig.isElite ? (settings.eliteSpeedMultiplier || typeConfig.speedMultiplier) : typeConfig.speedMultiplier;
+        const sizeMultiplier = typeConfig.isElite ? (settings.eliteSizeMultiplier || typeConfig.sizeMultiplier) : typeConfig.sizeMultiplier;
+
+        this.baseHp = (settings.monsterInitialHP || CONFIG.MONSTER.INITIAL_HP) * hpMultiplier;
         this.hp = Math.floor(this.baseHp * (1 + (difficultyMultiplier - 1) * (settings.monsterHPGrowth || 0.1) * 10));
         this.maxHp = this.hp;
-        this.attack = Math.floor((settings.monsterInitialAttack || CONFIG.MONSTER.INITIAL_ATTACK) * typeConfig.attackMultiplier * (1 + (difficultyMultiplier - 1) * (settings.monsterAttackGrowth || 0.05) * 10));
+        this.attack = Math.floor((settings.monsterInitialAttack || CONFIG.MONSTER.INITIAL_ATTACK) * attackMultiplier * (1 + (difficultyMultiplier - 1) * (settings.monsterAttackGrowth || 0.05) * 10));
         
         // 移动端适配速度
-        let baseSpeed = (settings.monsterInitialSpeed || CONFIG.MONSTER.INITIAL_SPEED) * typeConfig.speedMultiplier;
+        let baseSpeed = (settings.monsterInitialSpeed || CONFIG.MONSTER.INITIAL_SPEED) * speedMultiplier;
         if (isMobile) {
             baseSpeed = baseSpeed * CONFIG.MOBILE.SPEED_MULTIPLIER;
         }
         this.speed = baseSpeed * (1 + (difficultyMultiplier - 1) * (settings.monsterSpeedGrowth || 0.02) * 10);
         
-        this.size = ((settings.monsterInitialSize || CONFIG.MONSTER.INITIAL_SIZE) + (difficultyMultiplier - 1) * 2) * typeConfig.sizeMultiplier;
+        this.size = ((settings.monsterInitialSize || CONFIG.MONSTER.INITIAL_SIZE) + (difficultyMultiplier - 1) * 2) * sizeMultiplier;
         this.damage = this.attack;
         this.expValue = Math.floor((settings.monsterExpValue || CONFIG.REDPACKET.EXP_VALUE) * difficultyMultiplier * typeConfig.expMultiplier);
         
         // 精英怪属性
         this.isElite = typeConfig.isElite || false;
         this.name = typeConfig.name || '怪物';
-        this.redpacketDropCount = typeConfig.redpacketDropCount || 1;
+        this.redpacketDropCount = settings.eliteRedpacketDropCount || typeConfig.redpacketDropCount || 1;
         
         // 受伤动画相关
         this.isHurt = false;
@@ -1520,29 +1665,29 @@ class Monster {
         
         // 回复怪专用属性
         this.lastHealTime = Date.now();
-        this.healInterval = typeConfig.healInterval || 5000;
-        this.healRange = typeConfig.healRange || 200;
-        this.healAmountPercent = typeConfig.healAmountPercent || 0.2;
+        this.healInterval = settings.healerInterval || typeConfig.healInterval || 5000;
+        this.healRange = settings.healerRange || typeConfig.healRange || 200;
+        this.healAmountPercent = settings.healerAmountPercent || typeConfig.healAmountPercent || 0.2;
         this.isHealing = false;
         this.healStartTime = 0;
         this.healRangeWarningDuration = typeConfig.healRangeWarningDuration || 500;
         
         // 大盾怪专用属性
         this.lastShieldTime = Date.now();
-        this.shieldInterval = typeConfig.shieldInterval || 6000;
-        this.shieldRange = typeConfig.shieldRange || 180;
-        this.shieldDuration = typeConfig.shieldDuration || 2000;
-        this.shieldReduction = typeConfig.shieldReduction || 0.5;
+        this.shieldInterval = settings.shielderInterval || typeConfig.shieldInterval || 6000;
+        this.shieldRange = settings.shielderRange || typeConfig.shieldRange || 180;
+        this.shieldDuration = settings.shielderDuration || typeConfig.shieldDuration || 2000;
+        this.shieldReduction = settings.shielderReduction || typeConfig.shieldReduction || 0.5;
         this.isShielding = false;
         this.shieldStartTime = 0;
         this.shieldEndTime = 0;
         
         // 远程怪专用属性
-        this.attackRange = typeConfig.attackRange || 200;
+        this.attackRange = settings.rangedAttackRange || typeConfig.attackRange || 200;
         this.lastAttackTime = 0;
-        this.attackInterval = typeConfig.attackInterval || 2000;
-        this.projectileSpeed = typeConfig.projectileSpeed || 4;
-        this.projectileDamage = typeConfig.projectileDamage || 15;
+        this.attackInterval = settings.rangedAttackInterval || typeConfig.attackInterval || 2000;
+        this.projectileSpeed = settings.rangedProjectileSpeed || typeConfig.projectileSpeed || 4;
+        this.projectileDamage = settings.rangedProjectileDamage || typeConfig.projectileDamage || 15;
         this.projectileSize = typeConfig.projectileSize || 8;
         
         // 免伤状态（被大盾怪加盾）
@@ -3673,8 +3818,8 @@ class Game {
             monsterMaxMonsters: 30,
             monsterSpawnInterval: 1500,
             // 怪物成长曲线
-            monsterHPGrowth: 0.1,
-            monsterAttackGrowth: 0.05,
+            monsterHPGrowth: 0.05,
+            monsterAttackGrowth: 0.02,
             monsterSpeedGrowth: 0.01,
             // 怪物掉落经验
             monsterExpValue: 10,
@@ -3685,13 +3830,31 @@ class Game {
             bossSize: 60,
             bossSpawnInterval: 30000,
             // Boss成长曲线
-            bossHPGrowth: 0.15,
-            bossAttackGrowth: 0.08,
-            bossSpeedGrowth: 0.03,
+            bossHPGrowth: 0.08,
+            bossAttackGrowth: 0.04,
+            bossSpeedGrowth: 0.02,
             // Boss自爆伤害
             bossExplosionDamage: 30,
             // Boss掉落红包数量
-            bossRedpacketDropCount: 15
+            bossRedpacketDropCount: 15,
+            // 精英怪基础数值
+            eliteHpMultiplier: 1.5,
+            eliteAttackMultiplier: 0.5,
+            eliteSpeedMultiplier: 1.0,
+            eliteSizeMultiplier: 1.1,
+            eliteRedpacketDropCount: 6,
+            // 精英怪技能参数
+            healerInterval: 5000,
+            healerRange: 200,
+            healerAmountPercent: 0.2,
+            shielderInterval: 6000,
+            shielderRange: 180,
+            shielderDuration: 2000,
+            shielderReduction: 0.5,
+            rangedAttackInterval: 2000,
+            rangedAttackRange: 200,
+            rangedProjectileSpeed: 4,
+            rangedProjectileDamage: 15
         };
 
         // 从localStorage加载设置，如果没有则使用默认设置
@@ -3858,6 +4021,28 @@ class Game {
         // 暂停按钮事件
         document.getElementById('pauseButton').addEventListener('click', () => {
             this.togglePause();
+        });
+
+        // ==================== 图鉴系统事件监听器 ====================
+
+        // 开始界面图鉴按钮
+        document.getElementById('bestiaryButton').addEventListener('click', () => {
+            this.openBestiary();
+        });
+
+        // HUD图鉴按钮
+        document.getElementById('hudBestiaryButton').addEventListener('click', () => {
+            this.openBestiary();
+        });
+
+        // 关闭图鉴按钮
+        document.getElementById('closeBestiaryButton').addEventListener('click', () => {
+            this.closeBestiary();
+        });
+
+        // 返回图鉴列表按钮
+        document.getElementById('backToBestiary').addEventListener('click', () => {
+            this.showBestiaryGrid();
         });
 
         // 暂停界面 - 继续游戏按钮
@@ -4127,10 +4312,33 @@ class Game {
     // 根据权重随机选择怪物类型
     getRandomMonsterType() {
         const weights = CONFIG.MONSTER.TYPE_WEIGHTS;
-        const totalWeight = Object.values(weights).reduce((sum, weight) => sum + weight, 0);
+        
+        // 检查场上是否已有精英怪
+        const hasElite = this.monsters.some(monster => monster.isElite);
+        
+        // 如果已有精英怪，从权重中移除精英怪的选项
+        let adjustedWeights = { ...weights };
+        if (hasElite) {
+            // 按比例重新分配精英怪的权重到其他类型
+            const eliteWeight = weights.healer + weights.shielder + weights.ranged;
+            const nonEliteWeight = 100 - eliteWeight;
+            const multiplier = 100 / nonEliteWeight;
+            
+            // 移除精英怪权重
+            delete adjustedWeights.healer;
+            delete adjustedWeights.shielder;
+            delete adjustedWeights.ranged;
+            
+            // 重新分配权重
+            for (const type in adjustedWeights) {
+                adjustedWeights[type] = Math.floor(adjustedWeights[type] * multiplier);
+            }
+        }
+        
+        const totalWeight = Object.values(adjustedWeights).reduce((sum, weight) => sum + weight, 0);
         let random = Math.random() * totalWeight;
         
-        for (const [type, weight] of Object.entries(weights)) {
+        for (const [type, weight] of Object.entries(adjustedWeights)) {
             random -= weight;
             if (random <= 0) {
                 return type;
@@ -4142,7 +4350,7 @@ class Game {
     
     updateDifficulty() {
         // 每30秒难度增加
-        this.difficultyMultiplier = 1 + (this.gameTime / 30000) * 0.5;
+        this.difficultyMultiplier = 1 + (this.gameTime / 30000) * 0.25;
     }
 
     spawnBoss(currentTime) {
@@ -4907,7 +5115,12 @@ class Game {
             stats.push(`回复${Math.round(skillConfig.baseHealPercent * 100)}%血量`);
         }
         if (skillConfig.baseDamagePercent) {
-            stats.push(`造成${Math.round(skillConfig.baseDamagePercent * 100)}%血量伤害`);
+            // 天罚技能不显示具体数值
+            if (skillId === 'skyPunishment') {
+                stats.push(`造成大量伤害`);
+            } else {
+                stats.push(`造成${Math.round(skillConfig.baseDamagePercent * 100)}%血量伤害`);
+            }
         }
         if (skillConfig.baseRadius) {
             stats.push(`范围: ${skillConfig.baseRadius}`);
@@ -4937,6 +5150,13 @@ class Game {
                     upgrades.push(`伤害上限+${value}倍`);
                 } else if (key === 'cooldown') {
                     upgrades.push(`冷却-${value / 1000}秒`);
+                } else if (key === 'damagePercent') {
+                    // 天罚技能升级效果描述
+                    if (skillId === 'skyPunishment') {
+                        upgrades.push(`增加1%伤害比例`);
+                    } else {
+                        upgrades.push(`伤害+${Math.round(value * 100)}%`);
+                    }
                 }
             }
             if (upgrades.length > 0) {
@@ -5630,6 +5850,26 @@ class Game {
 
         // 同步Boss掉落红包数量
         document.getElementById('bossRedpacketDropCount').value = this.settings.bossRedpacketDropCount;
+
+        // 同步精英怪基础数值
+        document.getElementById('eliteHpMultiplier').value = this.settings.eliteHpMultiplier;
+        document.getElementById('eliteAttackMultiplier').value = this.settings.eliteAttackMultiplier;
+        document.getElementById('eliteSpeedMultiplier').value = this.settings.eliteSpeedMultiplier;
+        document.getElementById('eliteSizeMultiplier').value = this.settings.eliteSizeMultiplier;
+        document.getElementById('eliteRedpacketDropCount').value = this.settings.eliteRedpacketDropCount;
+
+        // 同步精英怪技能参数
+        document.getElementById('healerInterval').value = this.settings.healerInterval;
+        document.getElementById('healerRange').value = this.settings.healerRange;
+        document.getElementById('healerAmountPercent').value = this.settings.healerAmountPercent;
+        document.getElementById('shielderInterval').value = this.settings.shielderInterval;
+        document.getElementById('shielderRange').value = this.settings.shielderRange;
+        document.getElementById('shielderDuration').value = this.settings.shielderDuration;
+        document.getElementById('shielderReduction').value = this.settings.shielderReduction;
+        document.getElementById('rangedAttackInterval').value = this.settings.rangedAttackInterval;
+        document.getElementById('rangedAttackRange').value = this.settings.rangedAttackRange;
+        document.getElementById('rangedProjectileSpeed').value = this.settings.rangedProjectileSpeed;
+        document.getElementById('rangedProjectileDamage').value = this.settings.rangedProjectileDamage;
     }
 
     openSettings() {
@@ -5744,6 +5984,278 @@ class Game {
 
         // 读取Boss掉落红包数量
         this.settings.bossRedpacketDropCount = parseInt(document.getElementById('bossRedpacketDropCount').value) || 15;
+
+        // 读取精英怪基础数值
+        this.settings.eliteHpMultiplier = parseFloat(document.getElementById('eliteHpMultiplier').value) || 1.5;
+        this.settings.eliteAttackMultiplier = parseFloat(document.getElementById('eliteAttackMultiplier').value) || 0.5;
+        this.settings.eliteSpeedMultiplier = parseFloat(document.getElementById('eliteSpeedMultiplier').value) || 1.0;
+        this.settings.eliteSizeMultiplier = parseFloat(document.getElementById('eliteSizeMultiplier').value) || 1.1;
+        this.settings.eliteRedpacketDropCount = parseInt(document.getElementById('eliteRedpacketDropCount').value) || 6;
+
+        // 读取精英怪技能参数
+        this.settings.healerInterval = parseInt(document.getElementById('healerInterval').value) || 5000;
+        this.settings.healerRange = parseInt(document.getElementById('healerRange').value) || 200;
+        this.settings.healerAmountPercent = parseFloat(document.getElementById('healerAmountPercent').value) || 0.2;
+        this.settings.shielderInterval = parseInt(document.getElementById('shielderInterval').value) || 6000;
+        this.settings.shielderRange = parseInt(document.getElementById('shielderRange').value) || 180;
+        this.settings.shielderDuration = parseInt(document.getElementById('shielderDuration').value) || 2000;
+        this.settings.shielderReduction = parseFloat(document.getElementById('shielderReduction').value) || 0.5;
+        this.settings.rangedAttackInterval = parseInt(document.getElementById('rangedAttackInterval').value) || 2000;
+        this.settings.rangedAttackRange = parseInt(document.getElementById('rangedAttackRange').value) || 200;
+        this.settings.rangedProjectileSpeed = parseFloat(document.getElementById('rangedProjectileSpeed').value) || 4;
+        this.settings.rangedProjectileDamage = parseInt(document.getElementById('rangedProjectileDamage').value) || 15;
+    }
+
+    // ==================== 图鉴系统方法 ====================
+
+    /**
+     * 打开图鉴
+     */
+    openBestiary() {
+        // 如果在游戏中，暂停游戏
+        if (this.state === GameState.PLAYING) {
+            this.state = GameState.PAUSED;
+        }
+
+        document.getElementById('bestiaryScreen').classList.remove('hidden');
+        this.renderBestiaryGrid();
+    }
+
+    /**
+     * 关闭图鉴
+     */
+    closeBestiary() {
+        document.getElementById('bestiaryScreen').classList.add('hidden');
+        document.getElementById('monsterDetail').classList.remove('active');
+        document.getElementById('bestiaryGrid').style.display = 'grid';
+
+        // 如果游戏处于暂停状态，返回游戏或暂停界面
+        if (this.player && this.player.hp > 0 && this.state === GameState.PAUSED) {
+            this.showPauseScreen();
+        }
+    }
+
+    /**
+     * 渲染图鉴网格
+     */
+    renderBestiaryGrid() {
+        const grid = document.getElementById('bestiaryGrid');
+        grid.innerHTML = '';
+
+        // 添加所有怪物
+        Object.values(BESTIARY.monsters).forEach(monster => {
+            const card = document.createElement('div');
+            card.className = 'monster-card';
+            card.style.borderColor = monster.color;
+            card.innerHTML = `
+                <div style="position: relative;">
+                    <span class="monster-card-icon">${monster.emoji}</span>
+                    ${monster.badge ? `<span class="monster-card-badge">${monster.badge}</span>` : ''}
+                </div>
+                <div class="monster-card-name">${monster.name}</div>
+                <div class="monster-card-type">${monster.isElite ? '精英怪' : '普通怪'}</div>
+            `;
+            card.addEventListener('click', () => this.showMonsterDetail(monster));
+            grid.appendChild(card);
+        });
+
+        // 添加Boss
+        const bossCard = document.createElement('div');
+        bossCard.className = 'monster-card';
+        bossCard.style.borderColor = BESTIARY.boss.color;
+        bossCard.innerHTML = `
+            <div style="position: relative;">
+                <span class="monster-card-icon">${BESTIARY.boss.emoji}</span>
+                <span class="monster-card-badge">${BESTIARY.boss.badge}</span>
+            </div>
+            <div class="monster-card-name">${BESTIARY.boss.name}</div>
+            <div class="monster-card-type">Boss</div>
+        `;
+        bossCard.addEventListener('click', () => this.showMonsterDetail(BESTIARY.boss));
+        grid.appendChild(bossCard);
+    }
+
+    /**
+     * 显示怪物详情
+     */
+    showMonsterDetail(monster) {
+        document.getElementById('bestiaryGrid').style.display = 'none';
+        document.getElementById('monsterDetail').classList.add('active');
+
+        // 显示怪物名称
+        document.getElementById('monsterName').textContent = monster.name;
+
+        // 显示标签
+        const tagsContainer = document.getElementById('monsterTags');
+        tagsContainer.innerHTML = '';
+        monster.tags.forEach(tag => {
+            const tagEl = document.createElement('span');
+            tagEl.className = `monster-tag ${monster.isElite ? 'elite' : ''}`;
+            tagEl.textContent = tag;
+            tagsContainer.appendChild(tagEl);
+        });
+
+        // 显示描述
+        document.getElementById('monsterDescription').innerHTML = `
+            <p>${monster.description}</p>
+            ${monster.ability ? `<p style="color: var(--accent-gold); margin-top: 10px;"><strong>特殊能力：</strong>${monster.ability}</p>` : ''}
+        `;
+
+        // 显示特性
+        const statsContainer = document.getElementById('monsterStats');
+        statsContainer.innerHTML = '';
+        Object.values(monster.stats).forEach(stat => {
+            const statEl = document.createElement('div');
+            statEl.className = 'stat-item';
+            statEl.innerHTML = `
+                <span class="stat-label">${stat.label}：</span>
+                <span class="stat-value ${stat.class}">${stat.value}</span>
+            `;
+            statsContainer.appendChild(statEl);
+        });
+
+        // 渲染预览动画
+        this.renderMonsterPreview(monster);
+    }
+
+    /**
+     * 返回图鉴列表
+     */
+    showBestiaryGrid() {
+        document.getElementById('monsterDetail').classList.remove('active');
+        document.getElementById('bestiaryGrid').style.display = 'grid';
+    }
+
+    /**
+     * 渲染怪物预览动画
+     */
+    renderMonsterPreview(monster) {
+        const canvas = document.getElementById('monsterPreviewCanvas');
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const size = 40;
+        let animationTime = 0;
+
+        const animate = () => {
+            if (!document.getElementById('monsterDetail').classList.contains('active')) {
+                return;
+            }
+
+            ctx.clearRect(0, 0, width, height);
+
+            // 绘制背景圆环
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, size * 1.5, 0, Math.PI * 2);
+            ctx.strokeStyle = monster.color;
+            ctx.lineWidth = 3;
+            ctx.globalAlpha = 0.3 + Math.sin(animationTime * 0.05) * 0.1;
+            ctx.stroke();
+
+            // 绘制怪物emoji
+            ctx.globalAlpha = 1;
+            ctx.font = `${size * 1.5}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(monster.emoji, centerX, centerY);
+
+            // 绘制badge
+            if (monster.badge) {
+                ctx.font = `${size * 0.5}px Arial`;
+                ctx.fillText(monster.badge, centerX + size * 0.6, centerY - size * 0.8);
+            }
+
+            // 根据怪物类型绘制特效
+            if (monster.id === 'fast') {
+                // 快速怪：速度线
+                for (let i = 0; i < 3; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(centerX - size - 20, centerY - size * 0.3 + i * size * 0.3);
+                    ctx.lineTo(centerX - size, centerY - size * 0.3 + i * size * 0.3);
+                    ctx.strokeStyle = monster.color;
+                    ctx.lineWidth = 2;
+                    ctx.globalAlpha = 0.5;
+                    ctx.stroke();
+                }
+            } else if (monster.id === 'tank') {
+                // 坦克怪：盾牌光环
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, size * 1.2, 0, Math.PI * 2);
+                ctx.strokeStyle = monster.color;
+                ctx.lineWidth = 2;
+                ctx.globalAlpha = 0.4;
+                ctx.stroke();
+            } else if (monster.id === 'suicide') {
+                // 自爆怪：爆炸预警
+                const explodeProgress = (Math.sin(animationTime * 0.03) + 1) / 2;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, size * (1 + explodeProgress * 0.5), 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.font = '20px Arial';
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+                ctx.fillText('💥', centerX, centerY);
+            } else if (monster.id === 'healer') {
+                // 回复怪：治疗光环
+                const healProgress = (Math.sin(animationTime * 0.05) + 1) / 2;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, size * (1.5 + healProgress * 0.3), 0, Math.PI * 2);
+                ctx.strokeStyle = monster.color;
+                ctx.lineWidth = 2;
+                ctx.globalAlpha = 0.4 * healProgress;
+                ctx.stroke();
+                ctx.font = '20px Arial';
+                ctx.fillStyle = monster.color;
+                ctx.fillText('💚', centerX, centerY);
+            } else if (monster.id === 'shielder') {
+                // 大盾怪：盾牌效果
+                const shieldProgress = (Math.sin(animationTime * 0.05) + 1) / 2;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, size * 1.3, 0, Math.PI * 2);
+                ctx.strokeStyle = monster.color;
+                ctx.lineWidth = 3;
+                ctx.globalAlpha = 0.6 * shieldProgress;
+                ctx.stroke();
+                ctx.font = '20px Arial';
+                ctx.fillStyle = monster.color;
+                ctx.fillText('🔰', centerX, centerY);
+            } else if (monster.id === 'ranged') {
+                // 远程怪：弹道
+                const projectileX = centerX + Math.cos(animationTime * 0.03) * size * 1.5;
+                ctx.beginPath();
+                ctx.arc(projectileX, centerY, 5, 0, Math.PI * 2);
+                ctx.fillStyle = monster.color;
+                ctx.fill();
+                // 轨迹
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(projectileX, centerY);
+                ctx.strokeStyle = monster.color;
+                ctx.lineWidth = 2;
+                ctx.globalAlpha = 0.3;
+                ctx.stroke();
+            } else if (monster.id === 'boss') {
+                // Boss：皇冠和多层光环
+                ctx.font = '16px Arial';
+                ctx.fillText('👑', centerX, centerY - size * 1.5);
+                
+                for (let i = 1; i <= 2; i++) {
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, size * (0.8 + i * 0.4), 0, Math.PI * 2);
+                    ctx.strokeStyle = `rgba(255, 0, 0, ${0.3 + i * 0.1})`;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            }
+
+            animationTime += 16;
+            requestAnimationFrame(animate);
+        };
+
+        animate();
     }
 
     // ==================== 暂停系统方法 ====================
