@@ -1631,18 +1631,20 @@ class Monster {
         const sizeMultiplier = typeConfig.isElite ? (settings.eliteSizeMultiplier || typeConfig.sizeMultiplier) : typeConfig.sizeMultiplier;
 
         this.baseHp = (settings.monsterInitialHP || CONFIG.MONSTER.INITIAL_HP) * hpMultiplier;
-        this.hp = Math.floor(this.baseHp * (1 + (difficultyMultiplier - 1) * (settings.monsterHPGrowth || 0.1) * 10));
+        this.hp = Math.floor(this.baseHp * difficultyMultiplier);
         this.maxHp = this.hp;
-        this.attack = Math.floor((settings.monsterInitialAttack || CONFIG.MONSTER.INITIAL_ATTACK) * attackMultiplier * (1 + (difficultyMultiplier - 1) * (settings.monsterAttackGrowth || 0.05) * 10));
+        this.attack = Math.floor((settings.monsterInitialAttack || CONFIG.MONSTER.INITIAL_ATTACK) * attackMultiplier * difficultyMultiplier);
         
         // 移动端适配速度
         let baseSpeed = (settings.monsterInitialSpeed || CONFIG.MONSTER.INITIAL_SPEED) * speedMultiplier;
         if (isMobile) {
             baseSpeed = baseSpeed * CONFIG.MOBILE.SPEED_MULTIPLIER;
         }
-        this.speed = baseSpeed * (1 + (difficultyMultiplier - 1) * (settings.monsterSpeedGrowth || 0.02) * 10);
+        // 速度每30秒增加0.5（线性增长）
+        const gameTime30SecondUnits = window.game && window.game.gameTime ? window.game.gameTime / 30000 : 0;
+        this.speed = baseSpeed + gameTime30SecondUnits * 0.5;
         
-        this.size = ((settings.monsterInitialSize || CONFIG.MONSTER.INITIAL_SIZE) + (difficultyMultiplier - 1) * 2) * sizeMultiplier;
+        this.size = ((settings.monsterInitialSize || CONFIG.MONSTER.INITIAL_SIZE) * Math.pow(1.05, gameTime30SecondUnits)) * sizeMultiplier;
         this.damage = this.attack;
         this.expValue = Math.floor((settings.monsterExpValue || CONFIG.REDPACKET.EXP_VALUE) * difficultyMultiplier * typeConfig.expMultiplier);
         
@@ -2199,16 +2201,18 @@ class Boss {
         const settings = window.gameSettings || {};
         
         // 使用设置中的数值
-        this.hp = Math.floor((settings.bossInitialHP || CONFIG.BOSS.INITIAL_HP) * (1 + (difficultyMultiplier - 1) * (settings.bossHPGrowth || 0.15) * 10));
+        this.hp = Math.floor((settings.bossInitialHP || CONFIG.BOSS.INITIAL_HP) * difficultyMultiplier);
         this.maxHp = this.hp;
-        this.attack = Math.floor((settings.bossAttack || CONFIG.BOSS.ATTACK) * (1 + (difficultyMultiplier - 1) * (settings.bossAttackGrowth || 0.08) * 10));
+        this.attack = Math.floor((settings.bossAttack || CONFIG.BOSS.ATTACK) * difficultyMultiplier);
         
         // 移动端适配速度
         let baseSpeed = settings.bossSpeed || CONFIG.BOSS.SPEED;
         if (isMobile) {
             baseSpeed = baseSpeed * CONFIG.MOBILE.SPEED_MULTIPLIER;
         }
-        this.speed = baseSpeed * (1 + (difficultyMultiplier - 1) * (settings.bossSpeedGrowth || 0.03) * 10);
+        // 速度每30秒增加0.5（线性增长）
+        const gameTime30SecondUnits = window.game && window.game.gameTime ? window.game.gameTime / 30000 : 0;
+        this.speed = baseSpeed + gameTime30SecondUnits * 0.5;
         
         this.size = settings.bossSize || CONFIG.BOSS.SIZE;
         this.damage = this.attack;
@@ -4349,8 +4353,8 @@ class Game {
     }
     
     updateDifficulty() {
-        // 每30秒难度增加
-        this.difficultyMultiplier = 1 + (this.gameTime / 30000) * 0.25;
+        // 每30秒难度翻1.2倍（复利计算）
+        this.difficultyMultiplier = Math.pow(1.2, this.gameTime / 30000);
     }
 
     spawnBoss(currentTime) {
