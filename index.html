@@ -83,6 +83,20 @@
             </div>
         </div>
 
+        <!-- 角色选择界面 -->
+        <div id="characterSelectScreen" class="screen character-select-screen hidden">
+            <div class="screen-content">
+                <h2 class="screen-title">🎭 选择你的角色</h2>
+                <p class="character-select-subtitle">每个角色都有独特的攻击方式和特殊能力</p>
+                <div class="character-grid" id="characterGrid">
+                    <!-- 角色卡片会由JS动态生成 -->
+                </div>
+                <div class="button-row">
+                    <button id="backToMenuButton" class="game-button secondary">返回菜单</button>
+                </div>
+            </div>
+        </div>
+
         <!-- 升级界面 -->
         <div id="upgradeScreen" class="screen upgrade-screen hidden">
             <div class="screen-content">
@@ -240,7 +254,6 @@
                                 <label class="setting-label">
                                     <span class="setting-text">渲染质量预设</span>
                                     <select id="renderQualityPreset" class="setting-select">
-                                        <option value="auto">自动调整</option>
                                         <option value="high">高质量</option>
                                         <option value="medium">中等质量</option>
                                         <option value="low">低质量</option>

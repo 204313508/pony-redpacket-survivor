@@ -28,6 +28,100 @@ const CONFIG = {
         ATTACK_COOLDOWN: 400
     },
 
+    // 角色配置
+    CHARACTERS: {
+        // 默认角色：范围攻击
+        melee: {
+            id: 'melee',
+            name: '勇敢小马',
+            icon: '🐴',
+            description: '均衡型角色，使用范围攻击，适合新手',
+            attackType: 'melee',
+            attackRange: 160,
+            attackCooldown: 350,
+            baseColor: '#FFD700',
+            effects: {
+                attackColor: '#FFD700',
+                attackGlow: '#FFA500'
+            }
+        },
+        // 远程角色：穿透箭
+        ranged: {
+            id: 'ranged',
+            name: '神射手小马',
+            icon: '🐎',
+            description: '远程攻击，射程远，箭矢可穿透多个敌人',
+            attackType: 'ranged',
+            attackRange: 200,
+            attackCooldown: 550, // 攻速略低
+            projectileSpeed: 12, // 增加弹道速度
+            projectileSize: 10, // 增加弹道大小
+            penetration: true, // 穿透效果
+            maxPenetration: 999, // 最大穿透数量
+            baseColor: '#00BFFF',
+            effects: {
+                attackColor: '#00BFFF',
+                attackGlow: '#1E90FF',
+                projectileColor: '#00CED1'
+            }
+        },
+        // 近战角色：减伤+百分比伤害
+        tank: {
+            id: 'tank',
+            name: '守护小马',
+            icon: '🦓',
+            description: '近战攻击，自带减伤，攻击附加百分比伤害',
+            attackType: 'melee',
+            attackRange: 100,
+            attackCooldown: 150,
+            defenseBonus: 0, // 额外防御加成
+            // 每损失1.5%最大生命获得1%免伤
+            damageReductionFormula: (currentHp, maxHp) => {
+                const hpLostPercent = (maxHp - currentHp) / maxHp * 100;
+                return Math.min(75, hpLostPercent / 1.5); // 最大75%免伤
+            },
+            // 攻击附加敌方最大生命值1.5%的伤害
+            bonusDamagePercent: 0.015,
+            baseColor: '#32CD32',
+            effects: {
+                attackColor: '#32CD32',
+                attackGlow: '#228B22'
+            }
+        },
+        // 法师角色：火焰和冰霜
+        mage: {
+            id: 'mage',
+            name: '魔法小马',
+            icon: '🦄',
+            description: '远程攻击，法术弹命中后造成火焰或冰霜效果',
+            attackType: 'ranged',
+            attackRange: 250,
+            attackCooldown: 750,
+            projectileSpeed: 6,
+            projectileSize: 12, // 增加弹道大小
+            attackCounter: 0, // 攻击计数器（用于切换火/冰）
+            // 奇数次攻击：火焰效果
+            fireEffect: {
+                range: 140, // 140x140范围（增加40%）
+                damagePercent: 0.4, // 每秒40%攻击力（提高60%）
+                duration: 3000, // 持续3秒（加长50%）
+                tickInterval: 250 // 每250ms造成一次伤害（提高频率）
+            },
+            // 偶数次攻击：冰霜效果
+            iceEffect: {
+                range: 140, // 140x140范围（增加40%）
+                slowPercent: 0.6, // 60%减速（提高20%）
+                duration: 1500 // 持续1.5秒（加长50%）
+            },
+            baseColor: '#FF69B4',
+            effects: {
+                attackColor: '#FF69B4',
+                attackGlow: '#FF1493',
+                projectileColor: '#DA70D6'
+            }
+        }
+    },
+
     // 红包配置
     REDPACKET: {
         SIZE: 15,
@@ -154,7 +248,7 @@ const CONFIG = {
                 isElite: true, // 精英怪，显示名称
                 redpacketDropCount: 4, // 精英怪掉落红包数量
                 // 远程攻击参数
-                attackRange: 200, // 攻击范围
+                attackRange: 800, // 攻击范围（全图范围）
                 attackInterval: 2000, // 攻击间隔2秒
                 projectileSpeed: 4, // 弹道速度
                 projectileDamage: 15, // 弹道伤害
@@ -436,15 +530,15 @@ const BESTIARY = {
             badge: '🎯',
             color: '#fd9644',
             isElite: true,
-            description: '精英怪物，不会移动，可以发射远程弹道攻击玩家。',
+            description: '精英怪物，不会移动，可以全图范围发射远程弹道攻击玩家。',
             stats: {
                 hp: { label: '生命值', value: '较低', class: 'stat-low' },
                 speed: { label: '移动速度', value: '不移动', class: 'stat-low' },
                 attack: { label: '攻击力', value: '中等', class: 'stat-medium' },
-                behavior: { label: '行为', value: '远程攻击', class: 'stat-high' }
+                behavior: { label: '行为', value: '全图远程', class: 'stat-high' }
             },
             tags: ['精英怪', '远程型', '弹道'],
-            ability: '发射直线弹道攻击，玩家可以通过走位躲避'
+            ability: '全图范围发射直线弹道攻击，玩家可以通过走位躲避'
         }
     },
     boss: {
@@ -506,6 +600,22 @@ const Utils = {
         const length = Math.sqrt(x * x + y * y);
         if (length === 0) return { x: 0, y: 0 };
         return { x: x / length, y: y / length };
+    },
+    
+    // 四舍五入到一位小数
+    roundNumber(value) {
+        return Math.round(value * 10) / 10;
+    },
+    
+    // 格式化数值用于显示（保留一位小数，如果是0则不显示）
+    formatNumber(value) {
+        const rounded = Math.round(value * 10) / 10;
+        // 如果是整数，直接返回整数；否则保留一位小数
+        if (Number.isInteger(rounded)) {
+            return rounded.toString();
+        } else {
+            return rounded.toFixed(1);
+        }
     }
 };
 
@@ -884,9 +994,14 @@ class SoundEffect {
 
 // ==================== 玩家类 ====================
 class Player {
-    constructor(x, y, isMobile = false, gameSettings = null) {
+    constructor(x, y, isMobile = false, gameSettings = null, characterId = 'melee') {
         this.x = x;
         this.y = y;
+        this.characterId = characterId; // 角色ID
+        
+        // 获取角色配置
+        const characterConfig = CONFIG.CHARACTERS[characterId] || CONFIG.CHARACTERS.melee;
+        
         this.hp = CONFIG.PLAYER.INITIAL_HP;
         this.maxHp = CONFIG.PLAYER.INITIAL_HP;
         this.attackPower = CONFIG.PLAYER.INITIAL_ATTACK;
@@ -907,11 +1022,15 @@ class Player {
         this.expToLevel = CONFIG.PLAYER.INITIAL_EXP_TO_LEVEL;
         this.size = CONFIG.PLAYER.SIZE;
         
-        // 移动端使用稍大的攻击范围
-        this.attackRange = CONFIG.PLAYER.ATTACK_RANGE;
+        // 根据角色配置设置攻击范围
+        this.attackRange = characterConfig.attackRange;
         if (this.isMobile) {
-            this.attackRange = CONFIG.PLAYER.ATTACK_RANGE * CONFIG.MOBILE.ATTACK_RANGE_MULTIPLIER;
+            this.attackRange = characterConfig.attackRange * CONFIG.MOBILE.ATTACK_RANGE_MULTIPLIER;
         }
+        
+        // 角色特定属性
+        this.character = characterConfig;
+        this.attackCounter = 0; // 用于法师角色的攻击计数
         
         this.attackCooldown = 0;
         this.lastAttackTime = 0;
@@ -1030,14 +1149,18 @@ class Player {
     
     attack() {
         if (this.canAttack()) {
-            // 计算攻击冷却时间（考虑狂热技能效果）
-            let cooldownTime = CONFIG.PLAYER.ATTACK_COOLDOWN;
+            // 计算攻击冷却时间（根据角色配置和狂热技能效果）
+            let cooldownTime = this.character.attackCooldown;
             if (this.playerSkills.effects.frenzy.active) {
                 cooldownTime = cooldownTime * 0.5; // 狂热效果：攻击冷却减少50%
             }
             this.attackCooldown = cooldownTime;
             this.isAttacking = true;
             this.attackAnimationTime = 0;
+            
+            // 增加攻击计数（用于法师角色）
+            this.attackCounter++;
+            
             return true;
         }
         return false;
@@ -1066,8 +1189,28 @@ class Player {
         };
     }
 
+    /**
+     * 计算角色特定额外伤害（用于守护小马）
+     * @param {number} targetMaxHp 目标最大生命值
+     * @returns {number} 额外伤害
+     */
+    calculateBonusDamage(targetMaxHp) {
+        if (this.characterId === 'tank' && this.character.bonusDamagePercent) {
+            return Math.floor(targetMaxHp * this.character.bonusDamagePercent);
+        }
+        return 0;
+    }
+
     takeDamage(damage) {
-        const actualDamage = Math.max(1, damage - this.defense);
+        let actualDamage = Math.max(1, damage - this.defense);
+        
+        // 守护小马的减伤效果：每损失1.5%最大生命获得1%免伤
+        if (this.characterId === 'tank' && this.character.damageReductionFormula) {
+            const damageReduction = this.character.damageReductionFormula(this.hp, this.maxHp);
+            actualDamage = actualDamage * (1 - damageReduction / 100);
+        }
+        
+        actualDamage = Math.max(1, Math.floor(actualDamage));
         this.hp -= actualDamage;
 
         // 触发受伤动画
@@ -1087,10 +1230,25 @@ class Player {
     
     levelUp() {
         this.level++;
+        
+        // 扣除当前等级所需经验
         this.exp = this.exp - this.expToLevel;
+        
+        // 计算下一级所需经验
         this.expToLevel = Math.floor(this.expToLevel * CONFIG.UPGRADE.EXP_MULTIPLIER);
-    }
-    
+        
+        // 检查是否还能继续升级（支持连续升级）
+        while (this.exp >= this.expToLevel) {
+            this.level++;
+            this.exp = this.exp - this.expToLevel;
+            this.expToLevel = Math.floor(this.expToLevel * CONFIG.UPGRADE.EXP_MULTIPLIER);
+        }
+        
+        // 确保经验值不为负数（防御性检查）
+        if (this.exp < 0) {
+            this.exp = 0;
+        }
+    }    
     upgrade(type) {
         switch(type) {
             case 'health':
@@ -1480,11 +1638,12 @@ class Player {
         ctx.globalAlpha = 1;
         ctx.globalCompositeOperation = 'source-over';
 
-        // 绘制小马emoji
+        // 绘制角色emoji（根据角色配置）
+        const characterIcon = this.character.icon || '🐴';
         ctx.font = `${this.size * 2.5}px Arial`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('🐴', 0, 0);
+        ctx.fillText(characterIcon, 0, 0);
 
         ctx.restore();
 
@@ -2126,20 +2285,27 @@ class Projectile {
         if (this.trail.length > 10) {
             this.trail.shift();
         }
-        
-        // 移动弹道
-        this.x += this.directionX * this.speed;
-        this.y += this.directionY * this.speed;
-        
+
+        // 移动弹道（支持两种格式）
+        if (this.vx !== undefined && this.vy !== undefined) {
+            // 玩家弹道格式
+            this.x += this.vx;
+            this.y += this.vy;
+        } else {
+            // 怪物弹道格式
+            this.x += this.directionX * this.speed;
+            this.y += this.directionY * this.speed;
+        }
+
         // 检查是否超出地图范围
         if (this.x < 0 || this.x > CONFIG.MAP_WIDTH || this.y < 0 || this.y > CONFIG.MAP_HEIGHT) {
             this.active = false;
         }
     }
-    
+
     checkHit(player) {
         if (!this.active) return false;
-        
+
         const distance = Utils.distance(this.x, this.y, player.x, player.y);
         if (distance <= this.size + player.size) {
             this.active = false;
@@ -2147,17 +2313,35 @@ class Projectile {
         }
         return false;
     }
-    
+
     draw(ctx, cameraX, cameraY) {
         if (!this.active) return;
-        
+
         const screenX = this.x - cameraX;
         const screenY = this.y - cameraY;
-        
+
         ctx.save();
-        
-        // 绘制弹道轨迹
-        if (this.trail.length > 1) {
+
+        // 根据弹道类型使用不同的颜色和样式
+        let mainColor = '#fd9644';
+        let glowColor = 'rgba(253, 150, 68, 0.8)';
+        let coreColor = '#fffa65';
+
+        if (this.color) {
+            // 玩家弹道使用自定义颜色
+            mainColor = this.color;
+            glowColor = this.color.replace(')', ', 0.8)').replace('rgb', 'rgba').replace('#', 'rgba(');
+            if (this.color.startsWith('#')) {
+                const r = parseInt(this.color.slice(1, 3), 16);
+                const g = parseInt(this.color.slice(3, 5), 16);
+                const b = parseInt(this.color.slice(5, 7), 16);
+                glowColor = `rgba(${r}, ${g}, ${b}, 0.8)`;
+            }
+            coreColor = '#ffffff';
+        }
+
+        // 绘制弹道轨迹（只有Projectile类有trail属性）
+        if (this.trail && this.trail.length > 1) {
             ctx.beginPath();
             ctx.moveTo(screenX, screenY);
             for (let i = this.trail.length - 1; i >= 0; i--) {
@@ -2166,26 +2350,32 @@ class Projectile {
                 const pointScreenY = point.y - cameraY;
                 ctx.lineTo(pointScreenX, pointScreenY);
             }
-            ctx.strokeStyle = 'rgba(253, 150, 68, 0.3)';
+            ctx.strokeStyle = mainColor.replace(')', ', 0.3)').replace('rgb', 'rgba').replace('#', 'rgba(');
+            if (mainColor.startsWith('#')) {
+                const r = parseInt(mainColor.slice(1, 3), 16);
+                const g = parseInt(mainColor.slice(3, 5), 16);
+                const b = parseInt(mainColor.slice(5, 7), 16);
+                ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.3)`;
+            }
             ctx.lineWidth = this.size * 0.8;
             ctx.stroke();
         }
-        
+
         // 绘制弹道主体
         ctx.shadowBlur = 15;
-        ctx.shadowColor = 'rgba(253, 150, 68, 0.8)';
-        ctx.fillStyle = '#fd9644';
+        ctx.shadowColor = glowColor;
+        ctx.fillStyle = mainColor;
         ctx.beginPath();
         ctx.arc(screenX, screenY, this.size, 0, Math.PI * 2);
         ctx.fill();
-        
+
         // 弹道核心
         ctx.shadowBlur = 5;
-        ctx.fillStyle = '#fffa65';
+        ctx.fillStyle = coreColor;
         ctx.beginPath();
         ctx.arc(screenX, screenY, this.size * 0.5, 0, Math.PI * 2);
         ctx.fill();
-        
+
         ctx.restore();
     }
 }
@@ -3082,15 +3272,16 @@ class DamageNumber {
     constructor(x, y, value, type = 'normal') {
         this.x = x;
         this.y = y;
-        this.value = value;
-        this.type = type; // 'normal', 'crit', 'skill', 'heal'
+        // 四舍五入到一位小数（如 12.5）
+        this.value = Utils.roundNumber(value);
+        this.type = type; // 'normal', 'crit', 'skill', 'heal', 'fire', 'bonus', 'damage'
         this.duration = 1000; // 显示持续时间（毫秒）
         this.elapsed = 0;
         this.active = true;
         this.floatDistance = 80; // 向上飘动的距离
         this.initialScale = 1;
         this.shakeAmount = 0;
-        
+
         // 根据类型设置颜色和效果
         switch (type) {
             case 'crit':
@@ -3112,6 +3303,16 @@ class DamageNumber {
             case 'damage':
                 this.color = '#FF4757'; // 红色
                 this.initialScale = 1.2;
+                this.duration = 1000;
+                break;
+            case 'fire':
+                this.color = '#FF4500'; // 橙红色
+                this.initialScale = 1.2;
+                this.duration = 900;
+                break;
+            case 'bonus':
+                this.color = '#00CED1'; // 深青色
+                this.initialScale = 1.1;
                 this.duration = 1000;
                 break;
             default:
@@ -3151,6 +3352,16 @@ class DamageNumber {
             case 'damage':
                 this.color = '#FF4757';
                 this.initialScale = 1.2;
+                this.duration = 1000;
+                break;
+            case 'fire':
+                this.color = '#FF4500';
+                this.initialScale = 1.2;
+                this.duration = 900;
+                break;
+            case 'bonus':
+                this.color = '#00CED1';
+                this.initialScale = 1.1;
                 this.duration = 1000;
                 break;
             default:
@@ -3207,21 +3418,24 @@ class DamageNumber {
         ctx.shadowBlur = this.type === 'crit' ? 20 : 10;
         ctx.shadowColor = this.color;
         
+        // 格式化数值显示（保留一位小数，如果是0则不显示）
+        const displayValue = Utils.formatNumber(this.value);
+        
         // 绘制文字描边
         ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
         ctx.lineWidth = 3;
-        ctx.strokeText(this.value, 0, 0);
+        ctx.strokeText(displayValue, 0, 0);
         
         // 绘制文字填充
         ctx.fillStyle = this.color;
         ctx.globalAlpha = alpha;
-        ctx.fillText(this.value, 0, 0);
+        ctx.fillText(displayValue, 0, 0);
         
         // 暴击时额外绘制闪光效果
         if (this.type === 'crit' && progress < 0.5) {
             ctx.globalAlpha = alpha * (1 - progress * 2);
             ctx.fillStyle = '#FFFFFF';
-            ctx.fillText(this.value, 0, 0);
+            ctx.fillText(displayValue, 0, 0);
         }
         
         ctx.restore();
@@ -3788,7 +4002,7 @@ class Game {
             showSkillCooldown: true, // 显示技能冷却时间数字
             showDamageNumbers: true, // 显示伤害数字
             // 渲染质量预设
-            renderQualityPreset: 'auto', // 'auto', 'high', 'medium', 'low', 'custom'
+            renderQualityPreset: 'high', // 'high', 'medium', 'low', 'custom'
             // 详细渲染质量设置
             qualitySettings: {
                 effectQuality: 'high', // 'high', 'medium', 'low'
@@ -3856,7 +4070,7 @@ class Game {
             shielderDuration: 2000,
             shielderReduction: 0.5,
             rangedAttackInterval: 2000,
-            rangedAttackRange: 200,
+            rangedAttackRange: 800,
             rangedProjectileSpeed: 4,
             rangedProjectileDamage: 15
         };
@@ -3942,8 +4156,11 @@ class Game {
         });
         
         // 按钮事件
-        document.getElementById('startButton').addEventListener('click', () => this.startGame());
+        document.getElementById('startButton').addEventListener('click', () => this.showCharacterSelectScreen());
         document.getElementById('restartButton').addEventListener('click', () => this.showStartScreen());
+
+        // 角色选择界面事件
+        document.getElementById('backToMenuButton').addEventListener('click', () => this.showStartScreen());
         
         // 升级选项
         document.querySelectorAll('.upgrade-option').forEach(option => {
@@ -4084,7 +4301,7 @@ class Game {
         this.handleSkillUse(skillId);
     }
     
-    startGame() {
+    startGame(characterId = 'melee') {
         // 取消菜单动画（如果正在运行）
         if (this.menuAnimationId) {
             cancelAnimationFrame(this.menuAnimationId);
@@ -4095,7 +4312,8 @@ class Game {
         this.gameLoopRunning = false;
         this.gameLoopRequestId = null;
 
-        this.player = new Player(CONFIG.MAP_WIDTH / 2, CONFIG.MAP_HEIGHT / 2, this.isTouchDevice, this.settings);
+        // 使用选定的角色创建玩家
+        this.player = new Player(CONFIG.MAP_WIDTH / 2, CONFIG.MAP_HEIGHT / 2, this.isTouchDevice, this.settings, characterId);
         this.monsters = [];
         this.bosses = [];
         this.redPackets = [];
@@ -4106,6 +4324,7 @@ class Game {
         this.lightningEffects = [];
         this.damageNumbers = [];
         this.projectiles = []; // 初始化弹道数组
+        this.areaEffects = []; // 区域效果数组（用于法师角色的火焰和冰霜）
 
         // 清空技能栏UI
         this.clearSkillBarUI();
@@ -4125,10 +4344,11 @@ class Game {
         this.lastSpawnTime = 0;
         this.lastBossSpawnTime = 0;
         this.difficultyMultiplier = 1;
-        
+
         this.state = GameState.PLAYING;
-        
+
         document.getElementById('startScreen').classList.add('hidden');
+        document.getElementById('characterSelectScreen').classList.add('hidden');
         document.getElementById('gameOverScreen').classList.add('hidden');
         document.getElementById('upgradeScreen').classList.add('hidden');
         document.getElementById('hud').classList.remove('hidden');
@@ -4140,7 +4360,7 @@ class Game {
             if (!this.joystick) {
                 this.joystick = new VirtualJoystick(joystickElement);
             }
-            
+
             // 显示攻击按钮
             document.getElementById('attackButton').classList.remove('hidden');
         }
@@ -4150,7 +4370,7 @@ class Game {
 
         // 重置时间
         this.lastTime = performance.now();
-        
+
         // 启动游戏循环
         this.gameLoop();
     }
@@ -4165,59 +4385,153 @@ class Game {
         // 播放攻击音效
         this.soundEffect.playAttack();
 
+        // 根据角色类型执行不同的攻击逻辑
+        const characterId = this.player.characterId;
+
+        if (characterId === 'ranged') {
+            // 远程角色：发射穿透箭
+            this.executeRangedAttack();
+        } else if (characterId === 'tank') {
+            // 守护小马：近战攻击 + 百分比伤害
+            this.executeTankAttack();
+        } else if (characterId === 'mage') {
+            // 法师小马：发射法术弹
+            this.executeMageAttack();
+        } else {
+            // 默认角色：范围攻击
+            this.executeMeleeAttack();
+        }
+
+        this.updateUI();
+    }
+
+    // 默认角色的范围攻击
+    executeMeleeAttack() {
         // 创建攻击效果（使用玩家的实际攻击范围）
         this.attackEffects.push(this.attackEffectPool.acquire(this.player.x, this.player.y, this.player.direction, this.player.attackRange));
 
-                        // 检测攻击范围内的怪物
-                const attackRadius = this.player.attackRange;
-        
-                for (let i = this.monsters.length - 1; i >= 0; i--) {
-                    const monster = this.monsters[i];
-                    const distance = Utils.distance(this.player.x, this.player.y, monster.x, monster.y);
-        
-                    if (distance <= attackRadius) {
-                        // 计算伤害和暴击
-                        const damageInfo = this.player.calculateDamage(false);
-                        const result = monster.takeDamage(damageInfo.damage);
-        
-                        // 显示伤害数字
-                        const damageType = damageInfo.isCrit ? 'crit' : 'normal';
-                        this.damageNumbers.push(this.damageNumberPool.acquire(monster.x, monster.y - monster.size, result.damage, damageType));
-        
-                        // 嗜血术吸血效果
-                        if (this.player.playerSkills.effects.bloodthirst.active && result.damage > 0) {
-                            const skillConfig = CONFIG.SKILL.POOL.bloodthirst;
-                            const lifestealPercent = skillConfig.baseLifestealBonus;
-                            const healAmount = result.damage * lifestealPercent;
-        
-                            // 只在实际回复血量时显示
-                            const oldHp = this.player.hp;
-                            this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmount);
-                            const actualHeal = this.player.hp - oldHp;
-        
-                            if (actualHeal > 0) {
-                                this.damageNumbers.push(this.damageNumberPool.acquire(this.player.x, this.player.y - this.player.size, Math.floor(actualHeal), 'heal'));
-                            }
-                        }
-        
-                        if (result.killed) {
-                            // 播放怪物死亡音效
-                            this.soundEffect.playMonsterDeath();
-                    // 怪物死亡，掉落红包
-                    this.monsters.splice(i, 1);
-                    
-                    // 精英怪掉落多个红包
-                    const dropCount = monster.isElite ? monster.redpacketDropCount : 1;
-                    for (let k = 0; k < dropCount; k++) {
-                        const angle = Math.random() * Math.PI * 2;
-                        const dropDistance = Utils.randomRange(30, 80);
-                        const dropX = monster.x + Math.cos(angle) * dropDistance;
-                        const dropY = monster.y + Math.sin(angle) * dropDistance;
-                        this.redPackets.push(new RedPacket(dropX, dropY, this.isTouchDevice));
-                    }
-                    
-                    this.totalKills++;
-                    this.score += monster.isElite ? 300 : 100;
+        const attackRadius = this.player.attackRange;
+
+        // 检测攻击范围内的怪物
+        for (let i = this.monsters.length - 1; i >= 0; i--) {
+            const monster = this.monsters[i];
+            const distance = Utils.distance(this.player.x, this.player.y, monster.x, monster.y);
+
+            if (distance <= attackRadius) {
+                this.applyDamageToTarget(monster, i, 'monster');
+            }
+        }
+
+        // 检测攻击范围内的Boss
+        for (let i = this.bosses.length - 1; i >= 0; i--) {
+            const boss = this.bosses[i];
+            const distance = Utils.distance(this.player.x, this.player.y, boss.x, boss.y);
+
+            if (distance <= attackRadius) {
+                this.applyDamageToTarget(boss, i, 'boss');
+            }
+        }
+    }
+
+    // 远程角色的穿透箭攻击
+    executeRangedAttack() {
+        // 创建攻击效果
+        this.attackEffects.push(this.attackEffectPool.acquire(this.player.x, this.player.y, this.player.direction, this.player.attackRange));
+
+        // 找到攻击范围内最近的敌人
+        let nearestEnemy = null;
+        let nearestDistance = Infinity;
+
+        const attackRadius = this.player.attackRange;
+
+        // 检查怪物
+        for (const monster of this.monsters) {
+            const distance = Utils.distance(this.player.x, this.player.y, monster.x, monster.y);
+            if (distance <= attackRadius && distance < nearestDistance) {
+                nearestDistance = distance;
+                nearestEnemy = monster;
+            }
+        }
+
+        // 检查Boss
+        for (const boss of this.bosses) {
+            const distance = Utils.distance(this.player.x, this.player.y, boss.x, boss.y);
+            if (distance <= attackRadius && distance < nearestDistance) {
+                nearestDistance = distance;
+                nearestEnemy = boss;
+            }
+        }
+
+        // 计算发射方向（如果有敌人则朝向敌人，否则朝向当前方向）
+        let normalized;
+        if (nearestEnemy) {
+            const dx = nearestEnemy.x - this.player.x;
+            const dy = nearestEnemy.y - this.player.y;
+            normalized = Utils.normalize(dx, dy);
+        } else {
+            // 没有敌人时，向当前朝向发射
+            normalized = { x: this.player.direction, y: 0 };
+        }
+
+        // 创建穿透箭弹道
+        const projectile = {
+            x: this.player.x,
+            y: this.player.y,
+            vx: normalized.x * this.player.character.projectileSpeed,
+            vy: normalized.y * this.player.character.projectileSpeed,
+            size: this.player.character.projectileSize,
+            damage: this.player.attackPower,
+            isCrit: false,
+            penetration: true, // 穿透效果
+            hitTargets: [], // 已击中的目标
+            color: this.player.character.effects.projectileColor,
+            owner: 'player',
+            type: 'ranged',
+            active: true,
+            hitRadius: 20 // 增加碰撞检测半径
+        };
+
+        this.projectiles.push(projectile);
+    }
+
+    // 守护小马的近战攻击 + 百分比伤害
+    executeTankAttack() {
+        // 创建攻击效果
+        this.attackEffects.push(this.attackEffectPool.acquire(this.player.x, this.player.y, this.player.direction, this.player.attackRange));
+
+        const attackRadius = this.player.attackRange;
+
+        // 检测攻击范围内的怪物
+        for (let i = this.monsters.length - 1; i >= 0; i--) {
+            const monster = this.monsters[i];
+            const distance = Utils.distance(this.player.x, this.player.y, monster.x, monster.y);
+
+            if (distance <= attackRadius) {
+                // 计算基础伤害和暴击
+                const damageInfo = this.player.calculateDamage(false);
+
+                // 添加百分比伤害
+                const bonusDamage = this.player.calculateBonusDamage(monster.maxHp);
+                const totalDamage = damageInfo.damage + bonusDamage;
+
+                // 应用伤害
+                const result = monster.takeDamage(totalDamage);
+
+                // 显示伤害数字
+                const damageType = damageInfo.isCrit ? 'crit' : 'normal';
+                this.damageNumbers.push(this.damageNumberPool.acquire(monster.x, monster.y - monster.size, Utils.roundNumber(result.damage), damageType));
+
+                // 如果有额外伤害，额外显示
+                if (bonusDamage > 0) {
+                    this.damageNumbers.push(this.damageNumberPool.acquire(monster.x, monster.y - monster.size - 20, Utils.roundNumber(bonusDamage), 'bonus'));
+                }
+
+                // 嗜血术吸血效果
+                this.applyLifesteal(result.damage);
+
+                // 处理怪物死亡
+                if (result.killed) {
+                    this.handleEnemyDeath(monster, i, 'monster');
                 }
             }
         }
@@ -4228,6 +4542,214 @@ class Game {
             const distance = Utils.distance(this.player.x, this.player.y, boss.x, boss.y);
 
             if (distance <= attackRadius) {
+                // 计算基础伤害和暴击
+                const damageInfo = this.player.calculateDamage(false);
+
+                // 添加百分比伤害
+                const bonusDamage = this.player.calculateBonusDamage(boss.maxHp);
+                const totalDamage = damageInfo.damage + bonusDamage;
+
+                // 应用伤害
+                const result = boss.takeDamage(totalDamage);
+
+                // 显示伤害数字
+                const damageType = damageInfo.isCrit ? 'crit' : 'normal';
+                this.damageNumbers.push(this.damageNumberPool.acquire(boss.x, boss.y - boss.size, result.damage, damageType));
+
+                // 如果有额外伤害，额外显示
+                if (bonusDamage > 0) {
+                    this.damageNumbers.push(this.damageNumberPool.acquire(boss.x, boss.y - boss.size - 20, bonusDamage, 'bonus'));
+                }
+
+                // 嗜血术吸血效果
+                this.applyLifesteal(result.damage);
+
+                // 处理Boss死亡
+                if (result.killed) {
+                    this.handleEnemyDeath(boss, i, 'boss');
+                }
+            }
+        }
+    }
+
+    // 法师小马的法术弹攻击
+    executeMageAttack() {
+        // 创建攻击效果
+        this.attackEffects.push(this.attackEffectPool.acquire(this.player.x, this.player.y, this.player.direction, this.player.attackRange));
+
+        // 找到攻击范围内最近的敌人
+        let nearestEnemy = null;
+        let nearestDistance = Infinity;
+
+        const attackRadius = this.player.attackRange;
+
+        // 检查怪物
+        for (const monster of this.monsters) {
+            const distance = Utils.distance(this.player.x, this.player.y, monster.x, monster.y);
+            if (distance <= attackRadius && distance < nearestDistance) {
+                nearestDistance = distance;
+                nearestEnemy = monster;
+            }
+        }
+
+        // 检查Boss
+        for (const boss of this.bosses) {
+            const distance = Utils.distance(this.player.x, this.player.y, boss.x, boss.y);
+            if (distance <= attackRadius && distance < nearestDistance) {
+                nearestDistance = distance;
+                nearestEnemy = boss;
+            }
+        }
+
+        // 计算发射方向（如果有敌人则朝向敌人，否则朝向当前方向）
+        let normalized;
+        if (nearestEnemy) {
+            const dx = nearestEnemy.x - this.player.x;
+            const dy = nearestEnemy.y - this.player.y;
+            normalized = Utils.normalize(dx, dy);
+        } else {
+            // 没有敌人时，向当前朝向发射
+            normalized = { x: this.player.direction, y: 0 };
+        }
+
+        // 判断是奇数次还是偶数次攻击
+        const isOddAttack = this.player.attackCounter % 2 === 1;
+
+        // 创建法术弹
+        const projectile = {
+            x: this.player.x,
+            y: this.player.y,
+            vx: normalized.x * this.player.character.projectileSpeed,
+            vy: normalized.y * this.player.character.projectileSpeed,
+            size: this.player.character.projectileSize,
+            damage: this.player.attackPower,
+            isCrit: false,
+            color: this.player.character.effects.projectileColor,
+            owner: 'player',
+            type: 'mage',
+            isOddAttack: isOddAttack, // 标记是奇数次还是偶数次攻击
+            attackRange: this.player.attackRange,
+            active: true,
+            hitRadius: 20 // 增加碰撞检测半径
+        };
+
+        this.projectiles.push(projectile);
+    }
+
+    // 对目标应用伤害（用于范围攻击）
+    applyDamageToTarget(target, index, targetType) {
+        const damageInfo = this.player.calculateDamage(false);
+        const result = target.takeDamage(damageInfo.damage);
+
+        // 显示伤害数字
+        const damageType = damageInfo.isCrit ? 'crit' : 'normal';
+        this.damageNumbers.push(this.damageNumberPool.acquire(target.x, target.y - target.size, result.damage, damageType));
+
+        // 嗜血术吸血效果
+        this.applyLifesteal(result.damage);
+
+        // 处理敌人死亡
+        if (result.killed) {
+            this.handleEnemyDeath(target, index, targetType);
+        }
+    }
+
+    // 应用吸血效果
+    applyLifesteal(damage) {
+        if (this.player.playerSkills.effects.bloodthirst.active && damage > 0) {
+            const skillConfig = CONFIG.SKILL.POOL.bloodthirst;
+            const lifestealPercent = skillConfig.baseLifestealBonus;
+            const healAmount = damage * lifestealPercent;
+
+            const oldHp = this.player.hp;
+            this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmount);
+            const actualHeal = this.player.hp - oldHp;
+
+            if (actualHeal > 0) {
+                this.damageNumbers.push(this.damageNumberPool.acquire(this.player.x, this.player.y - this.player.size, Math.floor(actualHeal), 'heal'));
+            }
+        }
+    }
+
+    // 处理敌人死亡
+    handleEnemyDeath(enemy, index, targetType) {
+        this.soundEffect.playMonsterDeath();
+
+        // 掉落红包
+        const dropCount = enemy.isElite ? enemy.redpacketDropCount : 1;
+        for (let k = 0; k < dropCount; k++) {
+            const angle = Math.random() * Math.PI * 2;
+            const dropDistance = Utils.randomRange(30, 80);
+            const dropX = enemy.x + Math.cos(angle) * dropDistance;
+            const dropY = enemy.y + Math.sin(angle) * dropDistance;
+            this.redPackets.push(new RedPacket(dropX, dropY, this.isTouchDevice));
+        }
+
+        this.totalKills++;
+
+        if (targetType === 'monster') {
+            this.monsters.splice(index, 1);
+            this.score += enemy.isElite ? 300 : 100;
+        } else {
+            this.bosses.splice(index, 1);
+            this.score += 500;
+        }
+    }
+
+    // 处理穿透箭击中敌人
+    handleRangedProjectileHit(projectile, projectileIndex) {
+        const hitRadius = projectile.hitRadius || projectile.size;
+
+        // 检测是否击中怪物
+        for (let i = this.monsters.length - 1; i >= 0; i--) {
+            const monster = this.monsters[i];
+
+            // 检查是否已经击中过这个目标
+            if (projectile.hitTargets.includes(monster)) continue;
+
+            // 检查是否击中（使用更大的碰撞半径）
+            const distance = Utils.distance(projectile.x, projectile.y, monster.x, monster.y);
+            if (distance <= hitRadius + monster.size) {
+                // 记录已击中的目标
+                projectile.hitTargets.push(monster);
+
+                // 计算伤害和暴击
+                const damageInfo = this.player.calculateDamage(false);
+                const result = monster.takeDamage(damageInfo.damage);
+
+                // 显示伤害数字
+                const damageType = damageInfo.isCrit ? 'crit' : 'normal';
+                this.damageNumbers.push(this.damageNumberPool.acquire(monster.x, monster.y - monster.size, result.damage, damageType));
+
+                // 嗜血术吸血效果
+                this.applyLifesteal(result.damage);
+
+                // 处理怪物死亡
+                if (result.killed) {
+                    this.handleEnemyDeath(monster, i, 'monster');
+                }
+
+                // 如果不是穿透弹道，击中后移除
+                if (!projectile.penetration) {
+                    projectile.active = false;
+                    return;
+                }
+            }
+        }
+
+        // 检测是否击中Boss
+        for (let i = this.bosses.length - 1; i >= 0; i--) {
+            const boss = this.bosses[i];
+
+            // 检查是否已经击中过这个目标
+            if (projectile.hitTargets.includes(boss)) continue;
+
+            // 检查是否击中（使用更大的碰撞半径）
+            const distance = Utils.distance(projectile.x, projectile.y, boss.x, boss.y);
+            if (distance <= hitRadius + boss.size) {
+                // 记录已击中的目标
+                projectile.hitTargets.push(boss);
+
                 // 计算伤害和暴击
                 const damageInfo = this.player.calculateDamage(false);
                 const result = boss.takeDamage(damageInfo.damage);
@@ -4237,43 +4759,207 @@ class Game {
                 this.damageNumbers.push(this.damageNumberPool.acquire(boss.x, boss.y - boss.size, result.damage, damageType));
 
                 // 嗜血术吸血效果
-                if (this.player.playerSkills.effects.bloodthirst.active && result.damage > 0) {
-                    const skillConfig = CONFIG.SKILL.POOL.bloodthirst;
-                    const lifestealPercent = skillConfig.baseLifestealBonus;
-                    const healAmount = result.damage * lifestealPercent;
+                this.applyLifesteal(result.damage);
 
-                    // 只在实际回复血量时显示
-                    const oldHp = this.player.hp;
-                    this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmount);
-                    const actualHeal = this.player.hp - oldHp;
-
-                    if (actualHeal > 0) {
-                        this.damageNumbers.push(this.damageNumberPool.acquire(this.player.x, this.player.y - this.player.size, Math.floor(actualHeal), 'heal'));
-                    }
+                // 处理Boss死亡
+                if (result.killed) {
+                    this.handleEnemyDeath(boss, i, 'boss');
                 }
 
-                if (result.killed) {
-                    // 播放Boss死亡音效
-                    this.soundEffect.playMonsterDeath();
-
-                    // Boss死亡，掉落多个红包
-                    for (let j = 0; j < boss.redpacketDropCount; j++) {
-                        const angle = Math.random() * Math.PI * 2;
-                        const dropDistance = Utils.randomRange(30, 80);
-                        const dropX = boss.x + Math.cos(angle) * dropDistance;
-                        const dropY = boss.y + Math.sin(angle) * dropDistance;
-                        this.redPackets.push(new RedPacket(dropX, dropY, this.isTouchDevice));
-                    }
-                    this.bosses.splice(i, 1);
-                    this.totalKills++;
-                    this.score += 500;
+                // 如果不是穿透弹道，击中后移除
+                if (!projectile.penetration) {
+                    projectile.active = false;
+                    return;
                 }
             }
         }
-
-        this.updateUI();
     }
-    
+
+    // 处理法术弹击中敌人
+    handleMageProjectileHit(projectile, projectileIndex) {
+        const hitRadius = projectile.hitRadius || projectile.size;
+
+        // 检测是否击中怪物
+        for (let i = this.monsters.length - 1; i >= 0; i--) {
+            const monster = this.monsters[i];
+
+            // 检查是否击中（使用更大的碰撞半径）
+            const distance = Utils.distance(projectile.x, projectile.y, monster.x, monster.y);
+            if (distance <= hitRadius + monster.size) {
+                // 计算伤害和暴击
+                const damageInfo = this.player.calculateDamage(false);
+                const result = monster.takeDamage(damageInfo.damage);
+
+                // 显示伤害数字
+                const damageType = damageInfo.isCrit ? 'crit' : 'normal';
+                this.damageNumbers.push(this.damageNumberPool.acquire(monster.x, monster.y - monster.size, result.damage, damageType));
+
+                // 嗜血术吸血效果
+                this.applyLifesteal(result.damage);
+
+                // 处理怪物死亡
+                if (result.killed) {
+                    this.handleEnemyDeath(monster, i, 'monster');
+                }
+
+                // 创建区域效果
+                this.createAreaEffect(projectile.x, projectile.y, projectile.isOddAttack);
+
+                // 法术弹击中后移除
+                projectile.active = false;
+                return;
+            }
+        }
+
+        // 检测是否击中Boss
+        for (let i = this.bosses.length - 1; i >= 0; i--) {
+            const boss = this.bosses[i];
+
+            // 检查是否击中（使用更大的碰撞半径）
+            const distance = Utils.distance(projectile.x, projectile.y, boss.x, boss.y);
+            if (distance <= hitRadius + boss.size) {
+                // 计算伤害和暴击
+                const damageInfo = this.player.calculateDamage(false);
+                const result = boss.takeDamage(damageInfo.damage);
+
+                // 显示伤害数字
+                const damageType = damageInfo.isCrit ? 'crit' : 'normal';
+                this.damageNumbers.push(this.damageNumberPool.acquire(boss.x, boss.y - boss.size, result.damage, damageType));
+
+                // 嗜血术吸血效果
+                this.applyLifesteal(result.damage);
+
+                // 处理Boss死亡
+                if (result.killed) {
+                    this.handleEnemyDeath(boss, i, 'boss');
+                }
+
+                // 创建区域效果
+                this.createAreaEffect(projectile.x, projectile.y, projectile.isOddAttack);
+
+                // 法术弹击中后移除
+                projectile.active = false;
+                return;
+            }
+        }
+    }
+
+    // 创建区域效果（法师角色的火焰和冰霜）
+    createAreaEffect(x, y, isOddAttack) {
+        const character = this.player.character;
+        let areaEffect;
+
+        if (isOddAttack) {
+            // 奇数次攻击：火焰效果
+            areaEffect = {
+                x: x,
+                y: y,
+                type: 'fire',
+                range: character.fireEffect.range,
+                damagePerSecond: this.player.attackPower * character.fireEffect.damagePercent,
+                damagePerTick: this.player.attackPower * character.fireEffect.damagePercent * (character.fireEffect.tickInterval / 1000), // 每次tick的伤害
+                tickInterval: character.fireEffect.tickInterval || 250, // 每次伤害的间隔（ms）
+                duration: character.fireEffect.duration,
+                remainingDuration: character.fireEffect.duration,
+                lastDamageTime: 0,
+                color: '#FF4500',
+                active: true
+            };
+        } else {
+            // 偶数次攻击：冰霜效果
+            areaEffect = {
+                x: x,
+                y: y,
+                type: 'ice',
+                range: character.iceEffect.range,
+                slowPercent: character.iceEffect.slowPercent,
+                duration: character.iceEffect.duration,
+                remainingDuration: character.iceEffect.duration,
+                affectedEnemies: [], // 已受影响的敌人
+                color: '#00BFFF',
+                active: true
+            };
+        }
+
+        this.areaEffects.push(areaEffect);
+    }
+
+    // 应用区域效果
+    applyAreaEffect(effect) {
+        if (effect.type === 'fire') {
+            // 火焰效果：对范围内的敌人造成持续伤害
+            const now = Date.now();
+            const damageInterval = effect.tickInterval || 1000; // 使用配置的tickInterval
+
+            if (now - effect.lastDamageTime >= damageInterval) {
+                effect.lastDamageTime = now;
+
+                // 检测范围内的怪物
+                for (let i = this.monsters.length - 1; i >= 0; i--) {
+                    const monster = this.monsters[i];
+                    const distance = Utils.distance(effect.x, effect.y, monster.x, monster.y);
+
+                    if (distance <= effect.range / 2) {
+                        const result = monster.takeDamage(effect.damagePerTick);
+                        this.damageNumbers.push(this.damageNumberPool.acquire(monster.x, monster.y - monster.size, result.damage, 'fire'));
+
+                        if (result.killed) {
+                            this.handleEnemyDeath(monster, i, 'monster');
+                        }
+                    }
+                }
+
+                // 检测范围内的Boss
+                for (let i = this.bosses.length - 1; i >= 0; i--) {
+                    const boss = this.bosses[i];
+                    const distance = Utils.distance(effect.x, effect.y, boss.x, boss.y);
+
+                    if (distance <= effect.range / 2) {
+                        const result = boss.takeDamage(effect.damagePerTick);
+                        this.damageNumbers.push(this.damageNumberPool.acquire(boss.x, boss.y - boss.size, result.damage, 'fire'));
+
+                        if (result.killed) {
+                            this.handleEnemyDeath(boss, i, 'boss');
+                        }
+                    }
+                }
+            }
+        } else if (effect.type === 'ice') {
+            // 冰霜效果：对范围内的敌人减速
+            const slowDuration = effect.duration;
+
+            // 检测范围内的怪物
+            for (const monster of this.monsters) {
+                const distance = Utils.distance(effect.x, effect.y, monster.x, monster.y);
+
+                if (distance <= effect.range / 2) {
+                    // 应用减速效果
+                    if (!monster.slowed || monster.slowEndTime < Date.now()) {
+                        monster.slowed = true;
+                        monster.slowEndTime = Date.now() + slowDuration;
+                        monster.originalSpeed = monster.baseSpeed;
+                        monster.baseSpeed = monster.originalSpeed * (1 - effect.slowPercent);
+                    }
+                }
+            }
+
+            // 检测范围内的Boss
+            for (const boss of this.bosses) {
+                const distance = Utils.distance(effect.x, effect.y, boss.x, boss.y);
+
+                if (distance <= effect.range / 2) {
+                    // 应用减速效果
+                    if (!boss.slowed || boss.slowEndTime < Date.now()) {
+                        boss.slowed = true;
+                        boss.slowEndTime = Date.now() + slowDuration;
+                        boss.originalSpeed = boss.baseSpeed;
+                        boss.baseSpeed = boss.originalSpeed * (1 - effect.slowPercent);
+                    }
+                }
+            }
+        }
+    }
+
     handleUpgrade(upgradeType) {
         if (!this.player) return;
 
@@ -4375,54 +5061,15 @@ class Game {
         }
     }
 
+    // 性能监控已被移除，不再使用
     updatePerformanceMonitor(currentTime) {
-        // 只在自动模式下才进行性能监控
-        if (this.settings.renderQuality !== 'auto') return;
-
-        const pm = this.performanceMonitor;
-
-        // 计算当前FPS
-        const currentFps = 1000 / (currentTime - pm.lastCheckTime);
-        pm.lastCheckTime = currentTime;
-
-        // 平滑FPS值
-        pm.fps = pm.fps * 0.9 + currentFps * 0.1;
-
-        // 每30帧检查一次性能
-        pm.frameTime += 1;
-        if (pm.frameTime < 30) return;
-        pm.frameTime = 0;
-
-        // 根据FPS调整渲染质量
-        if (pm.fps < 30) {
-            pm.lowFpsCount++;
-            pm.highFpsCount = 0;
-
-            // 持续低FPS，降低渲染质量
-            if (pm.lowFpsCount > 3 && pm.renderQuality > 1) {
-                pm.renderQuality--;
-                pm.lowFpsCount = 0;
-                console.log(`性能下降，降低渲染质量至等级 ${pm.renderQuality}`);
-            }
-        } else if (pm.fps > 50) {
-            pm.highFpsCount++;
-            pm.lowFpsCount = 0;
-
-            // 持续高FPS，提升渲染质量
-            if (pm.highFpsCount > 10 && pm.renderQuality < 3) {
-                pm.renderQuality++;
-                pm.highFpsCount = 0;
-                console.log(`性能良好，提升渲染质量至等级 ${pm.renderQuality}`);
-            }
-        }
+        // 此方法已废弃，性能监控功能已完全移除
+        return;
     }
 
     // 获取当前渲染质量等级
     getCurrentRenderQuality() {
         const quality = this.settings.renderQuality;
-        if (quality === 'auto') {
-            return this.performanceMonitor.renderQuality;
-        }
         // 将字符串转换为数字
         const qualityMap = { 'high': 3, 'medium': 2, 'low': 1 };
         return qualityMap[quality] || 3;
@@ -4445,11 +5092,6 @@ class Game {
 
         this.gameTime += deltaTime;
 
-        // 性能监控（仅在自动模式下）
-        if (this.settings.renderQuality === 'auto') {
-            this.updatePerformanceMonitor(currentTime);
-        }
-        
         // 更新难度
         this.updateDifficulty();
 
@@ -4850,25 +5492,72 @@ class Game {
         // 更新弹道
         for (let i = this.projectiles.length - 1; i >= 0; i--) {
             const projectile = this.projectiles[i];
-            projectile.update(deltaTime);
 
-            // 检查弹道是否击中玩家
-            if (projectile.checkHit(this.player)) {
-                const actualDamage = this.player.takeDamage(projectile.damage);
-                this.playerHurtEffects.push(this.playerHurtEffectPool.acquire(this.player.x, this.player.y));
+            // 处理玩家发射的弹道（普通对象格式）
+            if (projectile.owner === 'player') {
+                // 更新玩家弹道位置（基于deltaTime，约60fps为基准）
+                const speedFactor = deltaTime / 16.67;
+                projectile.x += projectile.vx * speedFactor;
+                projectile.y += projectile.vy * speedFactor;
 
-                // 显示玩家受到的伤害数字（红色）
-                this.damageNumbers.push(this.damageNumberPool.acquire(this.player.x, this.player.y - this.player.size, actualDamage, 'damage'));
+                // 检查是否超出地图范围
+                if (projectile.x < -50 || projectile.x > CONFIG.MAP_WIDTH + 50 || projectile.y < -50 || projectile.y > CONFIG.MAP_HEIGHT + 50) {
+                    projectile.active = false;
+                }
 
-                if (this.player.hp <= 0) {
-                    this.gameOver();
-                    return;
+                if (projectile.type === 'ranged') {
+                    // 穿透箭：检测所有敌人
+                    this.handleRangedProjectileHit(projectile, i);
+                } else if (projectile.type === 'mage') {
+                    // 法术弹：检测命中并创建区域效果
+                    this.handleMageProjectileHit(projectile, i);
+                }
+            } else {
+                // 怪物发射的弹道：使用 Projectile 类的 update 方法
+                if (typeof projectile.update === 'function') {
+                    projectile.update(deltaTime);
+                }
+
+                // 检测是否击中玩家
+                if (projectile.checkHit(this.player)) {
+                    const actualDamage = this.player.takeDamage(projectile.damage);
+                    this.playerHurtEffects.push(this.playerHurtEffectPool.acquire(this.player.x, this.player.y));
+
+                    // 显示玩家受到的伤害数字（红色）
+                    this.damageNumbers.push(this.damageNumberPool.acquire(this.player.x, this.player.y - this.player.size, actualDamage, 'damage'));
+
+                    if (this.player.hp <= 0) {
+                        this.gameOver();
+                        return;
+                    }
                 }
             }
 
             // 移除不活跃的弹道
             if (!projectile.active) {
                 this.projectiles.splice(i, 1);
+            }
+        }
+
+        // 更新区域效果（法师角色的火焰和冰霜）
+        if (this.areaEffects && this.areaEffects.length > 0) {
+            for (let i = this.areaEffects.length - 1; i >= 0; i--) {
+                const effect = this.areaEffects[i];
+
+                if (effect && effect.active !== false) {
+                    // 应用区域效果
+                    this.applyAreaEffect(effect);
+                    
+                    // 更新持续时间（使用deltaTime）
+                    effect.remainingDuration -= deltaTime;
+                    if (effect.remainingDuration <= 0) {
+                        effect.active = false;
+                    }
+                }
+
+                if (!effect || !effect.active) {
+                    this.areaEffects.splice(i, 1);
+                }
             }
         }
 
@@ -5040,6 +5729,14 @@ class Game {
     
     showUpgradeScreen() {
         this.state = GameState.PAUSED;
+
+        // 显式取消游戏循环（与 pauseGame 保持一致）
+        if (this.gameLoopRequestId) {
+            cancelAnimationFrame(this.gameLoopRequestId);
+            this.gameLoopRequestId = null;
+        }
+        this.gameLoopRunning = false;
+
         document.getElementById('upgradeScreen').classList.remove('hidden');
         document.getElementById('currentLevel').textContent = this.player.level;
 
@@ -5470,11 +6167,157 @@ class Game {
     showStartScreen() {
         this.state = GameState.MENU;
         document.getElementById('gameOverScreen').classList.add('hidden');
+        document.getElementById('characterSelectScreen').classList.add('hidden');
         document.getElementById('hud').classList.add('hidden');
         document.getElementById('startScreen').classList.remove('hidden');
 
         // 渲染菜单背景
         this.renderMenuBackground();
+    }
+
+    showCharacterSelectScreen() {
+        this.state = GameState.MENU;
+        document.getElementById('startScreen').classList.add('hidden');
+        document.getElementById('gameOverScreen').classList.add('hidden');
+        document.getElementById('hud').classList.add('hidden');
+        document.getElementById('characterSelectScreen').classList.remove('hidden');
+
+        // 渲染角色卡片
+        this.renderCharacterCards();
+
+        // 渲染菜单背景
+        this.renderMenuBackground();
+    }
+
+    renderCharacterCards() {
+        const characterGrid = document.getElementById('characterGrid');
+        characterGrid.innerHTML = '';
+
+        const characters = CONFIG.CHARACTERS;
+
+        for (const [characterId, character] of Object.entries(characters)) {
+            const card = document.createElement('div');
+            card.className = 'character-card';
+            card.dataset.character = characterId;
+
+            // 根据角色类型生成不同的属性显示
+            let statsHTML = '';
+            let abilityHTML = '';
+
+            if (characterId === 'melee') {
+                statsHTML = `
+                    <div class="character-stats-title">角色属性</div>
+                    <div class="character-stat-item">
+                        <span class="character-stat-label">攻击类型</span>
+                        <span class="character-stat-value">范围攻击</span>
+                    </div>
+                    <div class="character-stat-item">
+                        <span class="character-stat-label">攻击范围</span>
+                        <span class="character-stat-value">${character.attackRange}</span>
+                    </div>
+                    <div class="character-stat-item">
+                        <span class="character-stat-label">攻击冷却</span>
+                        <span class="character-stat-value">${character.attackCooldown}ms</span>
+                    </div>
+                `;
+                abilityHTML = `
+                    <div class="character-ability-title">🌟 特殊能力</div>
+                    <div class="character-ability-description">均衡型角色，适合新手</div>
+                `;
+            } else if (characterId === 'ranged') {
+                statsHTML = `
+                    <div class="character-stats-title">角色属性</div>
+                    <div class="character-stat-item">
+                        <span class="character-stat-label">攻击类型</span>
+                        <span class="character-stat-value">远程攻击</span>
+                    </div>
+                    <div class="character-stat-item">
+                        <span class="character-stat-label">攻击范围</span>
+                        <span class="character-stat-value">${character.attackRange}</span>
+                    </div>
+                    <div class="character-stat-item">
+                        <span class="character-stat-label">攻击冷却</span>
+                        <span class="character-stat-value">${character.attackCooldown}ms</span>
+                    </div>
+                    <div class="character-stat-item">
+                        <span class="character-stat-label">弹道速度</span>
+                        <span class="character-stat-value">${character.projectileSpeed}</span>
+                    </div>
+                `;
+                abilityHTML = `
+                    <div class="character-ability-title">🎯 特殊能力</div>
+                    <div class="character-ability-description">穿透箭，可穿透多个敌人</div>
+                `;
+            } else if (characterId === 'tank') {
+                statsHTML = `
+                    <div class="character-stats-title">角色属性</div>
+                    <div class="character-stat-item">
+                        <span class="character-stat-label">攻击类型</span>
+                        <span class="character-stat-value">近战攻击</span>
+                    </div>
+                    <div class="character-stat-item">
+                        <span class="character-stat-label">攻击范围</span>
+                        <span class="character-stat-value">${character.attackRange}</span>
+                    </div>
+                    <div class="character-stat-item">
+                        <span class="character-stat-label">攻击冷却</span>
+                        <span class="character-stat-value">${character.attackCooldown}ms</span>
+                    </div>
+                `;
+                abilityHTML = `
+                    <div class="character-ability-title">🛡️ 特殊能力</div>
+                    <div class="character-ability-description">减伤+百分比伤害</div>
+                `;
+            } else if (characterId === 'mage') {
+                statsHTML = `
+                    <div class="character-stats-title">角色属性</div>
+                    <div class="character-stat-item">
+                        <span class="character-stat-label">攻击类型</span>
+                        <span class="character-stat-value">远程魔法</span>
+                    </div>
+                    <div class="character-stat-item">
+                        <span class="character-stat-label">攻击范围</span>
+                        <span class="character-stat-value">${character.attackRange}</span>
+                    </div>
+                    <div class="character-stat-item">
+                        <span class="character-stat-label">攻击冷却</span>
+                        <span class="character-stat-value">${character.attackCooldown}ms</span>
+                    </div>
+                    <div class="character-stat-item">
+                        <span class="character-stat-label">弹道速度</span>
+                        <span class="character-stat-value">${character.projectileSpeed}</span>
+                    </div>
+                `;
+                abilityHTML = `
+                    <div class="character-ability-title">🔮 特殊能力</div>
+                    <div class="character-ability-description">火焰持续伤害 / 冰霜减速</div>
+                `;
+            }
+
+            card.innerHTML = `
+                <div class="character-icon">${character.icon}</div>
+                <div class="character-name">${character.name}</div>
+                <div class="character-description">${character.description}</div>
+                <div class="character-stats">
+                    ${statsHTML}
+                </div>
+                <div class="character-ability">
+                    ${abilityHTML}
+                </div>
+            `;
+
+            // 点击角色卡片开始游戏
+            card.addEventListener('click', () => {
+                // 移除所有卡片的选中状态
+                document.querySelectorAll('.character-card').forEach(c => c.classList.remove('selected'));
+                // 添加当前卡片的选中状态
+                card.classList.add('selected');
+                // 开始游戏
+                this.startGame(characterId);
+            });
+
+            characterGrid.appendChild(card);
+        }
     }
 
     loadSettings() {
@@ -5696,13 +6539,6 @@ class Game {
     // 渲染质量预设定义
     getQualityPresets() {
         return {
-            auto: {
-                effectQuality: 'high',
-                shadowQuality: 'medium',
-                damageNumberQuality: 'high',
-                animationQuality: 'high',
-                particleQuality: 'medium'
-            },
             high: {
                 effectQuality: 'high',
                 shadowQuality: 'high',
@@ -5799,7 +6635,7 @@ class Game {
         document.getElementById('showDamageNumbers').checked = this.settings.showDamageNumbers;
 
         // 同步渲染质量预设
-        document.getElementById('renderQualityPreset').value = this.settings.renderQualityPreset || 'auto';
+        document.getElementById('renderQualityPreset').value = this.settings.renderQualityPreset || 'high';
 
         // 根据预设启用/禁用详细设置
         const isCustom = this.settings.renderQualityPreset === 'custom';
@@ -5927,7 +6763,7 @@ class Game {
         this.settings.showDamageNumbers = document.getElementById('showDamageNumbers').checked;
 
         // 读取渲染质量预设
-        this.settings.renderQualityPreset = document.getElementById('renderQualityPreset').value || 'auto';
+        this.settings.renderQualityPreset = document.getElementById('renderQualityPreset').value || 'high';
 
         // 如果是自定义，读取详细设置
         if (this.settings.renderQualityPreset === 'custom') {
@@ -6437,7 +7273,52 @@ class Game {
         this.lightningEffects.forEach(lightning => lightning.draw(ctx, cameraX, cameraY));
 
         // 绘制弹道
-        this.projectiles.forEach(projectile => projectile.draw(ctx, cameraX, cameraY));
+        this.projectiles.forEach(projectile => {
+            if (typeof projectile.draw === 'function') {
+                // Projectile类实例
+                projectile.draw(ctx, cameraX, cameraY);
+            } else if (projectile.owner === 'player') {
+                // 玩家弹道对象，直接绘制
+                const screenX = projectile.x - cameraX;
+                const screenY = projectile.y - cameraY;
+
+                ctx.save();
+
+                // 根据弹道类型使用不同的颜色
+                let mainColor = projectile.color || '#ffffff';
+                let glowColor = mainColor;
+
+                if (mainColor.startsWith('#')) {
+                    const r = parseInt(mainColor.slice(1, 3), 16);
+                    const g = parseInt(mainColor.slice(3, 5), 16);
+                    const b = parseInt(mainColor.slice(5, 7), 16);
+                    glowColor = `rgba(${r}, ${g}, ${b}, 0.8)`;
+                }
+
+                // 绘制弹道主体（增大渲染尺寸）
+                const renderSize = Math.max(projectile.size, 10);
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = glowColor;
+                ctx.fillStyle = mainColor;
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, renderSize, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 弹道核心
+                ctx.shadowBlur = 8;
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, renderSize * 0.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            }
+        });
+
+        // 绘制区域效果（法师角色的火焰和冰霜）- 低质量时简化
+        if (quality >= 2) {
+            this.areaEffects.forEach(effect => this.drawAreaEffect(ctx, cameraX, cameraY, effect));
+        }
 
         // 绘制怪物
         this.monsters.forEach(monster => monster.draw(ctx, cameraX, cameraY));
@@ -6509,7 +7390,70 @@ class Game {
         // 恢复上下文状态
         ctx.restore();
     }
-    
+
+    // 绘制区域效果（法师角色的火焰和冰霜）
+    drawAreaEffect(ctx, cameraX, cameraY, effect) {
+        if (!effect.active) return;
+
+        const screenX = effect.x - cameraX;
+        const screenY = effect.y - cameraY;
+
+        ctx.save();
+
+        // 计算透明度（随持续时间衰减）
+        const alpha = Math.min(1, effect.remainingDuration / 500);
+
+        if (effect.type === 'fire') {
+            // 火焰效果
+            const gradient = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, effect.range / 2);
+            gradient.addColorStop(0, `rgba(255, 69, 0, ${alpha * 0.6})`);
+            gradient.addColorStop(0.5, `rgba(255, 140, 0, ${alpha * 0.3})`);
+            gradient.addColorStop(1, `rgba(255, 69, 0, 0)`);
+
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(screenX, screenY, effect.range / 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 绘制火焰粒子
+            ctx.fillStyle = `rgba(255, 200, 50, ${alpha * 0.8})`;
+            for (let i = 0; i < 5; i++) {
+                const angle = (Date.now() / 200 + i * 72) % 360;
+                const distance = (effect.range / 4) * (0.5 + 0.5 * Math.sin(Date.now() / 100 + i));
+                const px = screenX + Math.cos(angle * Math.PI / 180) * distance;
+                const py = screenY + Math.sin(angle * Math.PI / 180) * distance;
+                ctx.beginPath();
+                ctx.arc(px, py, 5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        } else if (effect.type === 'ice') {
+            // 冰霜效果
+            const gradient = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, effect.range / 2);
+            gradient.addColorStop(0, `rgba(0, 191, 255, ${alpha * 0.5})`);
+            gradient.addColorStop(0.5, `rgba(135, 206, 250, ${alpha * 0.25})`);
+            gradient.addColorStop(1, `rgba(0, 191, 255, 0)`);
+
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(screenX, screenY, effect.range / 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 绘制冰霜粒子
+            ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.9})`;
+            for (let i = 0; i < 6; i++) {
+                const angle = (Date.now() / 300 + i * 60) % 360;
+                const distance = (effect.range / 3) * (0.3 + 0.7 * Math.cos(Date.now() / 200 + i));
+                const px = screenX + Math.cos(angle * Math.PI / 180) * distance;
+                const py = screenY + Math.sin(angle * Math.PI / 180) * distance;
+                ctx.beginPath();
+                ctx.arc(px, py, 4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        ctx.restore();
+    }
+
     drawMap(ctx, cameraX, cameraY) {
         // 绘制渐变背景
         const gradient = ctx.createRadialGradient(
@@ -6668,12 +7612,16 @@ class Game {
         // 更新血量条
         const healthPercent = (this.player.hp / this.player.maxHp) * 100;
         document.getElementById('healthBar').style.width = `${healthPercent}%`;
-        document.getElementById('healthText').textContent = `${Math.ceil(this.player.hp)}/${this.player.maxHp}`;
+        const displayHp = Utils.formatNumber(this.player.hp);
+        const displayMaxHp = Utils.formatNumber(this.player.maxHp);
+        document.getElementById('healthText').textContent = `${displayHp}/${displayMaxHp}`;
         
         // 更新经验条
-        const expPercent = (this.player.exp / this.player.expToLevel) * 100;
+        const expPercent = Math.max(0, Math.min(100, (this.player.exp / this.player.expToLevel) * 100));
         document.getElementById('expBar').style.width = `${expPercent}%`;
-        document.getElementById('expText').textContent = `${this.player.exp}/${this.player.expToLevel}`;
+        const displayExp = Math.max(0, Utils.formatNumber(this.player.exp));
+        const displayExpToLevel = Math.max(1, Utils.formatNumber(this.player.expToLevel));
+        document.getElementById('expText').textContent = `${displayExp}/${displayExpToLevel}`;
         
         // 更新统计
         document.getElementById('scoreDisplay').textContent = this.score;
@@ -6736,7 +7684,7 @@ class Game {
 
                 if (cooldownTextElement) {
                     if (showSkillCooldown && cooldownRemaining > 0) {
-                        const cooldownSeconds = Math.ceil(cooldownRemaining / 1000);
+                        const cooldownSeconds = Utils.formatNumber(cooldownRemaining / 1000);
                         cooldownTextElement.textContent = `${cooldownSeconds}s`;
                         cooldownTextElement.style.display = 'block';
                     } else {
@@ -6763,7 +7711,7 @@ class Game {
 
                 if (cooldownTextElement) {
                     if (showSkillCooldown && cooldownRemaining > 0) {
-                        const cooldownSeconds = Math.ceil(cooldownRemaining / 1000);
+                        const cooldownSeconds = Utils.formatNumber(cooldownRemaining / 1000);
                         cooldownTextElement.textContent = `${cooldownSeconds}s`;
                         cooldownTextElement.style.display = 'block';
                     } else {
