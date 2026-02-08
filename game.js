@@ -1996,7 +1996,15 @@ class GameStatsTracker {
             skillDamage: 0,
             skillHeal: 0,
             skillDodgeCount: 0,
-            healthyLevelCount: 0
+            healthyLevelCount: 0,
+            // 属性值
+            attack: 0,
+            defense: 0,
+            speed: 0,
+            maxHp: 0,
+            hp: 0,
+            // 技能等级
+            skillLevels: {}
         };
 
         this.globalStats = {
@@ -2035,7 +2043,15 @@ class GameStatsTracker {
             skillDamage: 0,
             skillHeal: 0,
             skillDodgeCount: 0,
-            healthyLevelCount: 0
+            healthyLevelCount: 0,
+            // 属性值
+            attack: 0,
+            defense: 0,
+            speed: 0,
+            maxHp: 0,
+            hp: 0,
+            // 技能等级
+            skillLevels: {}
         };
     }
 
@@ -2084,6 +2100,20 @@ class GameStatsTracker {
         if (hpPercent >= 50) {
             this.sessionStats.healthyLevelCount++;
         }
+    }
+
+    // 记录属性值
+    recordAttributes(player) {
+        this.sessionStats.attack = player.attackPower;
+        this.sessionStats.defense = player.defense;
+        this.sessionStats.speed = player.speed;
+        this.sessionStats.maxHp = player.maxHp;
+        this.sessionStats.hp = player.hp;
+    }
+
+    // 记录技能等级
+    recordSkillLevels(player) {
+        this.sessionStats.skillLevels = { ...player.playerSkills.learned };
     }
 
     // 记录受伤
@@ -2319,8 +2349,9 @@ class AchievementManager {
 
             // 技能类
             case 'skill_level':
-                // 需要检查所有已学技能的最大等级
-                return false; // 这个需要在Game类中实现，检查player.playerSkills.learned
+                // 检查所有已学技能的最大等级
+                const maxSkillLevel = Math.max(...Object.values(session.skillLevels || {}), 0);
+                return maxSkillLevel >= condition.target;
             case 'skill_variety':
                 return Object.keys(session.skillLevels || {}).length >= condition.target;
             case 'skill_total_level':
@@ -5842,6 +5873,20 @@ class Game {
             this.closeAchievementScreen();
         });
 
+        // 清空成就按钮
+        document.getElementById('resetAchievementsButton').addEventListener('click', () => {
+            console.log('清空成就按钮被点击');
+            this.showAchievementResetConfirm();
+        });
+
+        // 取消清空成就
+        document.getElementById('cancelAchievementReset').addEventListener('click', () => {
+            console.log('取消清空成就按钮被点击');
+            this.hideAchievementResetConfirm();
+        });
+
+        // 确认清空成就（事件在 HTML 中通过 onclick 绑定）
+
         // 返回成就列表按钮
         document.getElementById('backToAchievements').addEventListener('click', () => {
             this.showAchievementGrid();
@@ -5934,6 +5979,10 @@ class Game {
         this.lastBossSpawnTime = 0;
         this.difficultyMultiplier = 1;
 
+        // ==================== 成就系统 ====================
+        // 开始新游戏，记录统计数据
+        this.gameStats.startNewGame(characterId);
+
         this.state = GameState.PLAYING;
 
         document.getElementById('startScreen').classList.add('hidden');
@@ -5959,6 +6008,14 @@ class Game {
 
         // 重置时间
         this.lastTime = performance.now();
+
+        // 重置sessionStats（开始新游戏）
+        this.gameStats.startNewGame(characterId);
+
+        // 设置成就解锁通知回调
+        this.achievementManager.setNotificationCallback((achievement) => {
+            this.showAchievementNotification(achievement);
+        });
 
         // 启动游戏循环
         this.gameLoop();
@@ -6263,7 +6320,7 @@ class Game {
     // 处理敌人死亡
     handleEnemyDeath(enemy, index, targetType) {
         this.soundEffect.playMonsterDeath();
-
+    
         // 掉落红包
         const dropCount = enemy.isElite ? enemy.redpacketDropCount : 1;
         for (let k = 0; k < dropCount; k++) {
@@ -6273,9 +6330,20 @@ class Game {
             const dropY = enemy.y + Math.sin(angle) * dropDistance;
             this.redPackets.push(new RedPacket(dropX, dropY, this.isTouchDevice));
         }
-
+    
         this.totalKills++;
-
+    
+        // ==================== 成就系统 ====================
+        // 记录击杀数据
+        this.gameStats.recordKill(enemy.isElite || false);
+        if (targetType === 'boss') {
+            this.gameStats.recordBossKill();
+        }
+    
+        // 检查击杀类成就
+        this.achievementManager.checkAchievementsByCategory('kill');
+        this.achievementManager.checkAchievementsByCategory('boss');
+    
         if (targetType === 'monster') {
             this.monsters.splice(index, 1);
             this.score += enemy.isElite ? 300 : 100;
@@ -6284,7 +6352,6 @@ class Game {
             this.score += 500;
         }
     }
-
     // 处理穿透箭击中敌人
     handleRangedProjectileHit(projectile, projectileIndex) {
         const hitRadius = projectile.hitRadius || projectile.size;
@@ -6552,15 +6619,26 @@ class Game {
     handleUpgrade(upgradeType) {
         if (!this.player) return;
 
+        // 记录升级前的血量百分比
+        const hpPercent = (this.player.hp / this.player.maxHp) * 100;
+
         this.player.upgrade(upgradeType);
         this.player.levelUp();
+
+        // ==================== 成就系统 ====================
+        // 记录等级数据
+        this.gameStats.recordLevel(this.player.level, hpPercent);
+        // 检查等级类成就
+        this.achievementManager.checkAchievementsByCategory('level');
+        // 检查属性类成就
+        this.achievementManager.checkAchievementsByCategory('attribute');
 
         document.getElementById('upgradeScreen').classList.add('hidden');
         this.state = GameState.PLAYING;
 
         // 重置时间以避免deltaTime过大
         this.lastTime = performance.now();
-        
+
         // 启动游戏循环
         this.gameLoop();
     }
@@ -6697,6 +6775,21 @@ class Game {
         }
         if (weatherResult.lightningEffects.length > 0) {
             this.lightningEffects.push(...weatherResult.lightningEffects);
+        }
+
+        // 定期检查成就（每5秒检查一次）
+        if (!this.lastAchievementCheckTime) {
+            this.lastAchievementCheckTime = currentTime;
+        }
+        if (currentTime - this.lastAchievementCheckTime >= 5000) {
+            // 记录玩家属性值和技能等级
+            if (this.player) {
+                this.gameStats.recordAttributes(this.player);
+                this.gameStats.recordSkillLevels(this.player);
+            }
+            // 检查成就
+            this.achievementManager.checkAllAchievements();
+            this.lastAchievementCheckTime = currentTime;
         }
 
         // 计算天气速度加成（传递给 Player.applySkillEffects 使用）
@@ -7049,6 +7142,12 @@ class Game {
 
                 // 播放收集音效
                 this.soundEffect.playCollect();
+
+                // ==================== 成就系统 ====================
+                // 记录收集数据
+                this.gameStats.recordCollect();
+                // 检查收集类成就
+                this.achievementManager.checkAchievementsByCategory('collect');
 
                 const canLevelUp = this.player.gainExp(redPacket.expValue);
 
@@ -8800,10 +8899,25 @@ class Game {
         }
         this.gameLoopRunning = false;
 
+        // ==================== 成就系统 ====================
+        // 记录最终分数
+        this.gameStats.recordScore(this.score);
+        // 记录当前天气
+        this.gameStats.recordWeather(this.weatherSystem.currentWeather);
+        // 结束游戏，更新全局统计
+        this.gameStats.endGame();
+
+        // 检查各种成就
+        this.achievementManager.checkAchievementsByCategory('score');
+        this.achievementManager.checkAchievementsByCategory('survival');
+        this.achievementManager.checkAchievementsByCategory('weather');
+        this.achievementManager.checkAchievementsByCategory('games');
+        this.achievementManager.checkAllAchievements();
+
         this.state = GameState.GAME_OVER;
         document.getElementById('gameOverScreen').classList.remove('hidden');
         document.getElementById('hud').classList.add('hidden');
-        
+
         document.getElementById('finalRedpackets').textContent = this.totalRedPackets;
         document.getElementById('finalKills').textContent = this.totalKills;
         document.getElementById('finalScore').textContent = this.score;
@@ -9556,6 +9670,168 @@ class Game {
     }
 
     /**
+     * 显示成就清空确认弹窗
+     */
+    showAchievementResetConfirm() {
+        console.log('showAchievementResetConfirm called');
+        const dialog = document.getElementById('achievementResetConfirmDialog');
+        console.log('dialog element:', dialog);
+        if (dialog) {
+            dialog.classList.remove('hidden');
+            // 强制设置外层遮罩样式
+            dialog.style.position = 'fixed';
+            dialog.style.top = '0';
+            dialog.style.left = '0';
+            dialog.style.width = '100%';
+            dialog.style.height = '100%';
+            dialog.style.zIndex = '9999';
+            dialog.style.display = 'flex';
+            dialog.style.justifyContent = 'center';
+            dialog.style.alignItems = 'center';
+            dialog.style.background = 'rgba(0, 0, 0, 0.7)';
+            dialog.style.backdropFilter = 'blur(10px)';
+            dialog.style.transition = 'all 0.3s ease';
+
+            // 强制设置内层弹窗内容样式
+            const content = dialog.querySelector('.confirm-dialog-content');
+            if (content) {
+                content.style.background = 'linear-gradient(135deg, rgba(20, 18, 45, 0.98) 0%, rgba(15, 12, 35, 0.98) 100%)';
+                content.style.border = '2px solid rgba(255, 71, 87, 0.5)';
+                content.style.borderRadius = '20px';
+                content.style.padding = '5% 5%';
+                content.style.maxWidth = '85%';
+                content.style.width = '400px';
+                content.style.textAlign = 'center';
+                content.style.boxShadow = '0 20px 60px rgba(0, 0, 0, 0.5), 0 0 80px rgba(255, 71, 87, 0.2)';
+                content.style.animation = 'dialogAppear 0.3s ease';
+            }
+
+            // 设置标题样式
+            const title = dialog.querySelector('.confirm-dialog-title');
+            if (title) {
+                title.style.fontSize = '28px';
+                title.style.fontWeight = '900';
+                title.style.color = '#ff4757';
+                title.style.marginBottom = '5%';
+                title.style.textShadow = '0 0 15px rgba(255, 71, 87, 0.5), 0 2px 4px rgba(0, 0, 0, 0.5)';
+            }
+
+            // 设置消息样式
+            const message = dialog.querySelector('.confirm-dialog-message');
+            if (message) {
+                message.style.fontSize = '18px';
+                message.style.fontWeight = '600';
+                message.style.color = '#ffffff';
+                message.style.marginBottom = '8%';
+                message.style.lineHeight = '1.8';
+                message.style.textShadow = '0 1px 3px rgba(0, 0, 0, 0.8)';
+            }
+
+            // 设置按钮容器样式
+            const buttons = dialog.querySelector('.confirm-dialog-buttons');
+            if (buttons) {
+                buttons.style.display = 'flex';
+                buttons.style.gap = '5%';
+                buttons.style.justifyContent = 'center';
+                buttons.style.width = '100%';
+            }
+
+            // 设置按钮样式
+            const allButtons = dialog.querySelectorAll('.confirm-dialog-buttons button');
+            allButtons.forEach(btn => {
+                btn.style.flex = '1';
+                btn.style.minWidth = '120px';
+                btn.style.maxWidth = '180px';
+                btn.style.padding = '15px 20px';
+                btn.style.fontSize = '16px';
+                btn.style.fontWeight = '700';
+                btn.style.borderRadius = '12px';
+                btn.style.border = '2px solid';
+                btn.style.cursor = 'pointer';
+                btn.style.transition = 'all 0.2s ease';
+                btn.style.textShadow = '0 1px 2px rgba(0, 0, 0, 0.3)';
+            });
+
+            console.log('dialog classes after remove hidden:', dialog.className);
+            console.log('dialog display:', window.getComputedStyle(dialog).display);
+            console.log('dialog position:', window.getComputedStyle(dialog).position);
+            console.log('dialog z-index:', window.getComputedStyle(dialog).zIndex);
+        } else {
+            console.error('dialog element not found');
+            // 尝试创建弹窗
+            console.log('Creating dialog manually');
+            const newDialog = document.createElement('div');
+            newDialog.id = 'achievementResetConfirmDialog';
+            newDialog.className = 'confirm-dialog';
+            newDialog.innerHTML = `
+                <div class="confirm-dialog-content">
+                    <h3 class="confirm-dialog-title">⚠️ 确认清空成就</h3>
+                    <p class="confirm-dialog-message">确定要清空所有已解锁的成就吗？此操作不可恢复！</p>
+                    <div class="confirm-dialog-buttons">
+                        <button class="game-button secondary" onclick="window.gameInstance.hideAchievementResetConfirm()">取消</button>
+                        <button class="game-button danger" onclick="window.gameInstance.resetAllAchievements(); window.gameInstance.hideAchievementResetConfirm();">确认清空</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(newDialog);
+            setTimeout(() => {
+                newDialog.style.display = 'flex';
+            }, 100);
+        }
+    }
+
+    /**
+     * 隐藏成就清空确认弹窗
+     */
+    hideAchievementResetConfirm() {
+        const dialog = document.getElementById('achievementResetConfirmDialog');
+        if (dialog) {
+            dialog.classList.add('hidden');
+            // 显式设置 display: none，因为 showAchievementResetConfirm 中设置了内联样式会覆盖 CSS
+            dialog.style.display = 'none';
+        }
+    }
+
+    /**
+     * 清空所有成就
+     */
+    resetAllAchievements() {
+        console.log('resetAllAchievements called');
+        console.log('achievementManager:', this.achievementManager);
+
+        try {
+            if (this.achievementManager) {
+                console.log('Calling achievementManager.resetAllAchievements()');
+                this.achievementManager.resetAllAchievements();
+                console.log('Achievements reset');
+
+                // 使用 setTimeout 延迟执行，避免阻塞浏览器
+                setTimeout(() => {
+                    try {
+                        // 重新渲染成就界面
+                        this.renderAchievementCards();
+                        this.updateAchievementStats();
+
+                        // 显示成功提示（使用 setTimeout 避免阻塞）
+                        setTimeout(() => {
+                            alert('成就已清空！');
+                        }, 100);
+                    } catch (error) {
+                        console.error('Error after achievements reset:', error);
+                        alert('成就已清空，但更新界面时出现错误');
+                    }
+                }, 50);
+            } else {
+                console.error('achievementManager is not initialized');
+                alert('成就系统未初始化，请先开始游戏');
+            }
+        } catch (error) {
+            console.error('Error in resetAllAchievements:', error);
+            alert('清空成就时出现错误');
+        }
+    }
+
+    /**
      * 显示成就网格
      */
     showAchievementGrid() {
@@ -9578,45 +9854,71 @@ class Game {
      * 渲染成就卡片
      */
     renderAchievementCards(category = 'all') {
-        const grid = document.getElementById('achievementGrid');
-        grid.innerHTML = '';
+        try {
+            const grid = document.getElementById('achievementGrid');
+            if (!grid) {
+                console.error('achievementGrid element not found');
+                return;
+            }
 
-        let achievements = [];
-        if (category === 'all') {
-            achievements = this.achievementManager.getAllAchievements();
-        } else {
-            achievements = this.achievementManager.getAchievementsByCategory(category);
+            // 清空内容并移除旧的事件监听器
+            grid.innerHTML = '';
+
+            let achievements = [];
+            if (category === 'all') {
+                achievements = this.achievementManager.getAllAchievements();
+            } else {
+                achievements = this.achievementManager.getAchievementsByCategory(category);
+            }
+
+            if (!achievements || achievements.length === 0) {
+                console.warn('No achievements to render');
+                return;
+            }
+
+            achievements.forEach(achievement => {
+                try {
+                    const status = this.achievementManager.getAchievementStatus(achievement.id);
+                    const tierConfig = ACHIEVEMENT_CONFIG.TIERS[achievement.tier];
+                    const categoryConfig = ACHIEVEMENT_CONFIG.CATEGORIES[achievement.category];
+                    const progress = this.achievementManager.getAchievementProgress(achievement.id);
+
+                    const card = document.createElement('div');
+                    card.className = `achievement-card ${status.unlocked ? 'unlocked' : ''}`;
+                    card.dataset.achievementId = achievement.id;
+
+                    // 计算进度百分比
+                    const progressPercent = progress ? progress.percent : 0;
+
+                    card.innerHTML = `
+                        <span class="achievement-card-category">${categoryConfig.icon}</span>
+                        <span class="achievement-card-tier">${tierConfig.icon}</span>
+                        <span class="achievement-card-icon">${achievement.icon}</span>
+                        <div class="achievement-card-name">${achievement.name}</div>
+                        ${!status.unlocked && progress ? `
+                            <div class="achievement-card-progress">
+                                <div class="achievement-card-progress-bar" style="width: ${progressPercent}%"></div>
+                            </div>
+                            <div class="achievement-card-progress-text">${progress.current}/${progress.target}</div>
+                        ` : ''}
+                    `;
+
+                    // 使用事件委托或者创建独立的处理函数，避免闭包问题
+                    const handleCardClick = (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        this.showAchievementDetail(achievement);
+                    };
+
+                    card.addEventListener('click', handleCardClick, { once: false, passive: false });
+                    grid.appendChild(card);
+                } catch (error) {
+                    console.error('Error rendering achievement card:', achievement, error);
+                }
+            });
+        } catch (error) {
+            console.error('Error in renderAchievementCards:', error);
         }
-
-        achievements.forEach(achievement => {
-            const status = this.achievementManager.getAchievementStatus(achievement.id);
-            const tierConfig = ACHIEVEMENT_CONFIG.TIERS[achievement.tier];
-            const categoryConfig = ACHIEVEMENT_CONFIG.CATEGORIES[achievement.category];
-            const progress = this.achievementManager.getAchievementProgress(achievement.id);
-
-            const card = document.createElement('div');
-            card.className = `achievement-card ${status.unlocked ? 'unlocked' : ''}`;
-            card.dataset.achievementId = achievement.id;
-
-            // 计算进度百分比
-            const progressPercent = progress ? progress.percent : 0;
-
-            card.innerHTML = `
-                <span class="achievement-card-category">${categoryConfig.icon}</span>
-                <span class="achievement-card-tier">${tierConfig.icon}</span>
-                <span class="achievement-card-icon">${achievement.icon}</span>
-                <div class="achievement-card-name">${achievement.name}</div>
-                ${!status.unlocked && progress ? `
-                    <div class="achievement-card-progress">
-                        <div class="achievement-card-progress-bar" style="width: ${progressPercent}%"></div>
-                    </div>
-                    <div class="achievement-card-progress-text">${progress.current}/${progress.target}</div>
-                ` : ''}
-            `;
-
-            card.addEventListener('click', () => this.showAchievementDetail(achievement));
-            grid.appendChild(card);
-        });
     }
 
     /**
@@ -9697,9 +9999,34 @@ class Game {
         // 渲染成就卡片
         this.renderAchievementCards(category);
     }
+
+    /**
+     * 显示成就解锁通知
+     * @param {Object} achievement - 成就对象
+     */
+    showAchievementNotification(achievement) {
+        if (!achievement) return;
+
+        const notification = document.getElementById('achievementNotification');
+        const icon = document.getElementById('notificationIcon');
+        const title = document.getElementById('notificationTitle');
+        const name = document.getElementById('notificationName');
+
+        icon.textContent = achievement.icon;
+        title.textContent = '成就解锁';
+        name.textContent = achievement.name;
+
+        // 显示通知
+        notification.classList.add('show');
+
+        // 3秒后自动隐藏
+        setTimeout(() => {
+            notification.classList.remove('show');
+        }, 3000);
+    }
 }
 
 // ==================== 初始化游戏 ====================
 window.addEventListener('load', () => {
-    new Game();
+    window.gameInstance = new Game();
 });

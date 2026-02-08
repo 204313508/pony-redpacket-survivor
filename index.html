@@ -57,6 +57,17 @@
             </div>
         </div>
 
+        <!-- 成就解锁通知 -->
+        <div id="achievementNotification" class="achievement-notification">
+            <div class="notification-content">
+                <span class="notification-icon"></span>
+                <div class="notification-text">
+                    <div class="notification-title">成就解锁！</div>
+                    <div class="notification-name"></div>
+                </div>
+            </div>
+        </div>
+
         <!-- 开始界面 -->
         <div id="startScreen" class="screen start-screen">
             <div class="screen-content">
@@ -291,7 +302,20 @@
                 </div>
 
                 <div class="achievement-buttons">
+                    <button id="resetAchievementsButton" class="game-button danger" onclick="window.gameInstance.showAchievementResetConfirm()">清空成就</button>
                     <button id="closeAchievementButton" class="game-button secondary">关闭</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 成就清空确认弹窗 -->
+        <div id="achievementResetConfirmDialog" class="confirm-dialog hidden">
+            <div class="confirm-dialog-content">
+                <h3 class="confirm-dialog-title">⚠️ 确认清空成就</h3>
+                <p class="confirm-dialog-message">确定要清空所有已解锁的成就吗？此操作不可恢复！</p>
+                <div class="confirm-dialog-buttons">
+                    <button id="cancelAchievementReset" class="game-button secondary" onclick="window.gameInstance.hideAchievementResetConfirm()">取消</button>
+                    <button id="confirmAchievementReset" class="game-button danger" onclick="window.gameInstance.resetAllAchievements(); window.gameInstance.hideAchievementResetConfirm();">确认清空</button>
                 </div>
             </div>
         </div>

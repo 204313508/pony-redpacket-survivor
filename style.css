@@ -2628,6 +2628,13 @@ body::before {
     padding: 20px;
     border-top: 1px solid var(--glass-border);
     margin-top: 20px;
+    position: relative;
+    z-index: 10;
+    pointer-events: auto;
+}
+
+.achievement-buttons .game-button {
+    pointer-events: auto;
 }
 
 /* 成就解锁动画 */
@@ -3078,4 +3085,235 @@ body::before {
     .character-select-subtitle {
         font-size: 13px;
     }
+
+/* ==================== 成就解锁通知 ==================== */
+.achievement-notification {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    z-index: 1000;
+    pointer-events: none;
+    transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.achievement-notification.show {
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.notification-content {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.95) 0%, rgba(118, 75, 162, 0.95) 100%);
+    border: 3px solid rgba(255, 215, 0, 0.8);
+    border-radius: 20px;
+    padding: 25px 40px;
+    box-shadow: 0 0 60px rgba(255, 215, 0, 0.6), 0 0 100px rgba(102, 126, 234, 0.4);
+    backdrop-filter: blur(20px);
+    animation: notificationPulse 0.5s ease;
+}
+
+@keyframes notificationPulse {
+    0% {
+        box-shadow: 0 0 60px rgba(255, 215, 0, 0.6), 0 0 100px rgba(102, 126, 234, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 80px rgba(255, 215, 0, 0.8), 0 0 120px rgba(102, 126, 234, 0.6);
+    }
+    100% {
+        box-shadow: 0 0 60px rgba(255, 215, 0, 0.6), 0 0 100px rgba(102, 126, 234, 0.4);
+    }
+}
+
+.notification-icon {
+    font-size: 64px;
+    animation: iconSpin 0.5s ease;
+    filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8));
+}
+
+@keyframes iconSpin {
+    0% {
+        transform: rotate(-180deg) scale(0);
+    }
+    100% {
+        transform: rotate(0deg) scale(1);
+    }
+}
+
+.notification-text {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.notification-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--accent-gold);
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    letter-spacing: 1px;
+}
+
+.notification-name {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+    background: linear-gradient(135deg, #FFE259 0%, #FFA751 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.3));
+}
+
+/* 成就通知粒子特效 */
+.notification-content::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(from 0deg, transparent, rgba(255, 215, 0, 0.3), transparent, rgba(102, 126, 234, 0.3), transparent);
+    animation: notificationRotate 3s linear infinite;
+    z-index: -1;
+}
+
+@keyframes notificationRotate {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .notification-content {
+        padding: 20px 30px;
+    }
+
+    .notification-icon {
+        font-size: 48px;
+    }
+
+    .notification-title {
+        font-size: 16px;
+    }
+
+    .notification-name {
+        font-size: 18px;
+    }
+}
+
+/* ==================== 确认弹窗 ==================== */
+.confirm-dialog {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
+    z-index: 9999 !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.confirm-dialog.hidden {
+    display: none !important;
+}
+
+.confirm-dialog:not(.hidden) {
+    display: flex !important;
+}
+
+.confirm-dialog-content {
+    background: linear-gradient(135deg, rgba(20, 18, 45, 0.98) 0%, rgba(15, 12, 35, 0.98) 100%);
+    border: 2px solid rgba(255, 71, 87, 0.5);
+    border-radius: 20px;
+    padding: 40px 50px;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 80px rgba(255, 71, 87, 0.2);
+    animation: dialogAppear 0.3s ease;
+}
+
+@keyframes dialogAppear {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.confirm-dialog-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--accent-red);
+    margin-bottom: 20px;
+    text-shadow: 0 0 10px rgba(255, 71, 87, 0.3);
+}
+
+.confirm-dialog-message {
+    font-size: 16px;
+    color: var(--text-primary);
+    margin-bottom: 30px;
+    line-height: 1.6;
+}
+
+.confirm-dialog-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+/* ==================== 危险按钮样式 ==================== */
+.game-button.danger {
+    background: linear-gradient(135deg, #ff4757 0%, #ff6b81 100%);
+    border: 2px solid rgba(255, 71, 87, 0.6);
+    box-shadow: 0 8px 30px rgba(255, 71, 87, 0.4), 0 0 0 rgba(255, 71, 87, 0);
+    color: #fff !important;
+}
+
+.game-button.danger:hover {
+    transform: translateY(-5px) scale(1.05);
+    box-shadow: 0 12px 40px rgba(255, 71, 87, 0.6), 0 0 30px rgba(255, 71, 87, 0.3);
+    background: linear-gradient(135deg, #ff2e3e 0%, #ff556b 100%);
+}
+
+.game-button.danger:active {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 6px 20px rgba(255, 71, 87, 0.5);
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .confirm-dialog-content {
+        padding: 30px 25px;
+        max-width: 85%;
+    }
+
+    .confirm-dialog-title {
+        font-size: 20px;
+    }
+
+    .confirm-dialog-message {
+        font-size: 14px;
+    }
+
+    .confirm-dialog-buttons {
+        flex-direction: column;
+    }
+
+    .game-button.danger {
+        width: 100%;
+    }
+}
 }
