@@ -176,12 +176,6 @@ pony-redpacket-survivor/
 ├── style.css           # 样式文件
 ├── game.js             # 游戏逻辑
 ├── README.md           # 项目说明
-├── gamestart.png       # 游戏开始界面截图
-├── gamethunder.png     # Boss战斗截图
-├── levelup.png         # 升级界面截图
-├── gameover.png        # 游戏结束界面截图
-├── settings.png        # 设置界面截图
-├── mobile-gameplay.jpg # 移动端游戏截图
 └── sounds/             # 音频文件夹
 ```
 
@@ -190,6 +184,31 @@ pony-redpacket-survivor/
 #### 游戏开始界面
 <div align="center">
   <img src="gamestart.png" alt="游戏开始界面" width="400">
+</div>
+
+#### 角色选择界面
+<div align="center">
+  <img src="selectcharacter.png" alt="角色选择界面" width="400">
+</div>
+
+#### 怪物图鉴
+<div align="center">
+  <img src="monsters.png" alt="怪物图鉴" width="400">
+</div>
+
+#### 游戏战斗场景 1
+<div align="center">
+  <img src="game2.png" alt="游戏战斗场景 1" width="400">
+</div>
+
+#### 游戏战斗场景 2
+<div align="center">
+  <img src="game3.png" alt="游戏战斗场景 2" width="400">
+</div>
+
+#### 游戏战斗场景 3
+<div align="center">
+  <img src="game4.png" alt="游戏战斗场景 3" width="400">
 </div>
 
 #### Boss战斗
@@ -202,9 +221,19 @@ pony-redpacket-survivor/
   <img src="levelup.png" alt="升级界面" width="400">
 </div>
 
-#### 设置界面
+#### 设置界面 - 视觉设置
 <div align="center">
-  <img src="settings.png" alt="设置界面" width="400">
+  <img src="settings1.png" alt="设置界面-视觉设置" width="400">
+</div>
+
+#### 设置界面 - 渲染质量
+<div align="center">
+  <img src="settings2.png" alt="设置界面-渲染质量" width="400">
+</div>
+
+#### 设置界面 - 控制设置
+<div align="center">
+  <img src="settings3.png" alt="设置界面-控制设置" width="400">
 </div>
 
 #### 游戏结束界面
@@ -212,9 +241,9 @@ pony-redpacket-survivor/
   <img src="gameover.png" alt="游戏结束界面" width="400">
 </div>
 
-#### 移动端界面
+#### 移动端界面 - 游戏开始
 <div align="center">
-  <img src="mobile-gameplay.jpg" alt="移动端游戏进行中" width="400">
+  <img src="mobile-gameplay.png" alt="移动端游戏开始界面" width="400">
 </div>
 
 ### 📊 游戏参数
@@ -442,12 +471,6 @@ pony-redpacket-survivor/
 ├── style.css           # Styles
 ├── game.js             # Game logic
 ├── README.md           # Project documentation
-├── gamestart.png       # Game start screen
-├── gamethunder.png     # Boss combat screenshot
-├── levelup.png         # Upgrade screen
-├── gameover.png        # Game over screen
-├── settings.png        # Settings screen
-├── mobile-gameplay.jpg # Mobile gameplay screenshot
 └── sounds/             # Sound effects folder
 ```
 
@@ -456,6 +479,31 @@ pony-redpacket-survivor/
 #### Game Start Screen
 <div align="center">
   <img src="gamestart.png" alt="Game Start Screen" width="400">
+</div>
+
+#### Character Selection Screen
+<div align="center">
+  <img src="selectcharacter.png" alt="Character Selection Screen" width="400">
+</div>
+
+#### Monster Gallery
+<div align="center">
+  <img src="monsters.png" alt="Monster Gallery" width="400">
+</div>
+
+#### Gameplay Scene 1
+<div align="center">
+  <img src="game2.png" alt="Gameplay Scene 1" width="400">
+</div>
+
+#### Gameplay Scene 2
+<div align="center">
+  <img src="game3.png" alt="Gameplay Scene 2" width="400">
+</div>
+
+#### Gameplay Scene 3
+<div align="center">
+  <img src="game4.png" alt="Gameplay Scene 3" width="400">
 </div>
 
 #### Boss Combat
@@ -468,9 +516,19 @@ pony-redpacket-survivor/
   <img src="levelup.png" alt="Upgrade Screen" width="400">
 </div>
 
-#### Settings Screen
+#### Settings Screen - Visual Settings
 <div align="center">
-  <img src="settings.png" alt="Settings Screen" width="400">
+  <img src="settings1.png" alt="Settings Screen - Visual" width="400">
+</div>
+
+#### Settings Screen - Rendering Quality
+<div align="center">
+  <img src="settings2.png" alt="Settings Screen - Quality" width="400">
+</div>
+
+#### Settings Screen - Control Settings
+<div align="center">
+  <img src="settings3.png" alt="Settings Screen - Controls" width="400">
 </div>
 
 #### Game Over Screen
@@ -478,9 +536,9 @@ pony-redpacket-survivor/
   <img src="gameover.png" alt="Game Over Screen" width="400">
 </div>
 
-#### Mobile Screens
+#### Mobile Screens - Game Start
 <div align="center">
-  <img src="mobile-gameplay.jpg" alt="Mobile Gameplay" width="400">
+  <img src="mobile-gameplay.png" alt="Mobile Game Start Screen" width="400">
 </div>
 
 ### 📊 Game Parameters

@@ -1395,7 +1395,7 @@ class Player {
     }
 
     // 更新技能冷却和持续效果
-    updateSkillCooldowns(deltaTime) {
+    updateSkillCooldowns(deltaTime, weatherSpeedBonus = 0) {
         const currentTime = Date.now();
 
         // 更新技能持续效果
@@ -1411,20 +1411,20 @@ class Player {
             this.playerSkills.isInvincible = false;
         }
 
-        // 应用持续效果到属性
-        this.applySkillEffects();
+        // 应用持续效果到属性（传递天气加成）
+        this.applySkillEffects(weatherSpeedBonus);
     }
 
     // 应用技能效果到属性
-    applySkillEffects() {
+    applySkillEffects(weatherSpeedBonus = 0) {
         const currentTime = Date.now();
 
-        // 重置速度为基础值
-        this.speed = this.baseSpeed;
+        // 先计算基础速度+天气加成
+        this.speed = this.baseSpeed + weatherSpeedBonus;
 
-        // 飞毛腿效果
+        // 飞毛腿效果：在基础速度+天气加成的基础上增加50%
         if (this.playerSkills.effects.fleetFoot.active) {
-            this.speed = this.baseSpeed * (1 + 0.5);
+            this.speed = this.speed * (1 + 0.5);
         }
     }
 
@@ -5087,8 +5087,14 @@ class Game {
         this.gameLoopRunning = true;
 
         const currentTime = performance.now();
-        const deltaTime = currentTime - this.lastTime;
+        let deltaTime = currentTime - this.lastTime;
         this.lastTime = currentTime;
+
+        // 防御性检查：限制 deltaTime 最大值为 100ms（约 10fps）
+        // 避免 deltaTime 过大导致的游戏加速问题
+        if (deltaTime > 100) {
+            deltaTime = 100;
+        }
 
         this.gameTime += deltaTime;
 
@@ -5104,29 +5110,28 @@ class Game {
             this.lightningEffects.push(...weatherResult.lightningEffects);
         }
 
-        // 应用风天速度加成和雪天速度惩罚
+        // 计算天气速度加成（传递给 Player.applySkillEffects 使用）
         const speedBonus = this.weatherSystem.getSpeedBonus();
         const speedBonusPercent = this.weatherSystem.getSpeedBonusPercent();
         const speedPenalty = this.weatherSystem.getSpeedPenalty();
         const speedPenaltyPercent = this.weatherSystem.getSpeedPenaltyPercent();
 
+        let weatherSpeedBonus = 0;
         if (speedBonus > 0 && speedPenalty === 0) {
             // 只有风天加成
             const percentSpeed = this.player.baseSpeed * speedBonusPercent;
-            this.player.speed = this.player.baseSpeed + Math.max(speedBonus, percentSpeed);
+            weatherSpeedBonus = Math.max(speedBonus, percentSpeed);
         } else if (speedPenalty > 0 && speedBonus === 0) {
             // 只有雪天惩罚
             const percentPenalty = this.player.baseSpeed * speedPenaltyPercent;
-            this.player.speed = this.player.baseSpeed - Math.max(speedPenalty, percentPenalty);
+            weatherSpeedBonus = -Math.max(speedPenalty, percentPenalty);
         } else if (speedBonus > 0 && speedPenalty > 0) {
             // 同时有加成和惩罚（虽然实际上不会同时发生）
             const percentSpeed = this.player.baseSpeed * speedBonusPercent;
             const percentPenalty = this.player.baseSpeed * speedPenaltyPercent;
-            this.player.speed = this.player.baseSpeed + Math.max(speedBonus, percentSpeed) - Math.max(speedPenalty, percentPenalty);
-        } else {
-            // 无加成也无惩罚
-            this.player.speed = this.player.baseSpeed;
+            weatherSpeedBonus = Math.max(speedBonus, percentSpeed) - Math.max(speedPenalty, percentPenalty);
         }
+        // 无加成也无惩罚时，weatherSpeedBonus 保持为 0
 
         // 应用晴天攻击加成
         const attackBonus = this.weatherSystem.getAttackBonus();
@@ -5150,8 +5155,8 @@ class Game {
         // 更新玩家
         this.player.update(deltaTime, this.keys, joystickInput);
 
-        // 更新技能冷却和持续效果
-        this.player.updateSkillCooldowns(deltaTime);
+        // 更新技能冷却和持续效果（传递天气加成）
+        this.player.updateSkillCooldowns(deltaTime, weatherSpeedBonus);
 
         // 更新回血阵
         this.updateHealFields(deltaTime);
@@ -5925,6 +5930,15 @@ class Game {
         // 隐藏升级界面
         document.getElementById('upgradeScreen').classList.add('hidden');
         this.state = GameState.PLAYING;
+
+        // 确保 gameLoopRunning 被正确重置（防御性检查）
+        this.gameLoopRunning = false;
+        
+        // 取消之前的 requestAnimationFrame（如果存在）
+        if (this.gameLoopRequestId) {
+            cancelAnimationFrame(this.gameLoopRequestId);
+            this.gameLoopRequestId = null;
+        }
 
         // 重置时间以避免deltaTime过大
         this.lastTime = performance.now();
