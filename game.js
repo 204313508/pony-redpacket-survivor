@@ -421,6 +421,983 @@ const CONFIG = {
     }
 };
 
+// ==================== 成就系统配置 ====================
+const ACHIEVEMENT_CONFIG = {
+    // 成就类别
+    CATEGORIES: {
+        kill: { name: '击杀', icon: '⚔️', color: '#ff4757' },
+        level: { name: '等级', icon: '⭐', color: '#ffa502' },
+        score: { name: '分数', icon: '🏆', color: '#ffd700' },
+        skill: { name: '技能', icon: '🔮', color: '#7bed9f' },
+        attribute: { name: '属性', icon: '💪', color: '#70a1ff' },
+        survival: { name: '生存', icon: '❤️', color: '#ff6b81' },
+        collect: { name: '收集', icon: '🧧', color: '#eccc68' },
+        boss: { name: 'Boss', icon: '👑', color: '#ff6348' },
+        weather: { name: '天气', icon: '🌤️', color: '#5352ed' },
+        games: { name: '局数', icon: '🎮', color: '#2ed573' }
+    },
+
+    // 成就难度等级
+    TIERS: {
+        bronze: { name: '初级', icon: '🥉', color: '#b87333', gradient: 'linear-gradient(135deg, #b87333 0%, #cd7f32 100%)' },
+        silver: { name: '中级', icon: '🥈', color: '#c0c0c0', gradient: 'linear-gradient(135deg, #c0c0c0 0%, #d3d3d3 100%)' },
+        gold: { name: '高级', icon: '🥇', color: '#ffd700', gradient: 'linear-gradient(135deg, #ffd700 0%, #ffaa00 100%)' }
+    },
+
+    // 成就列表
+    ACHIEVEMENTS: [
+        // ==================== 击杀类成就 ====================
+        {
+            id: 'kill_total_bronze',
+            name: '初露锋芒',
+            description: '累计击杀50只怪物',
+            category: 'kill',
+            tier: 'bronze',
+            icon: '⚔️',
+            condition: { type: 'total_kills', target: 50 },
+            effect: 'golden_sword'
+        },
+        {
+            id: 'kill_total_silver',
+            name: '百战老兵',
+            description: '累计击杀200只怪物',
+            category: 'kill',
+            tier: 'silver',
+            icon: '🗡️',
+            condition: { type: 'total_kills', target: 200 },
+            effect: 'silver_sword'
+        },
+        {
+            id: 'kill_total_gold',
+            name: '万夫莫敌',
+            description: '累计击杀1000只怪物',
+            category: 'kill',
+            tier: 'gold',
+            icon: '💀',
+            condition: { type: 'total_kills', target: 1000 },
+            effect: 'skull_aura'
+        },
+        {
+            id: 'kill_single_bronze',
+            name: '单局首杀',
+            description: '单局击杀30只怪物',
+            category: 'kill',
+            tier: 'bronze',
+            icon: '🎯',
+            condition: { type: 'single_kills', target: 30 },
+            effect: 'target_pulse'
+        },
+        {
+            id: 'kill_single_silver',
+            name: '大杀四方',
+            description: '单局击杀100只怪物',
+            category: 'kill',
+            tier: 'silver',
+            icon: '🎪',
+            condition: { type: 'single_kills', target: 100 },
+            effect: 'fireworks'
+        },
+        {
+            id: 'kill_single_gold',
+            name: '屠戮盛宴',
+            description: '单局击杀300只怪物',
+            category: 'kill',
+            tier: 'gold',
+            icon: '🎆',
+            condition: { type: 'single_kills', target: 300 },
+            effect: 'grand_fireworks'
+        },
+        {
+            id: 'kill_elite_bronze',
+            name: '精英猎人',
+            description: '累计击杀10只精英怪',
+            category: 'kill',
+            tier: 'bronze',
+            icon: '👑',
+            condition: { type: 'elite_kills', target: 10 },
+            effect: 'crown_shine'
+        },
+        {
+            id: 'kill_elite_silver',
+            name: '精英终结者',
+            description: '累计击杀50只精英怪',
+            category: 'kill',
+            tier: 'silver',
+            icon: '🔱',
+            condition: { type: 'elite_kills', target: 50 },
+            effect: 'trident_glow'
+        },
+        {
+            id: 'kill_elite_gold',
+            name: '精英之王',
+            description: '累计击杀200只精英怪',
+            category: 'kill',
+            tier: 'gold',
+            icon: '⚜️',
+            condition: { type: 'elite_kills', target: 200 },
+            effect: 'fleur_de_lis'
+        },
+
+        // ==================== 等级类成就 ====================
+        {
+            id: 'level_reach_bronze',
+            name: '初入江湖',
+            description: '达到等级5',
+            category: 'level',
+            tier: 'bronze',
+            icon: '⭐',
+            condition: { type: 'reach_level', target: 5 },
+            effect: 'star_twinkle'
+        },
+        {
+            id: 'level_reach_silver',
+            name: '身经百战',
+            description: '达到等级15',
+            category: 'level',
+            tier: 'silver',
+            icon: '⭐⭐',
+            condition: { type: 'reach_level', target: 15 },
+            effect: 'double_star_spin'
+        },
+        {
+            id: 'level_reach_gold',
+            name: '登峰造极',
+            description: '达到等级30',
+            category: 'level',
+            tier: 'gold',
+            icon: '⭐⭐⭐',
+            condition: { type: 'reach_level', target: 30 },
+            effect: 'triple_star_shine'
+        },
+        {
+            id: 'level_fast_bronze',
+            name: '快速成长',
+            description: '单局5分钟内达到等级3',
+            category: 'level',
+            tier: 'bronze',
+            icon: '🚀',
+            condition: { type: 'fast_level', target: { level: 3, time: 300000 } },
+            effect: 'rocket_trail'
+        },
+        {
+            id: 'level_fast_silver',
+            name: '飞速升级',
+            description: '单局10分钟内达到等级10',
+            category: 'level',
+            tier: 'silver',
+            icon: '⚡',
+            condition: { type: 'fast_level', target: { level: 10, time: 600000 } },
+            effect: 'lightning_chain'
+        },
+        {
+            id: 'level_fast_gold',
+            name: '升级狂魔',
+            description: '单局15分钟内达到等级20',
+            category: 'level',
+            tier: 'gold',
+            icon: '💫',
+            condition: { type: 'fast_level', target: { level: 20, time: 900000 } },
+            effect: 'starlight_burst'
+        },
+        {
+            id: 'level_healthy_bronze',
+            name: '稳健成长',
+            description: '血量>50%时升级5次',
+            category: 'level',
+            tier: 'bronze',
+            icon: '🛡️',
+            condition: { type: 'healthy_level', target: { count: 5, hpPercent: 50 } },
+            effect: 'shield_aura'
+        },
+        {
+            id: 'level_healthy_silver',
+            name: '铁壁防御',
+            description: '血量>70%时升级10次',
+            category: 'level',
+            tier: 'silver',
+            icon: '🏰',
+            condition: { type: 'healthy_level', target: { count: 10, hpPercent: 70 } },
+            effect: 'castle_glow'
+        },
+        {
+            id: 'level_healthy_gold',
+            name: '无懈可击',
+            description: '血量>80%时升级15次',
+            category: 'level',
+            tier: 'gold',
+            icon: '🏯',
+            condition: { type: 'healthy_level', target: { count: 15, hpPercent: 80 } },
+            effect: 'shogun_castle'
+        },
+
+        // ==================== 分数类成就 ====================
+        {
+            id: 'score_reach_bronze',
+            name: '小有成就',
+            description: '单局达到500分',
+            category: 'score',
+            tier: 'bronze',
+            icon: '📊',
+            condition: { type: 'single_score', target: 500 },
+            effect: 'chart_rise'
+        },
+        {
+            id: 'score_reach_silver',
+            name: '成绩斐然',
+            description: '单局达到2000分',
+            category: 'score',
+            tier: 'silver',
+            icon: '📈',
+            condition: { type: 'single_score', target: 2000 },
+            effect: 'growth_curve'
+        },
+        {
+            id: 'score_reach_gold',
+            name: '高分王者',
+            description: '单局达到10000分',
+            category: 'score',
+            tier: 'gold',
+            icon: '🏆',
+            condition: { type: 'single_score', target: 10000 },
+            effect: 'trophy_beam'
+        },
+        {
+            id: 'score_highest_bronze',
+            name: '首次突破',
+            description: '历史最高分1000',
+            category: 'score',
+            tier: 'bronze',
+            icon: '🎖️',
+            condition: { type: 'highest_score', target: 1000 },
+            effect: 'medal_flash'
+        },
+        {
+            id: 'score_highest_silver',
+            name: '分数大师',
+            description: '历史最高分5000',
+            category: 'score',
+            tier: 'silver',
+            icon: '🥇',
+            condition: { type: 'highest_score', target: 5000 },
+            effect: 'gold_medal_spin'
+        },
+        {
+            id: 'score_highest_gold',
+            name: '分数之神',
+            description: '历史最高分20000',
+            category: 'score',
+            tier: 'gold',
+            icon: '👑',
+            condition: { type: 'highest_score', target: 20000 },
+            effect: 'crown_coronation'
+        },
+        {
+            id: 'score_streak_bronze',
+            name: '热身完毕',
+            description: '连续3局达到500分',
+            category: 'score',
+            tier: 'bronze',
+            icon: '🔥',
+            condition: { type: 'score_streak', target: { score: 500, streak: 3 } },
+            effect: 'flame_jump'
+        },
+        {
+            id: 'score_streak_silver',
+            name: '状态火热',
+            description: '连续5局达到1000分',
+            category: 'score',
+            tier: 'silver',
+            icon: '💥',
+            condition: { type: 'score_streak', target: { score: 1000, streak: 5 } },
+            effect: 'explosion_particles'
+        },
+        {
+            id: 'score_streak_gold',
+            name: '势不可挡',
+            description: '连续10局达到2000分',
+            category: 'score',
+            tier: 'gold',
+            icon: '☄️',
+            condition: { type: 'score_streak', target: { score: 2000, streak: 10 } },
+            effect: 'meteor_streak'
+        },
+
+        // ==================== 技能类成就 ====================
+        {
+            id: 'skill_level_bronze',
+            name: '初学乍练',
+            description: '任意技能达到3级',
+            category: 'skill',
+            tier: 'bronze',
+            icon: '🔮',
+            condition: { type: 'skill_level', target: 3 },
+            effect: 'magic_ball_spin'
+        },
+        {
+            id: 'skill_level_silver',
+            name: '技艺精湛',
+            description: '任意技能达到5级',
+            category: 'skill',
+            tier: 'silver',
+            icon: '🪄',
+            condition: { type: 'skill_level', target: 5 },
+            effect: 'wand_glow'
+        },
+        {
+            id: 'skill_level_gold',
+            name: '技能大师',
+            description: '任意技能达到8级',
+            category: 'skill',
+            tier: 'gold',
+            icon: '✨',
+            condition: { type: 'skill_level', target: 8 },
+            effect: 'starlight_twinkle'
+        },
+        {
+            id: 'skill_variety_bronze',
+            name: '技能丰富',
+            description: '同时拥有3个不同技能',
+            category: 'skill',
+            tier: 'bronze',
+            icon: '🎨',
+            condition: { type: 'skill_variety', target: 3 },
+            effect: 'palette_colors'
+        },
+        {
+            id: 'skill_variety_silver',
+            name: '全能选手',
+            description: '技能总等级达到15',
+            category: 'skill',
+            tier: 'silver',
+            icon: '🎭',
+            condition: { type: 'skill_total_level', target: 15 },
+            effect: 'mask_transform'
+        },
+        {
+            id: 'skill_variety_gold',
+            name: '技能全满',
+            description: '所有技能都达到5级',
+            category: 'skill',
+            tier: 'gold',
+            icon: '🎪',
+            condition: { type: 'skill_all_max', target: 5 },
+            effect: 'circus_fireworks'
+        },
+        {
+            id: 'skill_dodge_bronze',
+            name: '闪避大师',
+            description: '使用技能成功躲避10次攻击',
+            category: 'skill',
+            tier: 'bronze',
+            icon: '👻',
+            condition: { type: 'skill_dodge', target: 10 },
+            effect: 'ghost_float'
+        },
+        {
+            id: 'skill_dodge_silver',
+            name: '输出爆炸',
+            description: '使用技能造成5000点伤害',
+            category: 'skill',
+            tier: 'silver',
+            icon: '🔥',
+            condition: { type: 'skill_damage', target: 5000 },
+            effect: 'flame_blast'
+        },
+        {
+            id: 'skill_dodge_gold',
+            name: '回复之神',
+            description: '使用技能回血1000点',
+            category: 'skill',
+            tier: 'gold',
+            icon: '💚',
+            condition: { type: 'skill_heal', target: 1000 },
+            effect: 'heart_pulse'
+        },
+
+        // ==================== 属性类成就 ====================
+        {
+            id: 'attribute_attack_bronze',
+            name: '力量初显',
+            description: '攻击力达到50',
+            category: 'attribute',
+            tier: 'bronze',
+            icon: '💪',
+            condition: { type: 'attribute_attack', target: 50 },
+            effect: 'muscle_pulse'
+        },
+        {
+            id: 'attribute_attack_silver',
+            name: '力大无穷',
+            description: '攻击力达到100',
+            category: 'attribute',
+            tier: 'silver',
+            icon: '🦾',
+            condition: { type: 'attribute_attack', target: 100 },
+            effect: 'mech_arm_swing'
+        },
+        {
+            id: 'attribute_attack_gold',
+            name: '破坏之神',
+            description: '攻击力达到200',
+            category: 'attribute',
+            tier: 'gold',
+            icon: '🔨',
+            condition: { type: 'attribute_attack', target: 200 },
+            effect: 'hammer_shockwave'
+        },
+        {
+            id: 'attribute_defense_bronze',
+            name: '铁壁初成',
+            description: '防御力达到30',
+            category: 'attribute',
+            tier: 'bronze',
+            icon: '🛡️',
+            condition: { type: 'attribute_defense', target: 30 },
+            effect: 'shield_block'
+        },
+        {
+            id: 'attribute_defense_silver',
+            name: '固若金汤',
+            description: '防御力达到60',
+            category: 'attribute',
+            tier: 'silver',
+            icon: '🏰',
+            condition: { type: 'attribute_defense', target: 60 },
+            effect: 'castle_wall'
+        },
+        {
+            id: 'attribute_defense_gold',
+            name: '绝对防御',
+            description: '防御力达到100',
+            category: 'attribute',
+            tier: 'gold',
+            icon: '🛡️💎',
+            condition: { type: 'attribute_defense', target: 100 },
+            effect: 'diamond_shield'
+        },
+        {
+            id: 'attribute_speed_bronze',
+            name: '疾风步',
+            description: '速度达到6',
+            category: 'attribute',
+            tier: 'bronze',
+            icon: '🏃',
+            condition: { type: 'attribute_speed', target: 6 },
+            effect: 'wind_trail'
+        },
+        {
+            id: 'attribute_speed_silver',
+            name: '极速飞奔',
+            description: '速度达到8',
+            category: 'attribute',
+            tier: 'silver',
+            icon: '💨',
+            condition: { type: 'attribute_speed', target: 8 },
+            effect: 'speed_lines'
+        },
+        {
+            id: 'attribute_speed_gold',
+            name: '光速移动',
+            description: '速度达到10',
+            category: 'attribute',
+            tier: 'gold',
+            icon: '⚡',
+            condition: { type: 'attribute_speed', target: 10 },
+            effect: 'lightning_afterimage'
+        },
+        {
+            id: 'attribute_hp_bronze',
+            name: '身强体壮',
+            description: '生命值达到200',
+            category: 'attribute',
+            tier: 'bronze',
+            icon: '❤️',
+            condition: { type: 'attribute_hp', target: 200 },
+            effect: 'heart_expand'
+        },
+        {
+            id: 'attribute_hp_silver',
+            name: '生命充沛',
+            description: '生命值达到400',
+            category: 'attribute',
+            tier: 'silver',
+            icon: '💖',
+            condition: { type: 'attribute_hp', target: 400 },
+            effect: 'hearts_float'
+        },
+        {
+            id: 'attribute_hp_gold',
+            name: '不死之身',
+            description: '生命值达到800',
+            category: 'attribute',
+            tier: 'gold',
+            icon: '💗',
+            condition: { type: 'attribute_hp', target: 800 },
+            effect: 'heart_bloom'
+        },
+
+        // ==================== 生存类成就 ====================
+        {
+            id: 'survival_time_bronze',
+            name: '持久战',
+            description: '单局存活5分钟',
+            category: 'survival',
+            tier: 'bronze',
+            icon: '⏱️',
+            condition: { type: 'survival_time', target: 300000 },
+            effect: 'stopwatch_spin'
+        },
+        {
+            id: 'survival_time_silver',
+            name: '长寿战',
+            description: '单局存活10分钟',
+            category: 'survival',
+            tier: 'silver',
+            icon: '🕰️',
+            condition: { type: 'survival_time', target: 600000 },
+            effect: 'clock_rotate'
+        },
+        {
+            id: 'survival_time_gold',
+            name: '永生战',
+            description: '单局存活20分钟',
+            category: 'survival',
+            tier: 'gold',
+            icon: '⌛',
+            condition: { type: 'survival_time', target: 1200000 },
+            effect: 'hourglass_reverse'
+        },
+        {
+            id: 'survival_no_damage_bronze',
+            name: '轻松开局',
+            description: '1分钟内不受伤',
+            category: 'survival',
+            tier: 'bronze',
+            icon: '😎',
+            condition: { type: 'no_damage_time', target: 60000 },
+            effect: 'sunglasses_glare'
+        },
+        {
+            id: 'survival_no_damage_silver',
+            name: '完美闪避',
+            description: '3分钟内不受伤',
+            category: 'survival',
+            tier: 'silver',
+            icon: '🕶️',
+            condition: { type: 'no_damage_time', target: 180000 },
+            effect: 'dark_shades'
+        },
+        {
+            id: 'survival_no_damage_gold',
+            name: '无伤通关',
+            description: '5分钟内不受伤',
+            category: 'survival',
+            tier: 'gold',
+            icon: '🎭',
+            condition: { type: 'no_damage_time', target: 300000 },
+            effect: 'perfect_dodge'
+        },
+        {
+            id: 'survival_low_hp_bronze',
+            name: '绝境求生',
+            description: '血量<10%时存活30秒',
+            category: 'survival',
+            tier: 'bronze',
+            icon: '😰',
+            condition: { type: 'low_hp_survival', target: { hpPercent: 10, time: 30000 } },
+            effect: 'sweat_drops'
+        },
+        {
+            id: 'survival_low_hp_silver',
+            name: '极限生存',
+            description: '血量<5%时存活1分钟',
+            category: 'survival',
+            tier: 'silver',
+            icon: '😱',
+            condition: { type: 'low_hp_survival', target: { hpPercent: 5, time: 60000 } },
+            effect: 'scream_ripple'
+        },
+        {
+            id: 'survival_low_hp_gold',
+            name: '不死传说',
+            description: '血量<1%时存活2分钟',
+            category: 'survival',
+            tier: 'gold',
+            icon: '💀👻',
+            condition: { type: 'low_hp_survival', target: { hpPercent: 1, time: 120000 } },
+            effect: 'soul_escape'
+        },
+
+        // ==================== 收集类成就 ====================
+        {
+            id: 'collect_single_bronze',
+            name: '红包新手',
+            description: '单局收集50个红包',
+            category: 'collect',
+            tier: 'bronze',
+            icon: '🧧',
+            condition: { type: 'single_collect', target: 50 },
+            effect: 'packet_fall'
+        },
+        {
+            id: 'collect_single_silver',
+            name: '红包达人',
+            description: '单局收集200个红包',
+            category: 'collect',
+            tier: 'silver',
+            icon: '🧧🧧',
+            condition: { type: 'single_collect', target: 200 },
+            effect: 'packet_rain'
+        },
+        {
+            id: 'collect_single_gold',
+            name: '红包之神',
+            description: '单局收集500个红包',
+            category: 'collect',
+            tier: 'gold',
+            icon: '🧧🧧🧧',
+            condition: { type: 'single_collect', target: 500 },
+            effect: 'packet_storm'
+        },
+        {
+            id: 'collect_total_bronze',
+            name: '财富积累',
+            description: '累计收集200个红包',
+            category: 'collect',
+            tier: 'bronze',
+            icon: '💰',
+            condition: { type: 'total_collect', target: 200 },
+            effect: 'money_bag_shake'
+        },
+        {
+            id: 'collect_total_silver',
+            name: '财富达人',
+            description: '累计收集1000个红包',
+            category: 'collect',
+            tier: 'silver',
+            icon: '💵',
+            condition: { type: 'total_collect', target: 1000 },
+            effect: 'cash_fly'
+        },
+        {
+            id: 'collect_total_gold',
+            name: '财富之神',
+            description: '累计收集5000个红包',
+            category: 'collect',
+            tier: 'gold',
+            icon: '💎',
+            condition: { type: 'total_collect', target: 5000 },
+            effect: 'diamond_shine'
+        },
+        {
+            id: 'collect_burst_bronze',
+            name: '快手红包',
+            description: '10秒内收集10个红包',
+            category: 'collect',
+            tier: 'bronze',
+            icon: '⚡🧧',
+            condition: { type: 'burst_collect', target: { count: 10, time: 10000 } },
+            effect: 'lightning_packet'
+        },
+        {
+            id: 'collect_burst_silver',
+            name: '红包收割机',
+            description: '10秒内收集20个红包',
+            category: 'collect',
+            tier: 'silver',
+            icon: '💨🧧',
+            condition: { type: 'burst_collect', target: { count: 20, time: 10000 } },
+            effect: 'cyclone_packet'
+        },
+        {
+            id: 'collect_burst_gold',
+            name: '红包黑洞',
+            description: '10秒内收集30个红包',
+            category: 'collect',
+            tier: 'gold',
+            icon: '🌀🧧',
+            condition: { type: 'burst_collect', target: { count: 30, time: 10000 } },
+            effect: 'blackhole_absorb'
+        },
+
+        // ==================== Boss类成就 ====================
+        {
+            id: 'boss_kill_bronze',
+            name: '初战Boss',
+            description: '击败1个Boss',
+            category: 'boss',
+            tier: 'bronze',
+            icon: '👑',
+            condition: { type: 'boss_kills', target: 1 },
+            effect: 'crown_flash'
+        },
+        {
+            id: 'boss_kill_silver',
+            name: 'Boss杀手',
+            description: '击败10个Boss',
+            category: 'boss',
+            tier: 'silver',
+            icon: '⚔️👑',
+            condition: { type: 'boss_kills', target: 10 },
+            effect: 'sword_crown'
+        },
+        {
+            id: 'boss_kill_gold',
+            name: 'Boss终结者',
+            description: '击败50个Boss',
+            category: 'boss',
+            tier: 'gold',
+            icon: '💀👑',
+            condition: { type: 'boss_kills', target: 50 },
+            effect: 'skull_crown'
+        },
+        {
+            id: 'boss_no_damage_bronze',
+            name: '轻松击败',
+            description: '血量>80%时击败Boss',
+            category: 'boss',
+            tier: 'bronze',
+            icon: '🛡️👑',
+            condition: { type: 'boss_no_damage', target: 80 },
+            effect: 'shield_crown'
+        },
+        {
+            id: 'boss_no_damage_silver',
+            name: '完美击败',
+            description: '血量>90%时击败Boss',
+            category: 'boss',
+            tier: 'silver',
+            icon: '🏰👑',
+            condition: { type: 'boss_no_damage', target: 90 },
+            effect: 'castle_crown'
+        },
+        {
+            id: 'boss_no_damage_gold',
+            name: '神级击败',
+            description: '血量100%时击败Boss',
+            category: 'boss',
+            tier: 'gold',
+            icon: '✨👑',
+            condition: { type: 'boss_no_damage', target: 100 },
+            effect: 'star_crown'
+        },
+        {
+            id: 'boss_fast_bronze',
+            name: '速战速决',
+            description: '30秒内击败Boss',
+            category: 'boss',
+            tier: 'bronze',
+            icon: '⚡👑',
+            condition: { type: 'boss_fast_kill', target: 30000 },
+            effect: 'lightning_crown'
+        },
+        {
+            id: 'boss_fast_silver',
+            name: '秒杀Boss',
+            description: '15秒内击败Boss',
+            category: 'boss',
+            tier: 'silver',
+            icon: '💥👑',
+            condition: { type: 'boss_fast_kill', target: 15000 },
+            effect: 'explosion_crown'
+        },
+        {
+            id: 'boss_fast_gold',
+            name: '瞬杀Boss',
+            description: '10秒内击败Boss',
+            category: 'boss',
+            tier: 'gold',
+            icon: '☄️👑',
+            condition: { type: 'boss_fast_kill', target: 10000 },
+            effect: 'meteor_crown'
+        },
+
+        // ==================== 天气类成就 ====================
+        {
+            id: 'weather_sunny_bronze',
+            name: '阳光普照',
+            description: '晴天完成一局游戏',
+            category: 'weather',
+            tier: 'bronze',
+            icon: '☀️',
+            condition: { type: 'weather_complete', target: { weather: 'sunny', score: 0 } },
+            effect: 'sun_shine'
+        },
+        {
+            id: 'weather_sunny_silver',
+            name: '烈日当空',
+            description: '晴天单局达到1000分',
+            category: 'weather',
+            tier: 'silver',
+            icon: '🌞',
+            condition: { type: 'weather_complete', target: { weather: 'sunny', score: 1000 } },
+            effect: 'sun_flare'
+        },
+        {
+            id: 'weather_sunny_gold',
+            name: '太阳之神',
+            description: '晴天单局达到5000分',
+            category: 'weather',
+            tier: 'gold',
+            icon: '🔥',
+            condition: { type: 'weather_complete', target: { weather: 'sunny', score: 5000 } },
+            effect: 'sun_eruption'
+        },
+        {
+            id: 'weather_rainy_bronze',
+            name: '雨中漫步',
+            description: '雨天完成一局游戏',
+            category: 'weather',
+            tier: 'bronze',
+            icon: '🌧️',
+            condition: { type: 'weather_complete', target: { weather: 'rainy', score: 0 } },
+            effect: 'rain_drop'
+        },
+        {
+            id: 'weather_rainy_silver',
+            name: '暴雨狂舞',
+            description: '雨天单局达到1000分',
+            category: 'weather',
+            tier: 'silver',
+            icon: '🌊',
+            condition: { type: 'weather_complete', target: { weather: 'rainy', score: 1000 } },
+            effect: 'wave_surge'
+        },
+        {
+            id: 'weather_rainy_gold',
+            name: '风暴之王',
+            description: '雨天单局达到5000分',
+            category: 'weather',
+            tier: 'gold',
+            icon: '🌀',
+            condition: { type: 'weather_complete', target: { weather: 'rainy', score: 5000 } },
+            effect: 'storm_vortex'
+        },
+        {
+            id: 'weather_stormy_bronze',
+            name: '雷电交加',
+            description: '雷天完成一局游戏',
+            category: 'weather',
+            tier: 'bronze',
+            icon: '⛈️',
+            condition: { type: 'weather_complete', target: { weather: 'stormy', score: 0 } },
+            effect: 'lightning_strike'
+        },
+        {
+            id: 'weather_stormy_silver',
+            name: '雷电狂舞',
+            description: '雷天单局达到1000分',
+            category: 'weather',
+            tier: 'silver',
+            icon: '⚡',
+            condition: { type: 'weather_complete', target: { weather: 'stormy', score: 1000 } },
+            effect: 'chain_lightning'
+        },
+        {
+            id: 'weather_stormy_gold',
+            name: '雷神降临',
+            description: '雷天单局达到5000分',
+            category: 'weather',
+            tier: 'gold',
+            icon: '🌩️',
+            condition: { type: 'weather_complete', target: { weather: 'stormy', score: 5000 } },
+            effect: 'thunder_god'
+        },
+
+        // ==================== 游戏局数类成就 ====================
+        {
+            id: 'games_total_bronze',
+            name: '初来乍到',
+            description: '完成5局游戏',
+            category: 'games',
+            tier: 'bronze',
+            icon: '🎮',
+            condition: { type: 'total_games', target: 5 },
+            effect: 'controller_flash'
+        },
+        {
+            id: 'games_total_silver',
+            name: '游戏老手',
+            description: '完成20局游戏',
+            category: 'games',
+            tier: 'silver',
+            icon: '🕹️',
+            condition: { type: 'total_games', target: 20 },
+            effect: 'joystick_spin'
+        },
+        {
+            id: 'games_total_gold',
+            name: '游戏大师',
+            description: '完成100局游戏',
+            category: 'games',
+            tier: 'gold',
+            icon: '🎯',
+            condition: { type: 'total_games', target: 100 },
+            effect: 'target_lock'
+        },
+        {
+            id: 'games_streak_bronze',
+            name: '连续作战',
+            description: '连续游戏3局',
+            category: 'games',
+            tier: 'bronze',
+            icon: '🔄',
+            condition: { type: 'games_streak', target: 3 },
+            effect: 'loop_arrow'
+        },
+        {
+            id: 'games_streak_silver',
+            name: '持久作战',
+            description: '连续游戏10局',
+            category: 'games',
+            tier: 'silver',
+            icon: '🔁',
+            condition: { type: 'games_streak', target: 10 },
+            effect: 'repeat_mark'
+        },
+        {
+            id: 'games_streak_gold',
+            name: '永不停歇',
+            description: '连续游戏20局',
+            category: 'games',
+            tier: 'gold',
+            icon: '🔃',
+            condition: { type: 'games_streak', target: 20 },
+            effect: 'infinite_loop'
+        },
+        {
+            id: 'games_character_bronze',
+            name: '多面手',
+            description: '使用3种不同角色完成游戏',
+            category: 'games',
+            tier: 'bronze',
+            icon: '🎭',
+            condition: { type: 'character_variety', target: 3 },
+            effect: 'mask_switch'
+        },
+        {
+            id: 'games_character_silver',
+            name: '全能选手',
+            description: '使用所有角色完成游戏',
+            category: 'games',
+            tier: 'silver',
+            icon: '🎪',
+            condition: { type: 'character_variety', target: 4 },
+            effect: 'circus_show'
+        },
+        {
+            id: 'games_character_gold',
+            name: '全能大师',
+            description: '用每个角色都达到1000分',
+            category: 'games',
+            tier: 'gold',
+            icon: '🌟',
+            condition: { type: 'character_all_score', target: 1000 },
+            effect: 'star_gather'
+        }
+    ]
+};
+
 // ==================== 怪物图鉴数据 ====================
 const BESTIARY = {
     monsters: {
@@ -989,6 +1966,583 @@ class SoundEffect {
         Object.values(this.skillSounds).forEach(sound => {
             sound.volume = this.skillVolume;
         });
+    }
+}
+
+// ==================== 游戏统计追踪器 ====================
+/**
+ * 游戏统计追踪器
+ * 追踪单局和全局的游戏数据，用于成就系统
+ */
+class GameStatsTracker {
+    constructor() {
+        this.sessionStats = {
+            // 单局统计数据
+            kills: 0,
+            eliteKills: 0,
+            bossKills: 0,
+            score: 0,
+            redpacketsCollected: 0,
+            level: 1,
+            survivalTime: 0,
+            startTime: 0,
+            lastDamageTime: 0,
+            lowHpStartTime: 0,
+            collectBurstTime: 0,
+            collectBurstCount: 0,
+            bossStartTime: 0,
+            currentWeather: null,
+            characterId: null,
+            skillDamage: 0,
+            skillHeal: 0,
+            skillDodgeCount: 0,
+            healthyLevelCount: 0
+        };
+
+        this.globalStats = {
+            // 全局统计数据
+            totalKills: 0,
+            totalEliteKills: 0,
+            totalBossKills: 0,
+            totalGamesPlayed: 0,
+            totalRedpacketsCollected: 0,
+            highestScore: 0,
+            charactersUsed: new Set(),
+            consecutiveGames: 0,
+            consecutiveScoreGames: 0,
+            characterScores: {} // { characterId: highestScore }
+        };
+    }
+
+    // 开始新游戏
+    startNewGame(characterId) {
+        this.sessionStats = {
+            kills: 0,
+            eliteKills: 0,
+            bossKills: 0,
+            score: 0,
+            redpacketsCollected: 0,
+            level: 1,
+            survivalTime: 0,
+            startTime: Date.now(),
+            lastDamageTime: Date.now(),
+            lowHpStartTime: 0,
+            collectBurstTime: 0,
+            collectBurstCount: 0,
+            bossStartTime: 0,
+            currentWeather: null,
+            characterId: characterId,
+            skillDamage: 0,
+            skillHeal: 0,
+            skillDodgeCount: 0,
+            healthyLevelCount: 0
+        };
+    }
+
+    // 更新统计数据
+    updateStats(deltaTime) {
+        this.sessionStats.survivalTime += deltaTime;
+    }
+
+    // 记录击杀
+    recordKill(isElite = false) {
+        this.sessionStats.kills++;
+        if (isElite) {
+            this.sessionStats.eliteKills++;
+        }
+    }
+
+    // 记录Boss击杀
+    recordBossKill() {
+        this.sessionStats.bossKills++;
+    }
+
+    // 记录分数
+    recordScore(score) {
+        this.sessionStats.score = score;
+    }
+
+    // 记录收集红包
+    recordCollect() {
+        this.sessionStats.redpacketsCollected++;
+        const now = Date.now();
+
+        // 检查爆发收集
+        if (now - this.sessionStats.collectBurstTime <= 10000) {
+            this.sessionStats.collectBurstCount++;
+        } else {
+            this.sessionStats.collectBurstTime = now;
+            this.sessionStats.collectBurstCount = 1;
+        }
+    }
+
+    // 记录等级
+    recordLevel(level, hpPercent) {
+        this.sessionStats.level = level;
+
+        // 记录健康升级
+        if (hpPercent >= 50) {
+            this.sessionStats.healthyLevelCount++;
+        }
+    }
+
+    // 记录受伤
+    recordDamage() {
+        this.sessionStats.lastDamageTime = Date.now();
+    }
+
+    // 记录低血量时间
+    recordLowHp(hpPercent) {
+        if (hpPercent < 10) {
+            if (this.sessionStats.lowHpStartTime === 0) {
+                this.sessionStats.lowHpStartTime = Date.now();
+            }
+        } else {
+            this.sessionStats.lowHpStartTime = 0;
+        }
+    }
+
+    // 记录Boss开始战斗
+    recordBossStart() {
+        this.sessionStats.bossStartTime = Date.now();
+    }
+
+    // 记录Boss击杀时间
+    recordBossKillTime() {
+        if (this.sessionStats.bossStartTime > 0) {
+            return Date.now() - this.sessionStats.bossStartTime;
+        }
+        return 0;
+    }
+
+    // 记录天气
+    recordWeather(weatherType) {
+        this.sessionStats.currentWeather = weatherType;
+    }
+
+    // 记录技能伤害
+    recordSkillDamage(damage) {
+        this.sessionStats.skillDamage += damage;
+    }
+
+    // 记录技能治疗
+    recordSkillHeal(heal) {
+        this.sessionStats.skillHeal += heal;
+    }
+
+    // 记录技能闪避
+    recordSkillDodge() {
+        this.sessionStats.skillDodgeCount++;
+    }
+
+    // 结束游戏，更新全局统计
+    endGame() {
+        this.globalStats.totalGamesPlayed++;
+        this.globalStats.totalKills += this.sessionStats.kills;
+        this.globalStats.totalEliteKills += this.sessionStats.eliteKills;
+        this.globalStats.totalBossKills += this.sessionStats.bossKills;
+        this.globalStats.totalRedpacketsCollected += this.sessionStats.redpacketsCollected;
+
+        // 更新最高分
+        if (this.sessionStats.score > this.globalStats.highestScore) {
+            this.globalStats.highestScore = this.sessionStats.score;
+        }
+
+        // 更新角色使用记录
+        if (this.sessionStats.characterId) {
+            this.globalStats.charactersUsed.add(this.sessionStats.characterId);
+
+            // 更新角色最高分
+            if (!this.globalStats.characterScores[this.sessionStats.characterId] ||
+                this.sessionStats.score > this.globalStats.characterScores[this.sessionStats.characterId]) {
+                this.globalStats.characterScores[this.sessionStats.characterId] = this.sessionStats.score;
+            }
+        }
+
+        // 更新连续游戏统计
+        this.globalStats.consecutiveGames++;
+
+        // 检查连续高分游戏
+        if (this.sessionStats.score >= 500) {
+            this.globalStats.consecutiveScoreGames++;
+        } else {
+            this.globalStats.consecutiveScoreGames = 0;
+        }
+    }
+
+    // 重置连续统计（用于检测连续成就）
+    resetConsecutiveStats() {
+        this.globalStats.consecutiveGames = 0;
+        this.globalStats.consecutiveScoreGames = 0;
+    }
+
+    // 获取无伤时间
+    getNoDamageTime() {
+        return Date.now() - this.sessionStats.lastDamageTime;
+    }
+
+    // 获取低血量存活时间
+    getLowHpSurvivalTime() {
+        if (this.sessionStats.lowHpStartTime > 0) {
+            return Date.now() - this.sessionStats.lowHpStartTime;
+        }
+        return 0;
+    }
+
+    // 获取爆发收集数量
+    getBurstCollectCount() {
+        if (Date.now() - this.sessionStats.collectBurstTime <= 10000) {
+            return this.sessionStats.collectBurstCount;
+        }
+        return 0;
+    }
+
+    // 获取全局统计（用于保存）
+    getGlobalStatsForSave() {
+        return {
+            ...this.globalStats,
+            charactersUsed: Array.from(this.globalStats.charactersUsed)
+        };
+    }
+
+    // 加载全局统计
+    loadGlobalStats(savedStats) {
+        if (savedStats) {
+            this.globalStats = {
+                ...savedStats,
+                charactersUsed: new Set(savedStats.charactersUsed || [])
+            };
+        }
+    }
+}
+
+// ==================== 成就管理器 ====================
+/**
+ * 成就管理器
+ * 管理成就系统，包括成就状态检查、解锁、保存等
+ */
+class AchievementManager {
+    constructor(gameStats) {
+        this.gameStats = gameStats;
+        this.achievements = {}; // { achievementId: { unlocked: boolean, unlockedTime: number } }
+        this.notificationQueue = [];
+        this.isShowingNotification = false;
+        this.notificationCallback = null; // 成就解锁通知回调函数
+    }
+
+    // 初始化成就数据
+    init() {
+        this.loadAchievements();
+    }
+
+    // 从localStorage加载成就
+    loadAchievements() {
+        try {
+            const saved = localStorage.getItem('redpacket_game_achievements');
+            if (saved) {
+                this.achievements = JSON.parse(saved);
+            } else {
+                // 初始化所有成就为未解锁状态
+                this.initializeAllAchievements();
+            }
+        } catch (e) {
+            console.error('加载成就数据失败:', e);
+            this.initializeAllAchievements();
+        }
+    }
+
+    // 初始化所有成就为未解锁状态
+    initializeAllAchievements() {
+        this.achievements = {};
+        for (const achievement of ACHIEVEMENT_CONFIG.ACHIEVEMENTS) {
+            this.achievements[achievement.id] = {
+                unlocked: false,
+                unlockedTime: null
+            };
+        }
+        this.saveAchievements();
+    }
+
+    // 保存成就到localStorage
+    saveAchievements() {
+        try {
+            localStorage.setItem('redpacket_game_achievements', JSON.stringify(this.achievements));
+        } catch (e) {
+            console.error('保存成就数据失败:', e);
+        }
+    }
+
+    // 检查所有成就
+    checkAllAchievements() {
+        for (const achievement of ACHIEVEMENT_CONFIG.ACHIEVEMENTS) {
+            if (!this.achievements[achievement.id].unlocked) {
+                if (this.checkAchievementCondition(achievement)) {
+                    this.unlockAchievement(achievement);
+                }
+            }
+        }
+    }
+
+    // 检查单个成就条件
+    checkAchievementCondition(achievement) {
+        const condition = achievement.condition;
+        const session = this.gameStats.sessionStats;
+        const global = this.gameStats.globalStats;
+
+        switch (condition.type) {
+            // 击杀类
+            case 'total_kills':
+                return global.totalKills >= condition.target;
+            case 'single_kills':
+                return session.kills >= condition.target;
+            case 'elite_kills':
+                return global.totalEliteKills >= condition.target;
+
+            // 等级类
+            case 'reach_level':
+                return session.level >= condition.target;
+            case 'fast_level':
+                return session.level >= condition.target.level &&
+                       (Date.now() - session.startTime) <= condition.target.time;
+            case 'healthy_level':
+                // 检查健康升级次数（需要在游戏结束时检查）
+                return session.healthyLevelCount >= condition.target.count;
+
+            // 分数类
+            case 'single_score':
+                return session.score >= condition.target;
+            case 'highest_score':
+                return global.highestScore >= condition.target;
+            case 'score_streak':
+                return global.consecutiveScoreGames >= condition.target.streak &&
+                       session.score >= condition.target.score;
+
+            // 技能类
+            case 'skill_level':
+                // 需要检查所有已学技能的最大等级
+                return false; // 这个需要在Game类中实现，检查player.playerSkills.learned
+            case 'skill_variety':
+                return Object.keys(session.skillLevels || {}).length >= condition.target;
+            case 'skill_total_level':
+                const totalLevel = Object.values(session.skillLevels || {}).reduce((sum, level) => sum + level, 0);
+                return totalLevel >= condition.target;
+            case 'skill_all_max':
+                const allMax = Object.values(session.skillLevels || {}).every(level => level >= condition.target);
+                return allMax && Object.keys(session.skillLevels || {}).length > 0;
+            case 'skill_dodge':
+                return session.skillDodgeCount >= condition.target;
+            case 'skill_damage':
+                return session.skillDamage >= condition.target;
+            case 'skill_heal':
+                return session.skillHeal >= condition.target;
+
+            // 属性类
+            case 'attribute_attack':
+                return session.attack >= condition.target;
+            case 'attribute_defense':
+                return session.defense >= condition.target;
+            case 'attribute_speed':
+                return session.speed >= condition.target;
+            case 'attribute_hp':
+                return session.maxHp >= condition.target;
+
+            // 生存类
+            case 'survival_time':
+                return session.survivalTime >= condition.target;
+            case 'no_damage_time':
+                return this.gameStats.getNoDamageTime() >= condition.target;
+            case 'low_hp_survival':
+                const lowHpTime = this.gameStats.getLowHpSurvivalTime();
+                const currentHpPercent = (session.hp / session.maxHp) * 100;
+                return lowHpTime >= condition.target.time && currentHpPercent < condition.target.hpPercent;
+
+            // 收集类
+            case 'single_collect':
+                return session.redpacketsCollected >= condition.target;
+            case 'total_collect':
+                return global.totalRedpacketsCollected >= condition.target;
+            case 'burst_collect':
+                const burstCount = this.gameStats.getBurstCollectCount();
+                return burstCount >= condition.target.count;
+
+            // Boss类
+            case 'boss_kills':
+                return global.totalBossKills >= condition.target;
+            case 'boss_no_damage':
+                // 需要在Boss被击败时检查当时的血量
+                return false;
+            case 'boss_fast_kill':
+                const bossKillTime = this.gameStats.recordBossKillTime();
+                return bossKillTime > 0 && bossKillTime <= condition.target;
+
+            // 天气类
+            case 'weather_complete':
+                if (session.currentWeather === condition.target.weather) {
+                    return session.score >= condition.target.score;
+                }
+                return false;
+
+            // 游戏局数类
+            case 'total_games':
+                return global.totalGamesPlayed >= condition.target;
+            case 'games_streak':
+                return global.consecutiveGames >= condition.target;
+            case 'character_variety':
+                return global.charactersUsed.size >= condition.target;
+            case 'character_all_score':
+                return Object.values(global.characterScores).every(score => score >= condition.target) &&
+                       Object.keys(global.characterScores).length >= 4;
+
+            default:
+                return false;
+        }
+    }
+
+    // 检查特定类别的成就
+    checkAchievementsByCategory(category) {
+        for (const achievement of ACHIEVEMENT_CONFIG.ACHIEVEMENTS) {
+            if (achievement.category === category && !this.achievements[achievement.id].unlocked) {
+                if (this.checkAchievementCondition(achievement)) {
+                    this.unlockAchievement(achievement);
+                }
+            }
+        }
+    }
+
+    // 解锁成就
+    unlockAchievement(achievement) {
+        this.achievements[achievement.id].unlocked = true;
+        this.achievements[achievement.id].unlockedTime = Date.now();
+        this.saveAchievements();
+        this.queueNotification(achievement);
+    }
+
+    // 添加成就解锁通知到队列
+    queueNotification(achievement) {
+        this.notificationQueue.push(achievement);
+        this.showNextNotification();
+    }
+
+    // 显示下一个成就解锁通知
+    showNextNotification() {
+        if (this.isShowingNotification || this.notificationQueue.length === 0) {
+            return;
+        }
+
+        this.isShowingNotification = true;
+        const achievement = this.notificationQueue.shift();
+
+        // 调用回调函数显示通知
+        if (this.notificationCallback) {
+            this.notificationCallback(achievement);
+        }
+
+        // 3秒后显示下一个通知
+        setTimeout(() => {
+            this.isShowingNotification = false;
+            this.showNextNotification();
+        }, 3000);
+    }
+
+    // 设置成就解锁通知回调函数
+    setNotificationCallback(callback) {
+        this.notificationCallback = callback;
+    }
+
+    // 获取成就状态
+    getAchievementStatus(achievementId) {
+        return this.achievements[achievementId];
+    }
+
+    // 获取所有成就
+    getAllAchievements() {
+        return ACHIEVEMENT_CONFIG.ACHIEVEMENTS;
+    }
+
+    // 获取指定类别的成就
+    getAchievementsByCategory(category) {
+        return ACHIEVEMENT_CONFIG.ACHIEVEMENTS.filter(a => a.category === category);
+    }
+
+    // 获取已解锁成就数量
+    getUnlockedCount() {
+        return Object.values(this.achievements).filter(a => a.unlocked).length;
+    }
+
+    // 获取总成就数量
+    getTotalCount() {
+        return ACHIEVEMENT_CONFIG.ACHIEVEMENTS.length;
+    }
+
+    // 获取成就进度
+    getAchievementProgress(achievementId) {
+        const achievement = ACHIEVEMENT_CONFIG.ACHIEVEMENTS.find(a => a.id === achievementId);
+        if (!achievement) return null;
+
+        const condition = achievement.condition;
+        const session = this.gameStats.sessionStats;
+        const global = this.gameStats.globalStats;
+
+        let current = 0;
+        let target = condition.target;
+
+        switch (condition.type) {
+            case 'total_kills':
+                current = global.totalKills;
+                break;
+            case 'single_kills':
+                current = session.kills;
+                break;
+            case 'elite_kills':
+                current = global.totalEliteKills;
+                break;
+            case 'reach_level':
+                current = session.level;
+                break;
+            case 'single_score':
+                current = session.score;
+                break;
+            case 'highest_score':
+                current = global.highestScore;
+                break;
+            case 'single_collect':
+                current = session.redpacketsCollected;
+                break;
+            case 'total_collect':
+                current = global.totalRedpacketsCollected;
+                break;
+            case 'boss_kills':
+                current = global.totalBossKills;
+                break;
+            case 'total_games':
+                current = global.totalGamesPlayed;
+                break;
+            case 'skill_damage':
+                current = session.skillDamage;
+                break;
+            case 'skill_heal':
+                current = session.skillHeal;
+                break;
+            case 'skill_dodge':
+                current = session.skillDodgeCount;
+                break;
+            case 'survival_time':
+                current = session.survivalTime;
+                break;
+            default:
+                return null;
+        }
+
+        return {
+            current: current,
+            target: target,
+            percent: Math.min(100, Math.floor((current / target) * 100))
+        };
+    }
+
+    // 重置所有成就（用于测试）
+    resetAllAchievements() {
+        this.initializeAllAchievements();
     }
 }
 
@@ -3928,6 +5482,11 @@ class Game {
         // 天气系统
         this.weatherSystem = new WeatherSystem();
 
+        // 成就系统
+        this.gameStats = new GameStatsTracker();
+        this.achievementManager = new AchievementManager(this.gameStats);
+        this.achievementManager.init();
+
         // 性能监控系统
         this.performanceMonitor = {
             fps: 60,
@@ -4264,6 +5823,36 @@ class Game {
         // 返回图鉴列表按钮
         document.getElementById('backToBestiary').addEventListener('click', () => {
             this.showBestiaryGrid();
+        });
+
+        // ==================== 成就系统事件监听器 ====================
+
+        // 开始界面成就按钮
+        document.getElementById('achievementButton').addEventListener('click', () => {
+            this.openAchievementScreen();
+        });
+
+        // HUD成就按钮
+        document.getElementById('hudAchievementButton').addEventListener('click', () => {
+            this.openAchievementScreen();
+        });
+
+        // 关闭成就按钮
+        document.getElementById('closeAchievementButton').addEventListener('click', () => {
+            this.closeAchievementScreen();
+        });
+
+        // 返回成就列表按钮
+        document.getElementById('backToAchievements').addEventListener('click', () => {
+            this.showAchievementGrid();
+        });
+
+        // 成就类别筛选标签
+        document.querySelectorAll('.achievement-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                const category = e.currentTarget.dataset.category;
+                this.filterAchievementsByCategory(category);
+            });
         });
 
         // 暂停界面 - 继续游戏按钮
@@ -7934,6 +9523,179 @@ class Game {
 
         ctx.restore();
         ctx.restore();
+    }
+
+    // ==================== 成就系统方法 ====================
+
+    /**
+     * 打开成就界面
+     */
+    openAchievementScreen() {
+        // 如果在游戏中，暂停游戏
+        if (this.state === GameState.PLAYING) {
+            this.state = GameState.PAUSED;
+        }
+
+        document.getElementById('achievementScreen').classList.remove('hidden');
+        this.updateAchievementStats();
+        this.renderAchievementCards('all');
+    }
+
+    /**
+     * 关闭成就界面
+     */
+    closeAchievementScreen() {
+        document.getElementById('achievementScreen').classList.add('hidden');
+        document.getElementById('achievementDetail').classList.remove('active');
+        document.getElementById('achievementGrid').style.display = 'grid';
+
+        // 如果游戏处于暂停状态，返回游戏或暂停界面
+        if (this.player && this.player.hp > 0 && this.state === GameState.PAUSED) {
+            this.showPauseScreen();
+        }
+    }
+
+    /**
+     * 显示成就网格
+     */
+    showAchievementGrid() {
+        document.getElementById('achievementDetail').classList.remove('active');
+        document.getElementById('achievementGrid').style.display = 'grid';
+    }
+
+    /**
+     * 更新成就统计
+     */
+    updateAchievementStats() {
+        const unlockedCount = this.achievementManager.getUnlockedCount();
+        const totalCount = this.achievementManager.getTotalCount();
+
+        document.getElementById('achievementUnlockedCount').textContent = unlockedCount;
+        document.getElementById('achievementTotalCount').textContent = totalCount;
+    }
+
+    /**
+     * 渲染成就卡片
+     */
+    renderAchievementCards(category = 'all') {
+        const grid = document.getElementById('achievementGrid');
+        grid.innerHTML = '';
+
+        let achievements = [];
+        if (category === 'all') {
+            achievements = this.achievementManager.getAllAchievements();
+        } else {
+            achievements = this.achievementManager.getAchievementsByCategory(category);
+        }
+
+        achievements.forEach(achievement => {
+            const status = this.achievementManager.getAchievementStatus(achievement.id);
+            const tierConfig = ACHIEVEMENT_CONFIG.TIERS[achievement.tier];
+            const categoryConfig = ACHIEVEMENT_CONFIG.CATEGORIES[achievement.category];
+            const progress = this.achievementManager.getAchievementProgress(achievement.id);
+
+            const card = document.createElement('div');
+            card.className = `achievement-card ${status.unlocked ? 'unlocked' : ''}`;
+            card.dataset.achievementId = achievement.id;
+
+            // 计算进度百分比
+            const progressPercent = progress ? progress.percent : 0;
+
+            card.innerHTML = `
+                <span class="achievement-card-category">${categoryConfig.icon}</span>
+                <span class="achievement-card-tier">${tierConfig.icon}</span>
+                <span class="achievement-card-icon">${achievement.icon}</span>
+                <div class="achievement-card-name">${achievement.name}</div>
+                ${!status.unlocked && progress ? `
+                    <div class="achievement-card-progress">
+                        <div class="achievement-card-progress-bar" style="width: ${progressPercent}%"></div>
+                    </div>
+                    <div class="achievement-card-progress-text">${progress.current}/${progress.target}</div>
+                ` : ''}
+            `;
+
+            card.addEventListener('click', () => this.showAchievementDetail(achievement));
+            grid.appendChild(card);
+        });
+    }
+
+    /**
+     * 显示成就详情
+     */
+    showAchievementDetail(achievement) {
+        document.getElementById('achievementGrid').style.display = 'none';
+        document.getElementById('achievementDetail').classList.add('active');
+
+        const status = this.achievementManager.getAchievementStatus(achievement.id);
+        const tierConfig = ACHIEVEMENT_CONFIG.TIERS[achievement.tier];
+        const categoryConfig = ACHIEVEMENT_CONFIG.CATEGORIES[achievement.category];
+        const progress = this.achievementManager.getAchievementProgress(achievement.id);
+
+        // 显示成就图标
+        document.getElementById('achievementDetailIcon').textContent = achievement.icon;
+
+        // 显示难度标识
+        const tierEl = document.getElementById('achievementDetailTier');
+        tierEl.textContent = tierConfig.name;
+        tierEl.style.background = tierConfig.gradient;
+
+        // 显示成就名称
+        document.getElementById('achievementDetailName').textContent = achievement.name;
+
+        // 显示类别
+        const categoryEl = document.getElementById('achievementDetailCategory');
+        categoryEl.textContent = `${categoryConfig.icon} ${categoryConfig.name} - ${tierConfig.name}`;
+        categoryEl.style.background = `linear-gradient(135deg, ${categoryConfig.color}40 0%, ${categoryConfig.color}20 100%)`;
+
+        // 显示描述
+        document.getElementById('achievementDetailDescription').textContent = achievement.description;
+
+        // 显示进度
+        const progressBar = document.getElementById('achievementDetailProgress');
+        const currentEl = document.getElementById('achievementDetailCurrent');
+        const targetEl = document.getElementById('achievementDetailTarget');
+        const unlockTimeEl = document.getElementById('achievementDetailUnlockTime');
+
+        if (status.unlocked) {
+            // 已解锁
+            progressBar.style.width = '100%';
+            progressBar.style.background = 'linear-gradient(90deg, #ffd700 0%, #ffa500 100%)';
+            currentEl.textContent = '已完成';
+            targetEl.textContent = '';
+
+            // 显示解锁时间
+            const unlockDate = new Date(status.unlockedTime);
+            unlockTimeEl.textContent = `解锁时间: ${unlockDate.toLocaleString('zh-CN')}`;
+        } else if (progress) {
+            // 未解锁，显示进度
+            const progressPercent = progress.percent;
+            progressBar.style.width = `${progressPercent}%`;
+            currentEl.textContent = progress.current;
+            targetEl.textContent = progress.target;
+            unlockTimeEl.textContent = '';
+        } else {
+            // 无法计算进度
+            progressBar.style.width = '0%';
+            currentEl.textContent = '-';
+            targetEl.textContent = '-';
+            unlockTimeEl.textContent = '';
+        }
+    }
+
+    /**
+     * 按类别筛选成就
+     */
+    filterAchievementsByCategory(category) {
+        // 更新标签激活状态
+        document.querySelectorAll('.achievement-tab').forEach(tab => {
+            tab.classList.remove('active');
+            if (tab.dataset.category === category) {
+                tab.classList.add('active');
+            }
+        });
+
+        // 渲染成就卡片
+        this.renderAchievementCards(category);
     }
 }
 

@@ -51,6 +51,7 @@
                 <div class="button-group">
                     <button id="pauseButton" class="pause-button" title="暂停游戏 (ESC)">⏸️</button>
                     <button id="hudBestiaryButton" class="settings-button" title="查看图鉴">📖</button>
+                    <button id="hudAchievementButton" class="settings-button" title="查看成就">🏆</button>
                     <button id="settingsButton" class="settings-button">⚙️</button>
                 </div>
             </div>
@@ -77,8 +78,9 @@
                     <p><span class="emoji">⚔️</span> <strong>自动攻击</strong> - 有敌人在范围内自动攻击（可在设置中开关）</p>
                 </div>
                 <div class="button-row">
-                    <button id="startButton" class="game-button">开始游戏</button>
                     <button id="bestiaryButton" class="game-button secondary">📖 图鉴</button>
+                    <button id="achievementButton" class="game-button secondary">🏆 成就</button>
+                    <button id="startButton" class="game-button">开始游戏</button>
                 </div>
             </div>
         </div>
@@ -189,6 +191,107 @@
 
                 <div class="bestiary-buttons">
                     <button id="closeBestiaryButton" class="game-button secondary">关闭</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 成就界面 -->
+        <div id="achievementScreen" class="screen achievement-screen hidden">
+            <div class="screen-content">
+                <h2 class="screen-title">🏆 成就系统</h2>
+                <div class="achievement-stats">
+                    <span class="achievement-stat">
+                        <span class="achievement-stat-icon">📊</span>
+                        <span id="achievementUnlockedCount" class="achievement-stat-value">0</span>
+                        <span class="achievement-stat-divider">/</span>
+                        <span id="achievementTotalCount" class="achievement-stat-value">0</span>
+                        <span class="achievement-stat-label">已解锁</span>
+                    </span>
+                </div>
+
+                <!-- 类别筛选标签 -->
+                <div class="achievement-tabs" id="achievementTabs">
+                    <button class="achievement-tab active" data-category="all">
+                        <span class="tab-icon">📚</span>
+                        <span class="tab-text">全部</span>
+                    </button>
+                    <button class="achievement-tab" data-category="kill">
+                        <span class="tab-icon">⚔️</span>
+                        <span class="tab-text">击杀</span>
+                    </button>
+                    <button class="achievement-tab" data-category="level">
+                        <span class="tab-icon">⭐</span>
+                        <span class="tab-text">等级</span>
+                    </button>
+                    <button class="achievement-tab" data-category="score">
+                        <span class="tab-icon">🏆</span>
+                        <span class="tab-text">分数</span>
+                    </button>
+                    <button class="achievement-tab" data-category="skill">
+                        <span class="tab-icon">🔮</span>
+                        <span class="tab-text">技能</span>
+                    </button>
+                    <button class="achievement-tab" data-category="attribute">
+                        <span class="tab-icon">💪</span>
+                        <span class="tab-text">属性</span>
+                    </button>
+                    <button class="achievement-tab" data-category="survival">
+                        <span class="tab-icon">❤️</span>
+                        <span class="tab-text">生存</span>
+                    </button>
+                    <button class="achievement-tab" data-category="collect">
+                        <span class="tab-icon">🧧</span>
+                        <span class="tab-text">收集</span>
+                    </button>
+                    <button class="achievement-tab" data-category="boss">
+                        <span class="tab-icon">👑</span>
+                        <span class="tab-text">Boss</span>
+                    </button>
+                    <button class="achievement-tab" data-category="weather">
+                        <span class="tab-icon">🌤️</span>
+                        <span class="tab-text">天气</span>
+                    </button>
+                    <button class="achievement-tab" data-category="games">
+                        <span class="tab-icon">🎮</span>
+                        <span class="tab-text">局数</span>
+                    </button>
+                </div>
+
+                <!-- 成就网格 -->
+                <div class="achievement-grid" id="achievementGrid">
+                    <!-- 成就卡片会由JS动态生成 -->
+                </div>
+
+                <!-- 成就详情面板 -->
+                <div class="achievement-detail" id="achievementDetail">
+                    <button class="back-button" id="backToAchievements">← 返回成就</button>
+                    <div class="achievement-info">
+                        <div class="achievement-icon-display">
+                            <span id="achievementDetailIcon" class="achievement-detail-icon"></span>
+                            <span id="achievementDetailTier" class="achievement-detail-tier"></span>
+                        </div>
+                        <div class="achievement-details">
+                            <h3 class="achievement-name" id="achievementDetailName">成就名称</h3>
+                            <div class="achievement-category" id="achievementDetailCategory"></div>
+                            <div class="achievement-description" id="achievementDetailDescription"></div>
+                            <div class="achievement-progress-container">
+                                <h4>进度</h4>
+                                <div class="progress-bar">
+                                    <div id="achievementDetailProgress" class="progress-fill"></div>
+                                </div>
+                                <div class="progress-text">
+                                    <span id="achievementDetailCurrent">0</span>
+                                    <span class="progress-divider">/</span>
+                                    <span id="achievementDetailTarget">0</span>
+                                </div>
+                            </div>
+                            <div class="achievement-unlock-time" id="achievementDetailUnlockTime"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="achievement-buttons">
+                    <button id="closeAchievementButton" class="game-button secondary">关闭</button>
                 </div>
             </div>
         </div>
