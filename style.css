@@ -3316,4 +3316,102 @@ body::before {
         width: 100%;
     }
 }
+
+/* ==================== 成就通知样式 ==================== */
+.achievement-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    animation: slideInRight 0.5s ease;
+}
+
+.achievement-notification.hidden {
+    display: none;
+    animation: none;
+}
+
+.achievement-notification-content {
+    background: linear-gradient(135deg, rgba(20, 18, 45, 0.95) 0%, rgba(15, 12, 35, 0.95) 100%);
+    border: 2px solid rgba(255, 215, 0, 0.6);
+    border-radius: 15px;
+    padding: 20px 25px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(255, 215, 0, 0.3);
+    backdrop-filter: blur(10px);
+    min-width: 300px;
+    max-width: 400px;
+}
+
+.achievement-notification-icon {
+    font-size: 40px;
+    filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.5));
+    animation: bounce 1s ease infinite;
+}
+
+.achievement-notification-text {
+    flex: 1;
+}
+
+.achievement-notification-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #ffd700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    margin-bottom: 5px;
+}
+
+.achievement-notification-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .achievement-notification {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+    }
+
+    .achievement-notification-content {
+        padding: 15px 20px;
+        min-width: auto;
+    }
+
+    .achievement-notification-icon {
+        font-size: 32px;
+    }
+
+    .achievement-notification-title {
+        font-size: 14px;
+    }
+
+    .achievement-notification-name {
+        font-size: 12px;
+    }
 }

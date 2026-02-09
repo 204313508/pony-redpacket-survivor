@@ -2442,6 +2442,12 @@ class AchievementManager {
 
     // 解锁成就
     unlockAchievement(achievement) {
+        console.log('unlockAchievement called:', achievement);
+        if (!achievement || !achievement.id) {
+            console.error('unlockAchievement: invalid achievement object', achievement);
+            return;
+        }
+
         this.achievements[achievement.id].unlocked = true;
         this.achievements[achievement.id].unlockedTime = Date.now();
         this.saveAchievements();
@@ -2450,6 +2456,7 @@ class AchievementManager {
 
     // 添加成就解锁通知到队列
     queueNotification(achievement) {
+        console.log('queueNotification: adding achievement to queue:', achievement.name, 'queue length:', this.notificationQueue.length + 1);
         this.notificationQueue.push(achievement);
         this.showNextNotification();
     }
@@ -2463,15 +2470,32 @@ class AchievementManager {
         this.isShowingNotification = true;
         const achievement = this.notificationQueue.shift();
 
+        console.log('showNextNotification: 显示成就:', achievement.name);
+
         // 调用回调函数显示通知
         if (this.notificationCallback) {
-            this.notificationCallback(achievement);
+            try {
+                this.notificationCallback(achievement);
+            } catch (error) {
+                console.error('showNextNotification: 回调函数错误:', error);
+            }
         }
 
-        // 3秒后显示下一个通知
+        // 3秒后隐藏当前通知并显示下一个通知
         setTimeout(() => {
+            // 隐藏当前通知
+            const notification = document.getElementById('achievementNotification');
+            if (notification) {
+                notification.style.display = 'none';
+            }
+
             this.isShowingNotification = false;
-            this.showNextNotification();
+
+            // 显示下一个通知（如果有）
+            if (this.notificationQueue.length > 0) {
+                console.log('showNextNotification: 显示下一个通知，队列长度:', this.notificationQueue.length);
+                this.showNextNotification();
+            }
         }, 3000);
     }
 
@@ -5517,6 +5541,10 @@ class Game {
         this.gameStats = new GameStatsTracker();
         this.achievementManager = new AchievementManager(this.gameStats);
         this.achievementManager.init();
+        // 设置成就解锁通知回调函数
+        this.achievementManager.setNotificationCallback((achievement) => {
+            this.showAchievementNotification(achievement);
+        });
 
         // 性能监控系统
         this.performanceMonitor = {
@@ -9851,6 +9879,67 @@ class Game {
     }
 
     /**
+     * 显示成就解锁通知
+     */
+    showAchievementNotification(achievement) {
+        try {
+            const notification = document.getElementById('achievementNotification');
+            if (!notification) {
+                console.error('achievementNotification element not found');
+                return;
+            }
+
+            const icon = notification.querySelector('.achievement-notification-icon');
+            const name = notification.querySelector('.achievement-notification-name');
+            const title = notification.querySelector('.achievement-notification-title');
+
+            if (!icon || !name || !title) {
+                console.error('achievement notification child elements not found', { icon, name, title });
+                return;
+            }
+
+            // 设置通知内容
+            icon.textContent = achievement.icon || '🏆';
+            name.textContent = achievement.name || '未知成就';
+
+            // 如果之前有通知在显示，先隐藏
+            if (!notification.classList.contains('hidden')) {
+                notification.classList.add('hidden');
+                // 等待一小段时间后重新显示，以便动画能重新触发
+                setTimeout(() => {
+                    this.displayNotification(notification);
+                }, 50);
+            } else {
+                this.displayNotification(notification);
+            }
+        } catch (error) {
+            console.error('Error showing achievement notification:', error);
+        }
+    }
+
+    /**
+     * 实际显示通知
+     */
+    displayNotification(notification) {
+        try {
+            // 清除之前的隐藏定时器（如果有）
+            if (this.notificationHideTimeout) {
+                clearTimeout(this.notificationHideTimeout);
+            }
+
+            // 移除 hidden 类以显示通知，触发 CSS 动画
+            notification.classList.remove('hidden');
+
+            // 3 秒后隐藏通知，与 AchievementManager 的 showNextNotification 中的延迟一致
+            this.notificationHideTimeout = setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 3000);
+        } catch (error) {
+            console.error('Error displaying notification:', error);
+        }
+    }
+
+    /**
      * 渲染成就卡片
      */
     renderAchievementCards(category = 'all') {
@@ -10005,24 +10094,34 @@ class Game {
      * @param {Object} achievement - 成就对象
      */
     showAchievementNotification(achievement) {
-        if (!achievement) return;
+        if (!achievement) {
+            console.error('showAchievementNotification: achievement is null');
+            return;
+        }
 
-        const notification = document.getElementById('achievementNotification');
-        const icon = document.getElementById('notificationIcon');
-        const title = document.getElementById('notificationTitle');
-        const name = document.getElementById('notificationName');
+        console.log('showAchievementNotification: 成就解锁:', achievement.name);
 
-        icon.textContent = achievement.icon;
-        title.textContent = '成就解锁';
-        name.textContent = achievement.name;
+        try {
+            const notification = document.getElementById('achievementNotification');
+            const icon = document.getElementById('achievementIcon');
+            const name = document.getElementById('achievementName');
 
-        // 显示通知
-        notification.classList.add('show');
+            if (!notification || !icon || !name) {
+                console.error('showAchievementNotification: 元素未找到', { notification, icon, name });
+                return;
+            }
 
-        // 3秒后自动隐藏
-        setTimeout(() => {
-            notification.classList.remove('show');
-        }, 3000);
+            // 设置内容
+            icon.textContent = achievement.icon || '🏆';
+            name.textContent = achievement.name || '未知成就';
+
+            // 显示通知
+            notification.style.display = 'block';
+
+            console.log('showAchievementNotification: 通知已显示');
+        } catch (error) {
+            console.error('showAchievementNotification: 错误:', error);
+        }
     }
 }
 

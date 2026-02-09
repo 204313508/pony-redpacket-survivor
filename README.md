@@ -30,6 +30,7 @@
 - ⚔️ **自动攻击系统** - 智能自动攻击范围内敌人，解放双手
 - 📈 **RPG成长系统** - 收集红包升级，提升四大属性
 - ⚡ **技能系统** - 升级时可选择学习8种强力技能，最多同时使用3个
+- 🏆 **成就系统** - 超过40个成就等待解锁，涵盖击杀、等级、技能、属性、生存、收集、Boss、天气、局数等多个类别，初级、中级、高级三个难度等级，解锁成就获得荣誉
 - 🎨 **精美的视觉效果** - 使用Emoji角色，炫酷的攻击特效
 - 🚀 **流畅的游戏体验** - 纯HTML/CSS/JS实现，无需安装
 - 💪 **挑战性** - 怪物随时间增强，越玩越刺激
@@ -60,6 +61,36 @@
 - ⚔️ **攻击力** - +5 攻击
 - 🛡️ **防御力** - +3 防御
 - ⚡ **移速** - +0.5 速度
+
+#### 成就系统
+游戏内置丰富的成就系统，超过40个成就等待玩家解锁，挑战自我获得荣誉！
+
+**成就类别**
+- ⚔️ **击杀** - 累计击杀、单局击杀、精英怪击杀
+- ⭐ **等级** - 达到特定等级、快速升级、健康升级
+- 🏆 **分数** - 单局分数、最高分、连胜高分
+- 🔮 **技能** - 技能等级、技能种类、技能总等级、全满级、特殊技能使用
+- 💪 **属性** - 攻击、防御、速度、生命等属性达到特定值
+- ❤️ **生存** - 生存时间、无伤时间、低血量生存
+- 🧧 **收集** - 单局收集、累计收集、爆发收集
+- 👑 **Boss** - Boss击杀、无伤击败Boss、快速击败Boss
+- 🌤️ **天气** - 在各种天气下达到特定分数
+- 🎮 **局数** - 累计局数、连胜、使用不同角色
+
+**成就难度等级**
+- 🥉 **初级** - 适合新手玩家，容易达成
+- 🥈 **中级** - 需要一定技巧和经验
+- 🥇 **高级** - 挑战性极高，需要完美策略和操作
+
+**成就奖励**
+- 解锁成就会在游戏内弹出精美通知
+- 成就系统追踪玩家游戏进度
+- 不同难度等级有不同的图标和视觉效果
+
+**查看成就**
+- 游戏内按 ESC 键暂停，选择"成就"按钮
+- 或在 HUD 界面点击成就图标（🏆）
+- 查看已解锁和未解锁的成就，查看完成进度
 
 #### 技能系统
 升级时有概率出现技能选项，玩家可以学习强力技能来增强战斗能力：
@@ -196,6 +227,11 @@ pony-redpacket-survivor/
   <img src="monsters.png" alt="怪物图鉴" width="400">
 </div>
 
+#### 成就系统
+<div align="center">
+  <img src="chengjiu.png" alt="成就系统" width="400">
+</div>
+
 #### 游戏战斗场景 1
 <div align="center">
   <img src="game2.png" alt="游戏战斗场景 1" width="400">
@@ -245,6 +281,8 @@ pony-redpacket-survivor/
 <div align="center">
   <img src="mobile-gameplay.png" alt="移动端游戏开始界面" width="400">
 </div>
+
+
 
 ### 📊 游戏参数
 
@@ -325,6 +363,7 @@ pony-redpacket-survivor/
 - ⚔️ **Auto-Attack System** - Smartly attacks enemies in range, hands-free gameplay
 - 📈 **RPG Progression** - Collect red packets to level up and upgrade stats
 - ⚡ **Skill System** - Choose from 8 powerful skills when leveling up, equip up to 3 skills
+- 🏆 **Achievement System** - Over 40 achievements to unlock across categories like kills, levels, skills, stats, survival, collection, Bosses, weather, and games played. Three difficulty tiers: Bronze, Silver, Gold. Earn honors by unlocking achievements!
 - 🎨 **Beautiful Visuals** - Emoji-based characters, cool attack effects
 - 🚀 **Smooth Experience** - Pure HTML/CSS/JS, no installation needed
 - 💪 **Challenging** - Monsters get stronger over time
@@ -355,6 +394,36 @@ Collect enough red packets (EXP) to level up, choose from four stats:
 - ⚔️ **Attack Power** - +5 Attack
 - 🛡️ **Defense** - +3 Defense
 - ⚡ **Movement Speed** - +0.5 Speed
+
+#### Achievement System
+The game features a rich achievement system with over 40 achievements waiting to be unlocked. Challenge yourself and earn honors!
+
+**Achievement Categories**
+- ⚔️ **Kills** - Total kills, single-game kills, elite monster kills
+- ⭐ **Levels** - Reach specific levels, fast leveling, healthy leveling
+- 🏆 **Scores** - Single-game score, highest score, winning streak high scores
+- 🔮 **Skills** - Skill levels, skill variety, total skill levels, max all skills, special skill usage
+- 💪 **Stats** - Attack, defense, speed, HP reach specific values
+- ❤️ **Survival** - Survival time, damage-free time, low HP survival
+- 🧧 **Collection** - Single-game collection, total collection, burst collection
+- 👑 **Boss** - Boss kills, damage-free Boss defeat, fast Boss defeat
+- 🌤️ **Weather** - Achieve specific scores in various weather conditions
+- 🎮 **Games** - Total games played, winning streaks, use different characters
+
+**Achievement Difficulty Tiers**
+- 🥉 **Bronze** - Suitable for new players, easy to achieve
+- 🥈 **Silver** - Requires some skill and experience
+- 🥇 **Gold** - Extremely challenging, requires perfect strategy and gameplay
+
+**Achievement Rewards**
+- Unlocking achievements triggers beautiful in-game notifications
+- Achievement system tracks player game progress
+- Different difficulty tiers have different icons and visual effects
+
+**Viewing Achievements**
+- Press ESC to pause the game, select the "Achievements" button
+- Or click the achievement icon (🏆) in the HUD
+- View unlocked and locked achievements, check completion progress
 
 #### Skill System
 When leveling up, skill options may appear. Players can learn powerful skills to enhance combat abilities:
@@ -539,6 +608,11 @@ pony-redpacket-survivor/
 #### Mobile Screens - Game Start
 <div align="center">
   <img src="mobile-gameplay.png" alt="Mobile Game Start Screen" width="400">
+</div>
+
+#### Achievement System
+<div align="center">
+  <img src="chengjiu.png" alt="Achievement System" width="400">
 </div>
 
 ### 📊 Game Parameters
